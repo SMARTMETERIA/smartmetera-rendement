@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:rls": "vitest run --config vitest.integration.config.ts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "dev:seed-user": "node scripts/create-dev-user.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
