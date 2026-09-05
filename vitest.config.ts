@@ -13,5 +13,8 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     globals: true,
+    // Les tests d'intégration RLS ont leur propre config (vitest.integration.config.ts) :
+    // ils appellent le vrai Supabase distant, ne doivent pas tourner par défaut.
+    exclude: ["**/node_modules/**", "src/test/integration/**"],
   },
 });

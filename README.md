@@ -27,26 +27,60 @@ absolues, formules métier).
 
 ## Scripts
 
-| Commande               | Description                             |
-| ---------------------- | --------------------------------------- |
-| `npm run dev`          | Serveur de développement                |
-| `npm run build`        | Build de production                     |
-| `npm run start`        | Démarre le build de production          |
-| `npm run lint`         | ESLint                                  |
-| `npm run test`         | Tests Vitest (une passe)                |
-| `npm run test:watch`   | Tests Vitest en mode watch              |
-| `npm run format`       | Formatage Prettier (écrit les fichiers) |
-| `npm run format:check` | Vérifie le formatage sans écrire        |
+| Commande               | Description                                          |
+| ---------------------- | ---------------------------------------------------- |
+| `npm run dev`          | Serveur de développement                             |
+| `npm run build`        | Build de production                                  |
+| `npm run start`        | Démarre le build de production                       |
+| `npm run lint`         | ESLint                                               |
+| `npm run test`         | Tests Vitest (une passe)                             |
+| `npm run test:watch`   | Tests Vitest en mode watch                           |
+| `npm run format`       | Formatage Prettier (écrit les fichiers)              |
+| `npm run format:check` | Vérifie le formatage sans écrire                     |
+| `npm run test:rls`     | Tests d'isolation RLS (vrai Supabase, voir plus bas) |
 
 ## Base de données
 
-Les migrations SQL sont dans `supabase/migrations`. La migration `0001_init.sql`
-pose les fondations multi-tenant (organisations, rôles, RLS) : toute nouvelle
-table métier doit suivre le même gabarit (`organization_id` + RLS + policy par
-organisation), voir les règles absolues dans CLAUDE.md.
+Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
 
-Pour appliquer les migrations, installez la [CLI Supabase](https://supabase.com/docs/guides/local-development)
-puis liez le projet (`supabase link`) et exécutez `supabase db push`.
+- `0001_init.sql` — organisations, rôles (`superadmin`, `admin_client`, `agent`,
+  `lecteur`), appartenances, fonctions RLS `is_member()` / `has_role()` /
+  `is_superadmin()`. Toute nouvelle table métier doit suivre ce gabarit
+  (`organization_id` + RLS + policies via ces fonctions).
+- `0002_domain_schema.sql` — modèle métier complet : secteurs, sources,
+  compteurs, relevés (`readings`, partitionnée par mois sur `ts`, jamais de
+  suppression physique — voir CLAUDE.md), imports, bilan d'eau
+  (`balance_inputs` + `balances` calculée par trigger selon les formules de
+  CLAUDE.md), débit de nuit (`nightlines`), alertes, interventions, plans
+  d'action, rapports, journal d'audit.
+- `0003_security_hardening.sql`, `0004_revoke_execute_explicit.sql`,
+  `0005_fix_set_updated_at_search_path.sql` — durcissements relevés par les
+  advisors Supabase après coup (RLS sur les partitions, restriction des
+  fonctions internes, `search_path` fixe).
+
+Pour les appliquer sur un nouveau projet Supabase : installez la
+[CLI Supabase](https://supabase.com/docs/guides/local-development), liez le
+projet (`supabase link`) puis `supabase db push`. Sur ce projet elles sont
+déjà appliquées.
+
+### Jeu de données de démonstration
+
+`supabase/seed.sql` crée une régie fictive « Régie des Sources » (20 000
+abonnés, 800 km, hors ZRE, 3 secteurs, 8 compteurs, 24 mois de relevés
+horaires avec une fuite de 3 m³/h démarrant au mois 20 dans le secteur
+Centre, et le bilan annuel sur 2 exercices). Il est idempotent : le relancer
+supprime et recrée les données de cette organisation.
+
+Pour le rejouer : `supabase db push --include-seed`, ou collez son contenu
+dans l'éditeur SQL du dashboard Supabase.
+
+### Tests d'isolation RLS
+
+`npm run test:rls` crée deux organisations et deux utilisateurs jetables sur
+le **vrai** projet Supabase (clés dans `.env.local`), vérifie qu'aucun ne
+peut lire ni écrire les données de l'autre, puis nettoie tout. Ces tests ne
+tournent pas avec `npm run test` (ils ont leur propre config
+`vitest.integration.config.ts`) car ils ont besoin du réseau et des clés.
 
 ## Structure
 
@@ -60,5 +94,9 @@ src/
     rendement.ts          formules métier du bilan d'eau
     supabase/              clients Supabase (browser, serveur, proxy)
   proxy.ts                 rafraîchissement de session à chaque requête
-supabase/migrations/       migrations SQL versionnées
+  test/
+    integration/           tests d'isolation RLS (vrai Supabase)
+supabase/
+  migrations/               migrations SQL versionnées
+  seed.sql                  jeu de données de démonstration
 ```
