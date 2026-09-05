@@ -82,21 +82,52 @@ peut lire ni écrire les données de l'autre, puis nettoie tout. Ces tests ne
 tournent pas avec `npm run test` (ils ont leur propre config
 `vitest.integration.config.ts`) car ils ont besoin du réseau et des clés.
 
+### Import CSV/Excel
+
+Page `/import` : assistant en 5 étapes (modèle → fichier → mapping → aperçu
+→ suivi). Le parsing/mapping/calcul de delta (`src/lib/import/`) est partagé
+entre l'aperçu client et l'exécution serveur — dupliqué en version Deno dans
+`supabase/functions/process-import/lib/` (extensions `.ts` explicites et
+imports `npm:`/CDN requis par le runtime Deno, incompatibles avec la
+résolution de modules Next.js ; voir le commentaire en tête de chaque
+fichier miroir). Les fichiers Excel sont convertis en CSV **côté client**
+avant l'upload (voir `src/lib/import/toCsv.ts`) : la fonction Edge ne
+traite que du CSV, pour éviter d'embarquer le volumineux bundle SheetJS
+dans l'exécution serveur.
+
+8 modèles système préremplis (générique, Topkapi, Sofrel S4W, EWEBTEL/Plum,
+Kamstrup READy, Diehl IZAR@NET, Itron Temetra, export facturation JVS) sont
+seedés par `0006_import_pipeline.sql`, avec un fichier d'exemple par modèle
+dans `supabase/sample-imports/` — **mappings de départ plausibles, non
+vérifiés contre une vraie spec éditeur** ; l'assistant (détection auto +
+correction manuelle + sauvegarde en modèle d'organisation) est fait pour
+absorber l'écart avec un vrai fichier client.
+
+Gestion des index cumulés (rollover, remplacement de compteur, deltas
+négatifs) : voir `src/lib/import/computeDeltas.ts` et ses tests. Idempotence
+stricte via la contrainte unique `readings(meter_id, ts, source_id)` :
+rejouer un import met à jour les lignes existantes, n'en duplique aucune
+(vérifié par un test de bout en bout lors du développement).
+
 ## Structure
 
 ```
 src/
-  app/                    routes App Router
-    (auth)/connexion/     page de connexion (magic link)
-    auth/callback/        échange du code magic link contre une session
-  components/ui/          composants shadcn/ui
+  app/                      routes App Router
+    (auth)/connexion/       page de connexion (magic link)
+    auth/callback/          échange du code magic link contre une session
+    import/                 assistant d'import CSV/Excel
+  components/ui/            composants shadcn/ui
   lib/
-    rendement.ts          formules métier du bilan d'eau
-    supabase/              clients Supabase (browser, serveur, proxy)
-  proxy.ts                 rafraîchissement de session à chaque requête
+    rendement.ts            formules métier du bilan d'eau
+    supabase/                clients Supabase (browser, serveur, proxy)
+    import/                  parsing/mapping/deltas partagés (client + tests)
+  proxy.ts                   rafraîchissement de session à chaque requête
   test/
-    integration/           tests d'isolation RLS (vrai Supabase)
+    integration/             tests d'isolation RLS (vrai Supabase)
 supabase/
-  migrations/               migrations SQL versionnées
-  seed.sql                  jeu de données de démonstration
+  migrations/                 migrations SQL versionnées
+  seed.sql                    jeu de données de démonstration
+  sample-imports/              fichiers d'exemple par modèle d'import
+  functions/process-import/    Edge Function : exécution des imports
 ```
