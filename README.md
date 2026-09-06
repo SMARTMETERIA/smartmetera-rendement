@@ -109,6 +109,45 @@ stricte via la contrainte unique `readings(meter_id, ts, source_id)` :
 rejouer un import met à jour les lignes existantes, n'en duplique aucune
 (vérifié par un test de bout en bout lors du développement).
 
+### Moteur de calcul
+
+Chaque nuit à 05:00 Europe/Paris (pg_cron, auto-gating DST-safe toutes les
+15 min via `cron_declencheur_moteur_nocturne()` — pas de notion de fuseau
+nommé côté cron, donc c'est la fonction elle-même qui vérifie l'heure locale
+réelle), `executer_moteur_nocturne()` :
+
+1. Agrège les relevés horaires en volumes journaliers par compteur
+   (`daily_meter_volumes`, jour calendaire Europe/Paris).
+2. Calcule le débit horaire net par secteur — entrées moins sorties selon
+   `meters.sens` (`sector_hourly_flows`).
+3. Calcule le DMN (minimum sur la fenêtre [2h,4h) heure locale, résolue
+   heure-par-heure via `AT TIME ZONE` donc correcte lors des 2 nuits de
+   changement d'heure par an), la baseline (médiane des 14 nuits
+   précédentes) et la fuite estimée (`nightlines`), et déclenche une alerte
+   `fuite_suspectee` si 3 nuits consécutives dépassent baseline + max(20 %,
+   0,5 m³/h).
+4. Détecte les compteurs muets (>48h sans relevé), les débits de secteur
+   inversés et les volumes journaliers statistiquement anormaux (alertes
+   `compteur_muet` / `debit_inverse` / `index_anormal`).
+5. Calcule le bilan d'eau par organisation sur deux types de période
+   (`bilans_calcules`) : année civile (exact, depuis `balance_inputs`) et
+   glissant 12 mois (v_produit/importé/exporté mesurés en télérelève ;
+   v_comptabilisé/sans comptage/service répartis au prorata des jours sur
+   les exercices civils chevauchés — voir `repartirComposantesAnnuelles()`).
+
+Relançable à la main : `select public.executer_moteur_nocturne('2026-06-15');`
+(par défaut : hier). Journal d'exécution dans `moteur_executions` (lecture
+superadmin uniquement).
+
+Miroir TypeScript testable des formules (`src/lib/engine/`) : `bilan.ts`
+(rendement/ILP/ILC/seuil/conformité/distance au seuil — voir aussi
+`src/lib/rendement.ts`), `dmn.ts` (DMN/baseline/fuite/règle d'alerte),
+`alertes.ts` (compteur muet/débit inversé/index anormal). Testé avec des
+valeurs connues, dont l'exemple de référence : 2 000 000 m³ produits, 0
+importé, 0 exporté, 1 220 000 comptabilisé, 10 000 sans comptage, 20 000
+service, 800 km, hors ZRE → rendement 62,5 %, ILP 2,568, ILC 4,281, seuil
+65,86 %, non conforme.
+
 ## Structure
 
 ```
@@ -119,7 +158,8 @@ src/
     import/                 assistant d'import CSV/Excel
   components/ui/            composants shadcn/ui
   lib/
-    rendement.ts            formules métier du bilan d'eau
+    rendement.ts            formules métier du bilan d'eau (bilan annuel déclaré)
+    engine/                  moteur de calcul (bilan par période, DMN, alertes)
     supabase/                clients Supabase (browser, serveur, proxy)
     import/                  parsing/mapping/deltas partagés (client + tests)
   proxy.ts                   rafraîchissement de session à chaque requête

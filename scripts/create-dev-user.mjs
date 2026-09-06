@@ -58,13 +58,11 @@ async function main() {
     .maybeSingle();
 
   if (!existingMembership) {
-    const { error: memErr } = await admin
-      .from("memberships")
-      .insert({
-        user_id: user.id,
-        organization_id: org.id,
-        role: "superadmin",
-      });
+    const { error: memErr } = await admin.from("memberships").insert({
+      user_id: user.id,
+      organization_id: org.id,
+      role: "superadmin",
+    });
     if (memErr) throw memErr;
     console.log("Adhésion superadmin créée pour Régie des Sources.");
   } else if (existingMembership.role !== "superadmin") {

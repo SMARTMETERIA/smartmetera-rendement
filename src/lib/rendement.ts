@@ -48,10 +48,14 @@ export function indiceLineaireConsommation(bilan: BilanEau) {
   return (volumeConsommeAutorise(bilan) + vExporte) / (365 * bilan.lineaireKm);
 }
 
+/** Seuil réglementaire (décret 2012-97) : 85 % ou seuil ILC, terme fixe majoré en ZRE. */
+export function seuilReglementaire(bilan: BilanEau) {
+  const termeFixe = bilan.zoneDeRepartitionDesEaux ? 70 : 65;
+  return (termeFixe + 0.2 * indiceLineaireConsommation(bilan)) / 100;
+}
+
 /** Rendement conforme au décret 2012-97 (seuil à 85 % ou seuil ILC, majoré en ZRE). */
 export function estConformeDecret(bilan: BilanEau) {
   const rendement = rendementReseau(bilan);
-  const termeFixe = bilan.zoneDeRepartitionDesEaux ? 70 : 65;
-  const seuil = (termeFixe + 0.2 * indiceLineaireConsommation(bilan)) / 100;
-  return rendement >= 0.85 || rendement >= seuil;
+  return rendement >= 0.85 || rendement >= seuilReglementaire(bilan);
 }
