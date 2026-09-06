@@ -72,7 +72,33 @@ Centre, et le bilan annuel sur 2 exercices). Il est idempotent : le relancer
 supprime et recrée les données de cette organisation.
 
 Pour le rejouer : `supabase db push --include-seed`, ou collez son contenu
-dans l'éditeur SQL du dashboard Supabase.
+dans l'éditeur SQL du dashboard Supabase. Puis, dans cet ordre :
+
+1. `npm run dev:seed-user` — rattache le compte superadmin de dev à la
+   nouvelle organisation (le seed supprime et recrée l'organisation, donc
+   les adhésions précédentes).
+2. Peupler `daily_meter_volumes` sur toute la fenêtre glissante 12 mois
+   (le bilan glissant agrège cette table sur 365 jours, pas seulement sur
+   les nuits traitées par le moteur — voir plus bas) :
+   ```sql
+   do $$
+   declare v_jour date;
+   begin
+     for v_jour in select generate_series((now() - interval '12 months')::date, (now() - interval '1 day')::date, interval '1 day')::date
+     loop perform public.calculer_volumes_journaliers(v_jour); end loop;
+   end $$;
+   ```
+3. Lancer `executer_moteur_nocturne()` sur au moins les 35-40 derniers
+   jours (14 nuits de baseline + marge) pour peupler débits de nuit,
+   alertes et bilans :
+   ```sql
+   do $$
+   declare v_jour date;
+   begin
+     for v_jour in select generate_series((now() - interval '35 days')::date, (now() - interval '1 day')::date, interval '1 day')::date
+     loop perform public.executer_moteur_nocturne(v_jour); end loop;
+   end $$;
+   ```
 
 ### Tests d'isolation RLS
 
@@ -148,26 +174,73 @@ importé, 0 exporté, 1 220 000 comptabilisé, 10 000 sans comptage, 20 000
 service, 800 km, hors ZRE → rendement 62,5 %, ILP 2,568, ILC 4,281, seuil
 65,86 %, non conforme.
 
+### Tableau de bord
+
+Toutes les pages authentifiées vivent sous `src/app/(dashboard)/` (groupe de
+routes, layout partagé avec navigation) et vérifient la session **côté
+serveur** (`getCurrentOrganization()` → `redirect("/connexion")` si absente)
+— contrairement à `/import` qui vérifie côté client. En dev, `DevAutoLogin`
+tient compte de cette différence : après connexion automatique silencieuse,
+il renvoie explicitement vers `/app` si l'utilisateur vient d'atterrir sur
+`/connexion` (sinon il resterait sur l'écran de connexion malgré une session
+valide).
+
+- **`/app`** — vue d'ensemble : rendement/ILP/seuil/conformité (dernier
+  bilan glissant 12 mois), tendance 12 mois (Recharts), top 3 secteurs à
+  pertes, alertes ouvertes, compteur d'économies estimées, bouton PDF.
+- **`/secteurs`** / **`/secteurs/[id]`** — classement par fuite estimée ;
+  détail avec courbe de débit de nuit (jusqu'à 60 jours), alertes,
+  interventions, formulaire de création d'intervention.
+- **`/compteurs`** — liste, statut de remontée (réutilise
+  `estCompteurMuet()` du moteur), dernier volume connu.
+- **`/bilan`** — saisie/édition annuelle avec calcul immédiat (le formulaire
+  appelle `calculerBilan()` du moteur TS à chaque frappe, avant tout envoi
+  réseau) ; historique depuis `balances`.
+- **`/alertes`** — file complète, actions Acquitter / Clôturer.
+- **`/rapports`** — liste des rapports + export PDF (impression navigateur).
+- **`/parametres`** — organisation (dont le prix €/m³ utilisé pour le
+  compteur d'économies), secteurs, compteurs, sources, utilisateurs (rôles,
+  via `membres_organisation()` — la seule façon d'exposer un e-mail
+  `auth.users` en restant vérifié côté serveur).
+
+**Compteur d'économies estimées** : valeur annualisée des fuites détectées
+(dernière nuit connue par secteur × 365 × prix €/m³, réglable dans
+Paramètres). C'est une estimation de la valeur détectable grâce à la
+sectorisation, pas un montant déjà facturé — la formule est indiquée en
+légende sous le chiffre.
+
+**Bouton « Rapport PDF »** : utilise l'impression du navigateur
+(`window.print()`, voir `src/components/BoutonImprimer.tsx`) — pas de
+dépendance PDF supplémentaire. La navigation (`no-print`) est masquée à
+l'impression (voir `globals.css`).
+
 ## Structure
 
 ```
 src/
-  app/                      routes App Router
-    (auth)/connexion/       page de connexion (magic link)
-    auth/callback/          échange du code magic link contre une session
-    import/                 assistant d'import CSV/Excel
-  components/ui/            composants shadcn/ui
+  app/
+    (dashboard)/             pages authentifiées (layout + nav partagés)
+      app/                    vue d'ensemble (/app)
+      secteurs/, secteurs/[id]/
+      compteurs/, bilan/, alertes/, rapports/, parametres/
+    (auth)/connexion/         page de connexion (magic link)
+    auth/callback/            échange du code magic link contre une session
+    import/                   assistant d'import CSV/Excel
+  components/
+    ui/                       composants shadcn/ui
+    charts/                    graphiques Recharts (tendance, débit de nuit)
   lib/
-    rendement.ts            formules métier du bilan d'eau (bilan annuel déclaré)
-    engine/                  moteur de calcul (bilan par période, DMN, alertes)
-    supabase/                clients Supabase (browser, serveur, proxy)
-    import/                  parsing/mapping/deltas partagés (client + tests)
-  proxy.ts                   rafraîchissement de session à chaque requête
+    rendement.ts              formules métier du bilan d'eau (bilan annuel déclaré)
+    engine/                    moteur de calcul (bilan par période, DMN, alertes)
+    organization.ts            résolution de l'organisation courante (serveur)
+    supabase/                  clients Supabase (browser, serveur, proxy)
+    import/                    parsing/mapping/deltas partagés (client + tests)
+  proxy.ts                     rafraîchissement de session à chaque requête
   test/
-    integration/             tests d'isolation RLS (vrai Supabase)
+    integration/               tests d'isolation RLS (vrai Supabase)
 supabase/
-  migrations/                 migrations SQL versionnées
-  seed.sql                    jeu de données de démonstration
-  sample-imports/              fichiers d'exemple par modèle d'import
-  functions/process-import/    Edge Function : exécution des imports
+  migrations/                   migrations SQL versionnées
+  seed.sql                      jeu de données de démonstration
+  sample-imports/                fichiers d'exemple par modèle d'import
+  functions/process-import/      Edge Function : exécution des imports
 ```
