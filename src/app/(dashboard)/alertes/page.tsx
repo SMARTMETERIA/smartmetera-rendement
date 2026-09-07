@@ -17,16 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlerteActions } from "@/components/AlerteActions";
-
-const LABEL_TYPE: Record<string, string> = {
-  fuite_suspectee: "Fuite suspectée",
-  depassement_dmn: "Dépassement DMN",
-  anomalie_comptage: "Anomalie de comptage",
-  import_echec: "Échec d'import",
-  compteur_muet: "Compteur muet",
-  debit_inverse: "Débit inversé",
-  index_anormal: "Index anormal",
-};
+import { LABEL_TYPE_ALERTE } from "@/lib/alerts/labels";
 
 export default async function AlertesPage() {
   const org = await getCurrentOrganization();
@@ -88,7 +79,7 @@ export default async function AlertesPage() {
                           </p>
                         )}
                       </TableCell>
-                      <TableCell>{LABEL_TYPE[a.type] ?? a.type}</TableCell>
+                      <TableCell>{LABEL_TYPE_ALERTE[a.type] ?? a.type}</TableCell>
                       <TableCell>{secteur?.nom ?? "—"}</TableCell>
                       <TableCell>
                         <Badge

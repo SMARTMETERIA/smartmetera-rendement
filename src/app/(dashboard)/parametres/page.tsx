@@ -35,6 +35,7 @@ const LABEL_TYPE_SOURCE: Record<string, string> = {
   webhook_lorawan: "Webhook LoRaWAN",
   saisie_manuelle: "Saisie manuelle",
   api: "API",
+  email_entrant: "Boîte mail entrante",
 };
 
 interface MembreOrganisation {
@@ -213,6 +214,13 @@ export default async function ParametresPage() {
                   className="underline underline-offset-4"
                 >
                   gérer les webhooks LoRaWAN et le registre d&apos;équipements →
+                </Link>{" "}
+                ·{" "}
+                <Link
+                  href="/parametres/boite-mail"
+                  className="underline underline-offset-4"
+                >
+                  gérer la boîte mail entrante →
                 </Link>
               </CardDescription>
             </CardHeader>

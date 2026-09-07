@@ -215,6 +215,58 @@ importé, 0 exporté, 1 220 000 comptabilisé, 10 000 sans comptage, 20 000
 service, 800 km, hors ZRE → rendement 62,5 %, ILP 2,568, ILC 4,281, seuil
 65,86 %, non conforme.
 
+### Notifications par e-mail et boîte mail entrante
+
+**Alertes et digest (Resend)** : une Edge Function unique
+`supabase/functions/notifications/` route deux tâches déclenchées par
+`pg_cron` via `pg_net` (recette officielle Supabase — voir l'en-tête de la
+migration `0016_alertes_notifications.sql`) :
+
+- `/notifications/alertes` toutes les 15 min : regroupe par organisation
+  les alertes pas encore notifiées (`alerts.notifie_le is null`) et envoie
+  un e-mail à `admin_client`/`agent`. Idempotent par construction (pas de
+  fenêtre horaire nécessaire).
+- `/notifications/digest` le lundi vers 07:00 Europe/Paris (même gating
+  DST-safe que le moteur nocturne) : un digest hebdomadaire (rendement
+  glissant 12 mois + alertes de la semaine) par organisation, à
+  `admin_client`/`agent`/`lecteur`, dédoublonné par `digest_hebdo_envois`.
+
+`pg_net` s'authentifie avec la clé publique **anon** (un JWT valide mais
+sans aucun privilège — la fonction utilise `service_role` en interne pour
+son propre travail), lue depuis **Supabase Vault** (`functions_base_url`,
+`anon_key`) plutôt que codée en dur dans la migration.
+
+Gabarit HTML sobre et rendu des e-mails testables dans `src/lib/notifications/`
+(`emailLayout.ts`, `alerteEmail.ts`, `digestEmail.ts`, `inboundAckEmail.ts`),
+dupliqués en Deno dans `supabase/functions/notifications/lib/` et
+`supabase/functions/inbound-email/lib/` (même convention que `process-import`
+et `ingest`). Libellés de type d'alerte partagés avec la page `/alertes`
+via `src/lib/alerts/labels.ts`.
+
+**Boîte mail entrante** (`/parametres/boite-mail`) : chaque source de type
+`email_entrant` a une adresse dédiée (jeton en local-part, ou en suffixe
+`+jeton` pour l'adressage natif Postmark) et un modèle d'import par défaut
+(personne n'est là pour en choisir un à la réception). L'Edge Function
+`supabase/functions/inbound-email/` route `/inbound-email/postmark` (JSON)
+et `/inbound-email/mailgun` (`multipart/form-data`, signature HMAC vérifiée
+si `MAILGUN_SIGNING_KEY` est configurée) — voir `src/lib/inboundMail/` pour
+le détail des deux formats et leurs tests.
+
+Aucune réimplémentation du parsing CSV : la pièce jointe (CSV telle quelle,
+ou XLSX converti en CSV côté serveur avec SheetJS — seule Edge Function à
+embarquer cette dépendance, justement parce qu'il n'y a pas d'étape
+navigateur possible pour un e-mail) est déposée dans le bucket `imports` et
+un `import_jobs` est créé exactement comme pour l'upload manuel, puis
+`process-import` est invoqué et son résultat attendu. Accusé de réception
+ou e-mail d'erreur envoyé par Resend (rapport d'erreurs CSV en pièce jointe
+si des lignes ont été rejetées), et chaque e-mail journalisé dans
+`inbound_emails` (jamais de perte silencieuse).
+
+Configuration d'un export récurrent chez Topkapi/Sofrel S4W/EWEBTEL et
+option de dépôt SFTP : voir [`docs/`](./docs/README.md) (documentation
+volontairement prudente — la config précise de ces outils B2B n'est pas
+publique, à confirmer avec le support de chaque éditeur).
+
 ### Tableau de bord
 
 Toutes les pages authentifiées vivent sous `src/app/(dashboard)/` (groupe de
@@ -263,21 +315,26 @@ src/
     (dashboard)/             pages authentifiées (layout + nav partagés)
       app/                    vue d'ensemble (/app)
       secteurs/, secteurs/[id]/
-      compteurs/, bilan/, alertes/, rapports/, parametres/, parametres/sources/
+      compteurs/, bilan/, alertes/, rapports/,
+      parametres/, parametres/sources/, parametres/boite-mail/
     (auth)/connexion/         page de connexion (magic link)
     auth/callback/            échange du code magic link contre une session
     import/                   assistant d'import CSV/Excel
   components/
     ui/                       composants shadcn/ui
     charts/                    graphiques Recharts (tendance, débit de nuit)
-    sources/                   sources webhook, registre d'équipements, testeur de trame
+    sources/                   sources webhook LoRaWAN, registre d'équipements, testeur de trame
+    inbound-mail/               adresses e-mail entrantes, journal, testeur
   lib/
     rendement.ts              formules métier du bilan d'eau (bilan annuel déclaré)
     engine/                    moteur de calcul (bilan par période, DMN, alertes)
+    alerts/                    libellés d'alerte partagés (UI + e-mails)
     organization.ts            résolution de l'organisation courante (serveur)
     supabase/                  clients Supabase (browser, serveur, proxy)
     import/                    parsing/mapping/deltas partagés (client + tests)
     ingest/                    décodeurs LoRaWAN + enveloppes de plateforme (client + tests)
+    notifications/              gabarits d'e-mail sobres (alertes, digest, accusés de réception)
+    inboundMail/                enveloppes Postmark/Mailgun + conversion XLSX (client + tests)
   proxy.ts                     rafraîchissement de session à chaque requête
   test/
     integration/               tests d'isolation RLS (vrai Supabase)
@@ -287,4 +344,8 @@ supabase/
   sample-imports/                fichiers d'exemple par modèle d'import
   functions/process-import/      Edge Function : exécution des imports
   functions/ingest/              Edge Function : ingestion webhooks LoRaWAN
+  functions/notifications/       Edge Function : alertes + digest par e-mail (Resend)
+  functions/inbound-email/       Edge Function : boîte mail entrante (Postmark/Mailgun)
+docs/
+  README.md, *.md                export récurrent Topkapi/Sofrel/EWEBTEL, option SFTP
 ```
