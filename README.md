@@ -135,6 +135,47 @@ stricte via la contrainte unique `readings(meter_id, ts, source_id)` :
 rejouer un import met à jour les lignes existantes, n'en duplique aucune
 (vérifié par un test de bout en bout lors du développement).
 
+### Ingestion LoRaWAN
+
+Page `/parametres/sources` : sources webhook (une par plateforme, jeton
+secret dans l'URL — `.../functions/v1/ingest/<plateforme>/<jeton>`), registre
+d'équipements (DevEUI [+ canal] → compteur, décodeur, litres/impulsion) et
+testeur de trame intégré (envoie une trame d'exemple en direct et affiche le
+résultat). Une seule Edge Function `supabase/functions/ingest/` route les 4
+endpoints (`ttn`, `chirpstack`, `liveobjects`, `generic`) sur `req.url` —
+convention Supabase pour les sous-routes d'une fonction — avec `verify_jwt`
+désactivé (authentification propre au webhook via le jeton, les plateformes
+LoRaWAN ne peuvent pas envoyer de JWT Supabase).
+
+Pipeline : jeton → source/organisation → enveloppe de plateforme (DevEUI +
+payload brut, `src/lib/ingest/envelopes/`) → idempotence (`raw_frames`,
+contrainte unique `source_id + idempotency_key` construite depuis `fCnt` ou
+l'horodatage) → décodeur constructeur (`src/lib/ingest/decoders/`) → delta
+par rapport au dernier index connu de l'équipement, avec gestion de rollover
+(même heuristique que `computeDeltas.ts`) → upsert `readings`. Même
+convention de duplication contrôlée que `process-import` : logique pure dans
+`src/lib/ingest/` (testée par Vitest), miroir Deno dans
+`supabase/functions/ingest/lib/` (imports `.ts` explicites).
+
+4 décodeurs à partir des documentations constructeur (voir l'en-tête de
+chaque fichier pour la source et les limites connues) :
+
+- **Adeunis PULSE (format de trame "V4")** — trame périodique 0x46, compteurs
+  voie A/B en index cumulé 32 bits.
+- **Watteco Pulse Sens'O** — trame ZCL standard (cluster Binary Input,
+  attribut Count), jusqu'à 3 voies ; le mode batch compressé n'est pas
+  supporté.
+- **Milesight EM300-DI** — format TLV Milesight, canal `0x05/0xC8` (uint32 LE
+  cumulatif).
+- **Dragino SW3L** — trame FPORT 2, gère à la fois le mode index cumulatif et
+  le mode delta direct (`MOD`).
+
+Le format Orange Live Objects (`src/lib/ingest/envelopes/liveobjects.ts`) est
+reconstitué à partir de sources tierces (documentation officielle non
+explorable automatiquement) : à valider contre une trame réelle capturée
+depuis le portail du client, en utilisant `/ingest/generic` en attendant si
+besoin.
+
 ### Moteur de calcul
 
 Chaque nuit à 05:00 Europe/Paris (pg_cron, auto-gating DST-safe toutes les
@@ -222,19 +263,21 @@ src/
     (dashboard)/             pages authentifiées (layout + nav partagés)
       app/                    vue d'ensemble (/app)
       secteurs/, secteurs/[id]/
-      compteurs/, bilan/, alertes/, rapports/, parametres/
+      compteurs/, bilan/, alertes/, rapports/, parametres/, parametres/sources/
     (auth)/connexion/         page de connexion (magic link)
     auth/callback/            échange du code magic link contre une session
     import/                   assistant d'import CSV/Excel
   components/
     ui/                       composants shadcn/ui
     charts/                    graphiques Recharts (tendance, débit de nuit)
+    sources/                   sources webhook, registre d'équipements, testeur de trame
   lib/
     rendement.ts              formules métier du bilan d'eau (bilan annuel déclaré)
     engine/                    moteur de calcul (bilan par période, DMN, alertes)
     organization.ts            résolution de l'organisation courante (serveur)
     supabase/                  clients Supabase (browser, serveur, proxy)
     import/                    parsing/mapping/deltas partagés (client + tests)
+    ingest/                    décodeurs LoRaWAN + enveloppes de plateforme (client + tests)
   proxy.ts                     rafraîchissement de session à chaque requête
   test/
     integration/               tests d'isolation RLS (vrai Supabase)
@@ -243,4 +286,5 @@ supabase/
   seed.sql                      jeu de données de démonstration
   sample-imports/                fichiers d'exemple par modèle d'import
   functions/process-import/      Edge Function : exécution des imports
+  functions/ingest/              Edge Function : ingestion webhooks LoRaWAN
 ```

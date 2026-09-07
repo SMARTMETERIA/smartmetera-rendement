@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentOrganization } from "@/lib/organization";
 import {
@@ -206,7 +207,13 @@ export default async function ParametresPage() {
             <CardHeader>
               <CardTitle>Sources de données</CardTitle>
               <CardDescription>
-                Exports CSV, webhooks LoRaWAN, saisies manuelles
+                Exports CSV, webhooks LoRaWAN, saisies manuelles —{" "}
+                <Link
+                  href="/parametres/sources"
+                  className="underline underline-offset-4"
+                >
+                  gérer les webhooks LoRaWAN et le registre d&apos;équipements →
+                </Link>
               </CardDescription>
             </CardHeader>
             <CardContent>

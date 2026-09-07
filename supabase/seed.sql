@@ -94,6 +94,40 @@ begin
   update public.meters set sens = 'entree'
   where organization_id = v_org_id and type = 'sectorisation';
 
+  -- ---------------------------------------------------------------------
+  -- Démo ingestion LoRaWAN (/parametres/sources) : une source webhook
+  -- "generic" avec un jeton fixe (données de démo uniquement — en usage
+  -- réel, régénérer le jeton depuis l'UI), un compteur de service (hors
+  -- primètre des formules de bilan, donc sans impact sur le scénario de
+  -- rendement ci-dessus) et un équipement Milesight EM300-DI avec un index
+  -- de départ déjà connu : la trame d'exemple du testeur produit
+  -- immédiatement un relevé (delta), sans avoir besoin d'un deuxième envoi
+  -- pour initialiser la baseline.
+  -- ---------------------------------------------------------------------
+  declare
+    v_source_lora_id uuid;
+    v_meter_lora_id uuid;
+  begin
+    insert into public.sources (organization_id, type, nom, plateforme, webhook_token)
+      values (
+        v_org_id, 'webhook_lorawan', 'Démo LoRaWAN (générique)', 'generic',
+        '38517647be5eb85864b1d6a9023f5029a9b9778d9b81c63e'
+      )
+      returning id into v_source_lora_id;
+
+    insert into public.meters (organization_id, sector_id, type, numero_serie, nom)
+      values (v_org_id, null, 'service', 'LORA-DEMO-01', 'Démo capteur LoRaWAN')
+      returning id into v_meter_lora_id;
+
+    insert into public.devices (
+      organization_id, source_id, meter_id, dev_eui, decodeur,
+      litres_par_impulsion, dernier_index_impulsions, dernier_horodatage
+    ) values (
+      v_org_id, v_source_lora_id, v_meter_lora_id, '0018B2000000ABCD', 'milesight_em300_di',
+      10, 900, now() - interval '1 hour'
+    );
+  end;
+
   -- Partitions mensuelles nécessaires à la fenêtre de relevés.
   v_month := date_trunc('month', v_start_date)::date;
   while v_month <= date_trunc('month', v_end_date)::date loop
