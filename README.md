@@ -308,6 +308,49 @@ rendu PDF et les futurs usages (`src/lib/reports/assemblerContenu.ts`),
 dupliqué en Deno dans `supabase/functions/reports/lib/` (même convention
 que les autres Edge Functions).
 
+### Espace superadmin et calculateur de ROI
+
+**Espace superadmin** (`/admin`, réservé au rôle `superadmin`) : outil
+d'onboarding client, réutilisant les tables et policies RLS existantes
+(aucune n'accorde de droit supplémentaire, `has_role()`/`is_member()`
+laissent déjà passer un superadmin partout) :
+
+- **Organisations** : liste toutes organisations + création.
+- **Fiche de collecte** : modèle Excel à 4 onglets (Service, Secteurs,
+  Compteurs, Sources) téléchargeable, puis importé en un clic dans
+  l'organisation choisie (`src/lib/admin/ficheCollecte.ts`, testable —
+  génération et analyse 100 % côté navigateur, SheetJS déjà utilisé par
+  l'assistant d'import). Les en-têtes de colonnes évitent toute apostrophe
+  (ambiguïté courbe/droite selon l'éditeur utilisé pour remplir le
+  fichier).
+- **Utilisateurs** : invitation par e-mail — lien généré via l'API Admin
+  Auth de Supabase (`auth.admin.generateLink`, jamais l'e-mail par défaut
+  de Supabase) et envoyé par Resend avec le gabarit sobre commun à
+  l'application (Server Action `src/app/(dashboard)/admin/actions.ts`,
+  seul endroit du projet à utiliser un client `service_role` côté Next.js
+  — voir `src/lib/supabase/admin.ts`, jamais importable depuis un Client
+  Component).
+- **Modèles de sources** : assignation en masse du modèle de mapping par
+  défaut des sources `email_entrant`, toutes organisations confondues.
+- **Checklist d'activation J0-J5** : catalogue système d'étapes
+  d'onboarding (`checklist_activation_items`), suivi coché par
+  organisation (`checklist_activation_suivi`).
+- **Journal d'audit** : `audit_log` alimenté automatiquement par des
+  triggers sur `organizations`/`memberships` (`log_audit()`) — aucune
+  écriture applicative à retenir d'ajouter à chaque nouvelle fonctionnalité
+  touchant ces tables.
+
+**Calculateur de ROI** (`/roi`, public — hors du groupe de routes
+`(dashboard)`, aucune authentification requise, préremplit automatiquement
+avec les données de l'organisation si une session existe) : rendement,
+seuil réglementaire et conformité (réutilise tel quel
+`src/lib/engine/bilan.ts`, aucune formule de bilan réécrite), pertes en m³
+et en €, pénalité potentielle (doublement de la redevance prélèvement,
+article L213-10-9 du code de l'environnement, si non conforme), gain à
+10 %/20 % de récupération, valeur commerciale des pertes au prix du
+palier, coût net des travaux après subvention et durée de retour estimée
+(`src/lib/roi/calculateurRoi.ts`, testable).
+
 ### Tableau de bord
 
 Toutes les pages authentifiées vivent sous `src/app/(dashboard)/` (groupe de
@@ -356,11 +399,12 @@ src/
     (dashboard)/             pages authentifiées (layout + nav partagés)
       app/                    vue d'ensemble (/app)
       secteurs/, secteurs/[id]/
-      compteurs/, bilan/, alertes/, rapports/, plan-actions/,
+      compteurs/, bilan/, alertes/, rapports/, plan-actions/, admin/,
       parametres/, parametres/sources/, parametres/boite-mail/
     (auth)/connexion/         page de connexion (magic link)
     auth/callback/            échange du code magic link contre une session
     import/                   assistant d'import CSV/Excel
+    roi/                      calculateur de ROI public (hors auth)
   components/
     ui/                       composants shadcn/ui
     charts/                    graphiques Recharts (tendance, débit de nuit)
@@ -368,17 +412,21 @@ src/
     inbound-mail/               adresses e-mail entrantes, journal, testeur
     rapports/                   export RPQS, destinataires, téléchargement, déclencheur de test
     plan-actions/                catalogue, plan daté, suivi, export PDF
+    admin/                       organisations, fiche de collecte, invitations, checklist, audit
+    roi/                         formulaire + résultats du calculateur de ROI
   lib/
     rendement.ts              formules métier du bilan d'eau (bilan annuel déclaré)
     engine/                    moteur de calcul (bilan par période, DMN, alertes)
     alerts/                    libellés d'alerte partagés (UI + e-mails)
     organization.ts            résolution de l'organisation courante (serveur)
-    supabase/                  clients Supabase (browser, serveur, proxy)
+    supabase/                  clients Supabase (browser, serveur, proxy, admin service_role)
     import/                    parsing/mapping/deltas partagés (client + tests)
     ingest/                    décodeurs LoRaWAN + enveloppes de plateforme (client + tests)
-    notifications/              gabarits d'e-mail sobres (alertes, digest, accusés de réception)
+    notifications/              gabarits d'e-mail sobres (alertes, digest, accusés de réception, invitation)
     inboundMail/                enveloppes Postmark/Mailgun + conversion XLSX (client + tests)
     reports/                    export RPQS/SISPEA + assemblage du contenu du rapport (client + tests)
+    admin/                       fiche de collecte : modèle Excel + analyse (client + tests)
+    roi/                         calculateur de ROI, au-dessus du moteur de bilan (client + tests)
   proxy.ts                     rafraîchissement de session à chaque requête
   test/
     integration/               tests d'isolation RLS (vrai Supabase)

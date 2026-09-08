@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,6 +79,12 @@ export default function ConnexionPage() {
           )}
         </CardContent>
       </Card>
+      <p className="text-muted-foreground mt-4 text-center text-sm">
+        <Link href="/roi" className="underline underline-offset-4">
+          Calculateur de rendement et de retour sur investissement
+        </Link>{" "}
+        (sans compte)
+      </p>
     </main>
   );
 }

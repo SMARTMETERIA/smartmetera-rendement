@@ -11,6 +11,7 @@ const LIENS_NAV = [
   { href: "/import", label: "Import" },
   { href: "/rapports", label: "Rapports" },
   { href: "/plan-actions", label: "Plan d'actions" },
+  { href: "/roi", label: "ROI" },
   { href: "/parametres", label: "Paramètres" },
 ];
 
@@ -20,6 +21,10 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const org = await getCurrentOrganization();
+  const liens =
+    org.role === "superadmin"
+      ? [...LIENS_NAV, { href: "/admin", label: "Superadmin" }]
+      : LIENS_NAV;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -36,7 +41,7 @@ export default async function DashboardLayout({
           <LogoutButton />
         </div>
         <nav className="mx-auto flex max-w-7xl flex-wrap gap-1 px-4 pb-2 sm:px-6">
-          {LIENS_NAV.map((lien) => (
+          {liens.map((lien) => (
             <Link
               key={lien.href}
               href={lien.href}
