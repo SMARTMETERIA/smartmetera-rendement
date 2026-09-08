@@ -267,6 +267,47 @@ option de dépôt SFTP : voir [`docs/`](./docs/README.md) (documentation
 volontairement prudente — la config précise de ces outils B2B n'est pas
 publique, à confirmer avec le support de chaque éditeur).
 
+### Rapports PDF, export RPQS/SISPEA et plan d'actions
+
+**Rapport mensuel automatique** (`/rapports`) : Edge Function
+`supabase/functions/reports` (route `/reports/mensuel`), déclenchée par
+`pg_cron`/`pg_net` le 1er du mois vers 06:00 Europe/Paris (même gating
+DST-safe que le digest hebdomadaire). Pour chaque organisation ayant au
+moins un destinataire actif (`rapport_destinataires`, une liste libre
+d'adresses indépendante des comptes applicatifs — élus, DDT...), génère un
+PDF du mois précédent (page de garde, bilan glissant 12 mois, rendement vs
+seuil décret 2012-97, secteurs avec dernier débit de nuit connu, alertes du
+mois, interventions et m³ récupérés, plan d'actions actif), le stocke dans
+le bucket privé `rapports`, l'enregistre dans `reports` (idempotent par
+organisation/année/mois), et l'envoie par e-mail (Resend, PDF en pièce
+jointe). Génération PDF via `npm:pdf-lib` — seule Edge Function du projet à
+embarquer cette dépendance (pas d'alternative "impression navigateur"
+possible pour un envoi automatique). Attention à l'encodage WinAnsi de la
+police standard : tout texte passe par un neutraliseur caractère-par-
+caractère (`assainir()` dans `pdfBuilder.ts`) avant `drawText`, et les
+nombres sont groupés par 3 chiffres à la main plutôt qu'avec
+`Intl.NumberFormat("fr-FR")` (son séparateur de milliers, une espace fine
+insécable U+202F, fait planter la génération sinon).
+
+**Export RPQS/SISPEA** (`/rapports`) : CSV des indicateurs P104.3
+(rendement), P106.3 (ILP), ILC et des volumes du bilan annuel
+(`type_periode = 'annee_civile'`), généré côté client
+(`src/lib/reports/rpqsExport.ts`, testable) — un pense-bête pour la saisie
+dans l'observatoire SISPEA, qui n'a pas d'import CSV en masse public.
+
+**Plan d'actions décret 2012-97** (`/plan-actions`) : catalogue système
+d'actions types par catégorie (sectorisation, recherche de fuites,
+renouvellement, gestion de pression, compteurs de sectorisation,
+télérelève — seedé dans `0019_rapports_plan_actions.sql`, complétable par
+organisation), génération d'un plan daté (`action_plans` + `actions`,
+échéance/priorité/statut éditables inline), export PDF à la demande (route
+`/reports/plan-action` de la même Edge Function).
+
+Assemblage du contenu du rapport mensuel testable et partagé entre le
+rendu PDF et les futurs usages (`src/lib/reports/assemblerContenu.ts`),
+dupliqué en Deno dans `supabase/functions/reports/lib/` (même convention
+que les autres Edge Functions).
+
 ### Tableau de bord
 
 Toutes les pages authentifiées vivent sous `src/app/(dashboard)/` (groupe de
@@ -315,7 +356,7 @@ src/
     (dashboard)/             pages authentifiées (layout + nav partagés)
       app/                    vue d'ensemble (/app)
       secteurs/, secteurs/[id]/
-      compteurs/, bilan/, alertes/, rapports/,
+      compteurs/, bilan/, alertes/, rapports/, plan-actions/,
       parametres/, parametres/sources/, parametres/boite-mail/
     (auth)/connexion/         page de connexion (magic link)
     auth/callback/            échange du code magic link contre une session
@@ -325,6 +366,8 @@ src/
     charts/                    graphiques Recharts (tendance, débit de nuit)
     sources/                   sources webhook LoRaWAN, registre d'équipements, testeur de trame
     inbound-mail/               adresses e-mail entrantes, journal, testeur
+    rapports/                   export RPQS, destinataires, téléchargement, déclencheur de test
+    plan-actions/                catalogue, plan daté, suivi, export PDF
   lib/
     rendement.ts              formules métier du bilan d'eau (bilan annuel déclaré)
     engine/                    moteur de calcul (bilan par période, DMN, alertes)
@@ -335,6 +378,7 @@ src/
     ingest/                    décodeurs LoRaWAN + enveloppes de plateforme (client + tests)
     notifications/              gabarits d'e-mail sobres (alertes, digest, accusés de réception)
     inboundMail/                enveloppes Postmark/Mailgun + conversion XLSX (client + tests)
+    reports/                    export RPQS/SISPEA + assemblage du contenu du rapport (client + tests)
   proxy.ts                     rafraîchissement de session à chaque requête
   test/
     integration/               tests d'isolation RLS (vrai Supabase)
@@ -346,6 +390,7 @@ supabase/
   functions/ingest/              Edge Function : ingestion webhooks LoRaWAN
   functions/notifications/       Edge Function : alertes + digest par e-mail (Resend)
   functions/inbound-email/       Edge Function : boîte mail entrante (Postmark/Mailgun)
+  functions/reports/             Edge Function : rapport mensuel + export PDF plan d'actions (pdf-lib)
 docs/
   README.md, *.md                export récurrent Topkapi/Sofrel/EWEBTEL, option SFTP
 ```

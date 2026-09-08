@@ -128,6 +128,45 @@ begin
     );
   end;
 
+  -- ---------------------------------------------------------------------
+  -- Démo boîte mail entrante (/parametres/boite-mail) : une source
+  -- "generique" avec un modèle d'import par défaut, jeton fixe (démo
+  -- uniquement — régénérer en usage réel).
+  -- ---------------------------------------------------------------------
+  declare
+    v_template_generique_id uuid;
+  begin
+    select id into v_template_generique_id
+    from public.import_templates where is_system and source_type = 'generique' limit 1;
+
+    insert into public.sources (organization_id, type, nom, default_template_id, inbound_token)
+      values (
+        v_org_id, 'email_entrant', 'Démo boîte mail entrante', v_template_generique_id,
+        '70a153086466e0b014b9432850b2d22e'
+      );
+  end;
+
+  -- ---------------------------------------------------------------------
+  -- Démo rapports/plan d'actions (/rapports, /plan-actions).
+  -- ---------------------------------------------------------------------
+  declare
+    v_plan_id uuid;
+  begin
+    insert into public.rapport_destinataires (organization_id, email, nom)
+      values (v_org_id, 'test-elu@example.com', 'Élu test')
+      on conflict (organization_id, email) do nothing;
+
+    insert into public.action_plans (organization_id, nom, description, annee_debut, annee_fin, statut)
+      values (v_org_id, 'Plan 2026-2028', 'Plan de démonstration', 2026, 2028, 'actif')
+      returning id into v_plan_id;
+
+    insert into public.actions (organization_id, action_plan_id, catalogue_action_type_id, titre, description, statut, priorite, echeance)
+    select v_org_id, v_plan_id, cat.id, cat.titre, cat.description, 'en_cours', 'haute', date '2027-06-30'
+    from public.catalogue_actions_types cat
+    where cat.is_system and cat.categorie = 'renouvellement'
+    limit 1;
+  end;
+
   -- Partitions mensuelles nécessaires à la fenêtre de relevés.
   v_month := date_trunc('month', v_start_date)::date;
   while v_month <= date_trunc('month', v_end_date)::date loop

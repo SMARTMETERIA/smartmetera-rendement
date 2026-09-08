@@ -10,6 +10,7 @@ const LIENS_NAV = [
   { href: "/alertes", label: "Alertes" },
   { href: "/import", label: "Import" },
   { href: "/rapports", label: "Rapports" },
+  { href: "/plan-actions", label: "Plan d'actions" },
   { href: "/parametres", label: "Paramètres" },
 ];
 
