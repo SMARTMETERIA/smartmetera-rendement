@@ -58,6 +58,20 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
   advisors Supabase après coup (RLS sur les partitions, restriction des
   fonctions internes, `search_path` fixe).
 
+- `0024_immeuble_modele.sql`, `0025_revoke_immeuble_modele.sql` — offre
+  Immeuble (voir [`docs/PLAN_IMMEUBLE.md`](./docs/PLAN_IMMEUBLE.md)) :
+  `organizations.kind` (`reseau` | `immeuble`), statut, garde-fou d'envoi,
+  `slug` public et `settings` ; marque blanche (`org_branding`), clients,
+  immeubles, logements, occupants, occupations ; compteurs rattachés à un
+  immeuble ou un logement (fluide, unité) ; `readings.alarm_codes` et
+  `readings.index_value` ; relevés mensuels, notes annuelles, registre des
+  envois en ajout seul (`deliveries`, `delivery_events`, protégés par
+  déclencheur), bilans d'immeuble et usage mensuel. Toutes les références
+  entre tables passent par des clés étrangères composites
+  `(id, organization_id)` : impossible de pointer vers une autre
+  organisation. `src/test/migrations-rls.test.ts` vérifie que chaque table
+  a RLS et au moins une politique.
+
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le
 projet (`supabase link`) puis `supabase db push`. Sur ce projet elles sont
