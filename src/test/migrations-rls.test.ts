@@ -18,9 +18,9 @@ const sql = readdirSync(dossier)
   // Retire les commentaires SQL pour ne pas compter un gabarit commenté.
   .replace(/--.*$/gm, "");
 
-const tables = [
-  ...sql.matchAll(/create table public\.(\w+)\s*\(/gi),
-].map((m) => m[1]);
+const tables = [...sql.matchAll(/create table public\.(\w+)\s*\(/gi)].map(
+  (m) => m[1],
+);
 
 describe("migrations : RLS sur chaque table", () => {
   it("trouve les tables des migrations", () => {
@@ -31,7 +31,10 @@ describe("migrations : RLS sur chaque table", () => {
 
   it.each(tables)("%s a RLS activée", (table) => {
     expect(sql).toMatch(
-      new RegExp(`alter table public\\.${table} enable row level security`, "i"),
+      new RegExp(
+        `alter table public\\.${table} enable row level security`,
+        "i",
+      ),
     );
   });
 
