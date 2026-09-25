@@ -16,9 +16,9 @@
 --
 -- Idempotent : rejoue-le autant de fois que nécessaire, il nettoie d'abord
 -- toute donnée précédente identifiée par le nom de l'organisation. Après
--- l'avoir rejoué, relancer `npm run dev:seed-user` (rattache le compte
--- superadmin de dev à la nouvelle organisation) puis le moteur de calcul
--- (voir README) pour peupler volumes journaliers / débits de nuit / bilans.
+-- l'avoir rejoué, réinviter un administrateur depuis /admin (le seed ne
+-- crée aucun compte), puis lancer le moteur de calcul (voir README) pour
+-- peupler volumes journaliers / débits de nuit / bilans.
 
 do $$
 declare

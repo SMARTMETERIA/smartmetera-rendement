@@ -1,44 +1,36 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getContexteUtilisateur } from "@/lib/auth/contexte";
 
 export interface CurrentOrganization {
   organizationId: string;
   organizationName: string;
+  /** Rôle d'adhésion, ou "superadmin" pour un superadmin de plateforme. */
   role: string;
   userId: string;
+  isPlatformAdmin: boolean;
 }
 
 /**
- * Organisation courante de l'utilisateur connecté. Simplification tant
- * qu'il n'y a pas de sélecteur multi-organisation dans l'application (une
- * seule adhésion attendue pour l'instant — voir aussi src/app/import).
+ * Organisation Réseau courante de l'utilisateur connecté (pages du groupe
+ * (dashboard)). Simplification tant qu'il n'y a pas de sélecteur
+ * multi-organisation : la première adhésion à portée organisation.
+ * Les autres profils sont renvoyés vers leur propre espace.
  */
 export async function getCurrentOrganization(): Promise<CurrentOrganization> {
-  const supabase = await createClient();
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) {
-    redirect("/connexion");
+  const ctx = await getContexteUtilisateur();
+
+  if (!ctx.adhesion) {
+    redirect(ctx.isPlatformAdmin ? "/admin" : "/accueil");
   }
-
-  const { data: membership } = await supabase
-    .from("memberships")
-    .select("organization_id, role, organizations(nom)")
-    .eq("user_id", userData.user.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (!membership) {
-    redirect("/connexion");
+  if (ctx.adhesion.kind === "immeuble") {
+    redirect("/immeuble");
   }
-
-  const organizations = membership.organizations as unknown as {
-    nom: string;
-  } | null;
 
   return {
-    organizationId: membership.organization_id,
-    organizationName: organizations?.nom ?? "",
-    role: membership.role,
-    userId: userData.user.id,
+    organizationId: ctx.adhesion.organizationId,
+    organizationName: ctx.adhesion.organizationName,
+    role: ctx.isPlatformAdmin ? "superadmin" : ctx.adhesion.role,
+    userId: ctx.userId,
+    isPlatformAdmin: ctx.isPlatformAdmin,
   };
 }

@@ -88,9 +88,10 @@ supprime et recrée les données de cette organisation.
 Pour le rejouer : `supabase db push --include-seed`, ou collez son contenu
 dans l'éditeur SQL du dashboard Supabase. Puis, dans cet ordre :
 
-1. `npm run dev:seed-user` — rattache le compte superadmin de dev à la
-   nouvelle organisation (le seed supprime et recrée l'organisation, donc
-   les adhésions précédentes).
+1. Redonner l'accès : le seed supprime et recrée l'organisation, donc ses
+   adhésions. Un superadmin (voir `scripts/grant-superadmin.sql`) invite
+   un administrateur depuis `/admin` > Utilisateurs. Aucun compte n'est
+   créé par le seed.
 2. Peupler `daily_meter_volumes` sur toute la fenêtre glissante 12 mois
    (le bilan glissant agrège cette table sur 365 jours, pas seulement sur
    les nuits traitées par le moteur — voir plus bas) :
@@ -370,11 +371,9 @@ palier, coût net des travaux après subvention et durée de retour estimée
 Toutes les pages authentifiées vivent sous `src/app/(dashboard)/` (groupe de
 routes, layout partagé avec navigation) et vérifient la session **côté
 serveur** (`getCurrentOrganization()` → `redirect("/connexion")` si absente)
-— contrairement à `/import` qui vérifie côté client. En dev, `DevAutoLogin`
-tient compte de cette différence : après connexion automatique silencieuse,
-il renvoie explicitement vers `/app` si l'utilisateur vient d'atterrir sur
-`/connexion` (sinon il resterait sur l'écran de connexion malgré une session
-valide).
+— contrairement à `/import` qui vérifie côté client. Aucune connexion
+automatique ni compte de développement : on se connecte comme en
+production (voir « Connexion et comptes »).
 
 - **`/app`** — vue d'ensemble : rendement/ILP/seuil/conformité (dernier
   bilan glissant 12 mois), tendance 12 mois (Recharts), top 3 secteurs à

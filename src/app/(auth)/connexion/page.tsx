@@ -1,90 +1,43 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { createClient } from "@/lib/supabase/client";
+import { FormulaireConnexion } from "@/components/auth/FormulaireConnexion";
+import { journalDevActif } from "@/components/auth/AvisJournalDev";
 
-export default function ConnexionPage() {
-  const [email, setEmail] = useState("");
-  const [statut, setStatut] = useState<"repos" | "envoi" | "envoye" | "erreur">(
-    "repos",
-  );
+const MESSAGES_ERREUR: Record<string, string> = {
+  lien_invalide:
+    "Ce lien n'est plus valable (déjà utilisé ou expiré). Demandez-en un nouveau ci-dessous.",
+  google: "La connexion avec Google n'a pas abouti. Réessayez ou utilisez votre adresse e-mail.",
+};
 
-  async function envoyerLienMagique(evenement: React.FormEvent) {
-    evenement.preventDefault();
-    setStatut("envoi");
-
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    setStatut(error ? "erreur" : "envoye");
-  }
+export default async function ConnexionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ erreur?: string; compte?: string }>;
+}) {
+  const { erreur, compte } = await searchParams;
+  const message =
+    compte === "supprime"
+      ? "Votre compte a été supprimé."
+      : erreur
+        ? (MESSAGES_ERREUR[erreur] ?? MESSAGES_ERREUR.lien_invalide)
+        : null;
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Connexion</CardTitle>
-          <CardDescription>
-            Recevez un lien de connexion par e-mail, sans mot de passe.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {statut === "envoye" ? (
-            <p className="text-muted-foreground text-sm">
-              Un lien de connexion a été envoyé à {email}. Vérifiez votre boîte
-              de réception.
-            </p>
-          ) : (
-            <form onSubmit={envoyerLienMagique} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Adresse e-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="vous@regie-eau.fr"
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={statut === "envoi"}
-              >
-                {statut === "envoi" ? "Envoi en cours..." : "Recevoir le lien"}
-              </Button>
-              {statut === "erreur" && (
-                <p className="text-destructive text-sm">
-                  Une erreur est survenue. Réessayez.
-                </p>
-              )}
-            </form>
-          )}
-        </CardContent>
-      </Card>
-      <p className="text-muted-foreground mt-4 text-center text-sm">
-        <Link href="/roi" className="underline underline-offset-4">
-          Calculateur de rendement et de retour sur investissement
-        </Link>{" "}
-        (sans compte)
-      </p>
-    </main>
+    <>
+      <FormulaireConnexion message={message} journalDev={journalDevActif()} />
+      <div className="text-muted-foreground max-w-sm space-y-2 text-center text-sm">
+        <p>
+          Installateur, plombier ou prestataire de comptage ?{" "}
+          <Link href="/inscription" className="text-foreground underline underline-offset-4">
+            Créer un compte partenaire
+          </Link>
+        </p>
+        <p>
+          <Link href="/roi" className="underline underline-offset-4">
+            Calculateur de rendement et de retour sur investissement
+          </Link>{" "}
+          (sans compte)
+        </p>
+      </div>
+    </>
   );
 }

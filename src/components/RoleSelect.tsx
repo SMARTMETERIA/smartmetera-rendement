@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/select";
 
 const ROLES = [
-  { value: "superadmin", label: "Superadmin" },
   { value: "admin_client", label: "Admin client" },
   { value: "agent", label: "Agent" },
   { value: "lecteur", label: "Lecteur" },

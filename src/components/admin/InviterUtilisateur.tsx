@@ -24,7 +24,6 @@ const ROLES = [
   { value: "admin_client", label: "Admin client" },
   { value: "agent", label: "Agent" },
   { value: "lecteur", label: "Lecteur" },
-  { value: "superadmin", label: "Superadmin" },
 ] as const;
 
 export function InviterUtilisateur({ organisations }: { organisations: Organisation[] }) {

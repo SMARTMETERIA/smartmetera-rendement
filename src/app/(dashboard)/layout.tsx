@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getCurrentOrganization } from "@/lib/organization";
+import { redirect } from "next/navigation";
+import { getContexteUtilisateur } from "@/lib/auth/contexte";
 import { LogoutButton } from "@/components/LogoutButton";
 
 const LIENS_NAV = [
@@ -20,11 +21,18 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const org = await getCurrentOrganization();
-  const liens =
-    org.role === "superadmin"
-      ? [...LIENS_NAV, { href: "/admin", label: "Superadmin" }]
-      : LIENS_NAV;
+  const ctx = await getContexteUtilisateur();
+  // Superadmin de plateforme sans adhésion : seul l'espace superadmin a un
+  // sens (les pages Réseau le renvoient vers /admin).
+  if (!ctx.adhesion && !ctx.isPlatformAdmin) {
+    redirect("/accueil");
+  }
+  const reseau = ctx.adhesion?.kind === "reseau";
+  const liens = [
+    ...(reseau ? LIENS_NAV : []),
+    ...(ctx.isPlatformAdmin ? [{ href: "/admin", label: "Superadmin" }] : []),
+    { href: "/compte", label: "Mon compte" },
+  ];
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -34,9 +42,11 @@ export default async function DashboardLayout({
             <span className="text-lg font-semibold tracking-tight">
               SmartMeteria Rendement
             </span>
-            <span className="text-muted-foreground hidden text-sm sm:inline">
-              — {org.organizationName}
-            </span>
+            {ctx.adhesion && (
+              <span className="text-muted-foreground hidden text-sm sm:inline">
+                — {ctx.adhesion.organizationName}
+              </span>
+            )}
           </div>
           <LogoutButton />
         </div>

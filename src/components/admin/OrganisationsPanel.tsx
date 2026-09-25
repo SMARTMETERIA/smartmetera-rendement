@@ -23,6 +23,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ActionsOrganisation } from "./ActionsOrganisation";
+
+const LIBELLES_OFFRE: Record<string, string> = { reseau: "Réseau", immeuble: "Immeuble" };
+const LIBELLES_STATUT: Record<string, string> = { essai: "Essai", actif: "Actif", suspendu: "Suspendu" };
 
 interface Organisation {
   id: string;
@@ -32,6 +36,9 @@ interface Organisation {
   zone_repartition_eaux: boolean;
   prix_m3_eur: number;
   created_at: string;
+  kind: string;
+  status: string;
+  trial_ends_at: string | null;
 }
 
 export function OrganisationsPanel({ organisations }: { organisations: Organisation[] }) {
@@ -76,17 +83,27 @@ export function OrganisationsPanel({ organisations }: { organisations: Organisat
         <TableHeader>
           <TableRow>
             <TableHead>Nom</TableHead>
+            <TableHead>Offre</TableHead>
+            <TableHead>Statut</TableHead>
             <TableHead>Linéaire</TableHead>
             <TableHead>Abonnés</TableHead>
             <TableHead>ZRE</TableHead>
             <TableHead>Prix m³</TableHead>
             <TableHead>Créée le</TableHead>
+            <TableHead className="w-40" />
           </TableRow>
         </TableHeader>
         <TableBody>
           {organisations.map((o) => (
             <TableRow key={o.id}>
               <TableCell className="font-medium">{o.nom}</TableCell>
+              <TableCell>{LIBELLES_OFFRE[o.kind] ?? o.kind}</TableCell>
+              <TableCell>
+                {LIBELLES_STATUT[o.status] ?? o.status}
+                {o.status === "essai" && o.trial_ends_at
+                  ? ` jusqu’au ${new Date(o.trial_ends_at).toLocaleDateString("fr-FR")}`
+                  : ""}
+              </TableCell>
               <TableCell>{o.lineaire_reseau_km ? `${o.lineaire_reseau_km} km` : "—"}</TableCell>
               <TableCell>{o.nb_abonnes ?? "—"}</TableCell>
               <TableCell>{o.zone_repartition_eaux ? "Oui" : "Non"}</TableCell>
@@ -94,11 +111,14 @@ export function OrganisationsPanel({ organisations }: { organisations: Organisat
               <TableCell className="text-muted-foreground text-xs">
                 {new Date(o.created_at).toLocaleDateString("fr-FR")}
               </TableCell>
+              <TableCell>
+                <ActionsOrganisation id={o.id} nom={o.nom} />
+              </TableCell>
             </TableRow>
           ))}
           {organisations.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-muted-foreground text-center">
+              <TableCell colSpan={9} className="text-muted-foreground text-center">
                 Aucune organisation.
               </TableCell>
             </TableRow>

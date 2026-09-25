@@ -34,6 +34,9 @@
 .DS_Store
 *.pem
 
+# e-mails de développement (liens de connexion : ne jamais versionner)
+/.emails-dev/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentOrganization } from "@/lib/organization";
+import { getContexteUtilisateur } from "@/lib/auth/contexte";
 import {
   Card,
   CardContent,
@@ -17,9 +17,9 @@ import { ChecklistActivation } from "@/components/admin/ChecklistActivation";
 import { JournalAudit } from "@/components/admin/JournalAudit";
 
 export default async function AdminPage() {
-  const org = await getCurrentOrganization();
-  if (org.role !== "superadmin") {
-    redirect("/app");
+  const ctx = await getContexteUtilisateur();
+  if (!ctx.isPlatformAdmin) {
+    redirect("/accueil");
   }
 
   const supabase = await createClient();
@@ -34,7 +34,7 @@ export default async function AdminPage() {
   ] = await Promise.all([
     supabase
       .from("organizations")
-      .select("id, nom, lineaire_reseau_km, nb_abonnes, zone_repartition_eaux, prix_m3_eur, created_at")
+      .select("id, nom, kind, status, trial_ends_at, lineaire_reseau_km, nb_abonnes, zone_repartition_eaux, prix_m3_eur, created_at")
       .order("created_at", { ascending: false }),
     supabase
       .from("import_templates")
@@ -83,7 +83,11 @@ export default async function AdminPage() {
           <Card>
             <CardHeader>
               <CardTitle>Organisations</CardTitle>
-              <CardDescription>Toutes les organisations SmartMeteria.</CardDescription>
+              <CardDescription>
+                Toutes les organisations (régies et partenaires). Exporter
+                télécharge toutes leurs données ; la suppression exige un
+                export de moins de 24 heures.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <OrganisationsPanel organisations={organisations ?? []} />
