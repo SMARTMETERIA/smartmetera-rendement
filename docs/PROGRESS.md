@@ -1,7 +1,71 @@
-# Avancement — offre Immeuble
+# Avancement — Gardien de l'eau
 
-Branche : `feat/immeuble`. Plan : `docs/PLAN_IMMEUBLE.md`. Questions en
-attente : `docs/BLOCKERS.md`.
+Copie de travail : `feat/gardien` (partie de `feat/immeuble`, commit
+`5810423`). Plan : `docs/PLAN_GARDIEN.md` (version 2). Questions en
+attente : `docs/BLOCKERS.md`. L'historique de l'offre Immeuble (en pause)
+est conservé en bas de ce fichier.
+
+## Phase G0 : point de situation — terminée
+
+Plan : lire la section 0 du plan, `PROGRESS.md`, `AUDIT.md` et le code ;
+déplacer le plan dans `docs/` ; marquer le plan Immeuble en pause ;
+mettre à jour `CLAUDE.md` ; écrire la synthèse et la liste de rattrapage.
+
+### Ce qui est fait avant le plan Gardien
+
+- **Offre Réseau** (prompts 0 à 8, en pause) : import CSV universel,
+  réception LoRaWAN, moteur de débit de nuit, alertes et e-mails, rapports
+  PDF, espace superadmin, calculateur de retour sur investissement.
+- **Offre Immeuble** (en pause) : phases 0 et 1 terminées, phase 2
+  commencée puis arrêtée le 25 septembre 2026 à la demande de Rayan
+  (détail en bas de ce fichier).
+- **Plan Gardien, version 1** : aucune phase commencée (aucune trace dans
+  ce fichier ni dans l'historique Git).
+
+### Ce qui est réutilisable pour le Gardien
+
+| Besoin du plan | Existant réutilisé |
+|---|---|
+| Offre, statut, essai, slug, réglages d'organisation (G1) | `organizations.kind`, `status`, `trial_ends_at`, `slug`, `settings` (migration `0024`) : ajouter la valeur `sites` |
+| Clients d'un partenaire (G1) | table `clients` (`0024`) |
+| Appareils (G1, G3) | table `devices` (`0015`) : DevEUI, décodeur, litres par impulsion, dernier index ; à compléter (IMEI, kit, pile, radio, stock) |
+| Relevés d'eau (G1, G4) | table `readings` partitionnée par mois, `quality_flag`, idempotence (compteur + horodatage + source), `index_value` |
+| Usage mensuel (G1, G6) | table `usage_monthly` (`0024`) : à compléter (points, monnaie, retenue à la source) |
+| Superadmin de plateforme (G2) | `platform_admins`, `is_platform_admin()`, `scripts/grant-superadmin.sql` (`0027`) |
+| `dev-superadmin` supprimé (G2) | compte supprimé en base (`0027`), `DevAutoLogin` et script retirés ; test de non-retour à écrire |
+| Fonctions d'aide RLS (G2) | `is_member`, `has_role`, `org_role`, `peut_voir_organisation`, gabarit `security definer` + `search_path = ''` |
+| Connexion (G2) | mot de passe, lien magique, Google (bouchon), mot de passe oublié, réinitialisation, `/compte`, aiguillage `/accueil`, quotas, Turnstile (bouchon) |
+| Inscription autonome (G2) | `/inscription` (aujourd'hui : organisation `immeuble`) : à basculer vers `sites` |
+| Invitations (G2) | invitations d'agents dans `/immeuble/equipe` et `/admin` |
+| Réception des capteurs (G3) | Edge Function `ingest` : jeton par source, enveloppes ChirpStack, TTN, Live Objects et générique ; journal `raw_frames` ; décodeurs Adeunis PULSE v4, Milesight EM300-DI, Watteco, Dragino ; calcul de delta et idempotence |
+| Moteur de nuit (G4) | `executer_moteur_nocturne()`, DMN, ligne de base, compteurs muets (en heure de Paris, par secteur) : à décliner par site et par fuseau |
+| E-mails (G5) | envoi centralisé `src/lib/email/envoyer.ts` (journal `/dev/emails` en développement), gabarits à la marque, Edge Function `notifications` |
+| Rapports PDF (G5) | Edge Function `reports` (`pdf-lib`), déclencheur mensuel pg_cron |
+| Pré-diagnostic (G6) | calculateur `/roi` (`src/lib/roi/calculateurRoi.ts`) |
+| Marque blanche (G7) | `org_branding`, mention « Propulsé par SmartMetera » protégée, `src/lib/marque.ts` |
+
+### Rattrapage version 2 (règle de la section 0)
+
+Aucune phase du plan Gardien n'était terminée avec la version 1 : la phase
+de rattrapage « Phase V2 » est **vide**. Les compléments marqués **(v2)**
+seront construits directement dans les phases G1 à G9, dans l'ordre du
+plan. La phase 2 Immeuble interrompue n'est pas reprise pour elle-même :
+ses restes utiles au Gardien (tests des modules d'envoi, test
+« `dev-superadmin` introuvable », matrice RLS) sont intégrés à la phase G2.
+
+Fait : plan déplacé dans `docs/PLAN_GARDIEN.md` ; ligne « En pause »
+ajoutée en tête de `docs/PLAN_IMMEUBLE.md` ; bloc « Produit actif » de
+`CLAUDE.md` remplacé par la section 7 du plan (les règles Immeuble utiles
+aux offres en pause sont conservées dessous). Aucun code modifié.
+Vérification de départ : typecheck, lint et tests unitaires verts.
+
+Comment tester à l'écran : rien à tester, phase sans code.
+
+---
+
+# Historique — offre Immeuble (en pause)
+
+Branche d'origine : `feat/immeuble`. Plan : `docs/PLAN_IMMEUBLE.md`.
 
 ## Phase 0 : audit — terminée
 
@@ -38,16 +102,10 @@ d'index mensuel (voir `AUDIT.md`, point 4).
 Comment tester à l'écran : rien de visible, l'application Réseau doit
 fonctionner exactement comme avant (connexion, vue d'ensemble, secteurs).
 
-## Phase 2 : rôles, sécurité et connexion autonome — en cours
+## Phase 2 : rôles, sécurité et connexion autonome — interrompue
 
-Plan :
-1. Migrations : rôle `gestionnaire` à portée client, `platform_admins`, fonctions d'aide (`is_platform_admin`, `org_role`, `can_read_client`, `can_read_building`, `occupant_units`), politiques élargies, RPC occupant, quotas, suppression de `dev-superadmin`.
-2. Envoi d'e-mails centralisé (Resend en production, journal consultable en développement) et gabarits à la marque du partenaire.
-3. Pages : connexion (mot de passe, lien, Google), inscription partenaire, mot de passe oublié, réinitialisation, compte (adresse, mot de passe, suppression), aiguillage après connexion.
-4. Invitations d'agents et de gestionnaires par l'admin du partenaire ; export puis suppression d'organisation par le superadmin.
-5. Tests : matrice RLS (2 partenaires, 1 régie, 2 clients, 4 immeubles, occupants dont un arrivé en cours d'année), test « `dev-superadmin` introuvable ».
-
-État à l'arrêt de la session (25 septembre 2026, arrêt demandé par Rayan) :
+Arrêt demandé par Rayan le 25 septembre 2026 (passage au plan Gardien).
+Les restes utiles sont repris dans la phase G2.
 
 Fait :
 - Migrations `0026` à `0029` appliquées sur la base de développement :
@@ -63,16 +121,8 @@ Fait :
   suppression d'organisation dans `/admin`. `DevAutoLogin` et
   `scripts/create-dev-user.mjs` retirés ; `scripts/grant-superadmin.sql`
   ajouté.
-- Typecheck, lint et 229 tests unitaires verts. Non vérifié à l'écran.
+- Typecheck, lint et 229 tests unitaires verts.
 
-Reste :
-- Tests unitaires des nouveaux modules (envoi, gabarits, garde-fou,
-  validation, liens, aiguillage, liste des tables exportées).
-- Test « `dev-superadmin` introuvable dans le code ».
-- Matrice RLS d'intégration (`src/test/integration/`).
-- Vérification à l'écran : inscription → lien dans `/dev/emails` →
-  arrivée sur `/immeuble`.
-- README (section « Connexion et comptes ») et avis de sécurité Supabase.
-
-Prochaine action exacte : écrire `src/lib/email/envoyer.test.ts`
-(`choisirModeEnvoi`, `formaterExpediteur`), puis les autres tests listés.
+Non fait (repris ou abandonné) : matrice RLS occupants (offre en pause) ;
+tests des modules d'envoi et test « `dev-superadmin` introuvable » (repris
+en G2).

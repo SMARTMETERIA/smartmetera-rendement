@@ -1,5 +1,7 @@
 # SmartMetera : plan de construction « Immeuble », marque blanche et mise en ligne
 
+> En pause depuis le 25 septembre 2026, remplacé par docs/PLAN_GARDIEN.md
+
 Version 1, 24 septembre 2026. Ce fichier est la source de vérité de la suite du projet. Il remplace les prompts A, B et C restants du guide A→Z.
 
 ## Mode d'emploi (Rayan)
