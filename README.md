@@ -71,6 +71,25 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
   `(id, organization_id)` : impossible de pointer vers une autre
   organisation. `src/test/migrations-rls.test.ts` vérifie que chaque table
   a RLS et au moins une politique.
+- `0030_gardien_modele.sql` à `0032_index_gardien_modele.sql` — produit
+  actif **Gardien de l'eau** (voir
+  [`docs/PLAN_GARDIEN.md`](./docs/PLAN_GARDIEN.md)) : offre `sites` ;
+  facturation d'organisation (retenue à la source, remise fondateur, prix
+  partenaire) et tarifs protégés (superadmin seulement) ; réglages de
+  plateforme `platform_settings` (tarifs, prix de l'eau par défaut, seuils,
+  délais ; lecture et écriture superadmin) ; `sites` (fuseau, monnaie, prix
+  de l'eau, unité d'activité, périodes de fermeture) ; points de comptage
+  (`meters.site_id`, zone, poids d'impulsion, index de pose, transmission,
+  surveillance) ; flotte d'appareils (`devices` : référence DevEUI ou
+  IMEI, kit, pile, radio, stock, QR code) ; points et relevés de
+  température (relevés jamais supprimés, protégés par déclencheur) ; plages
+  de consommation normale la nuit ; données d'activité ; fuites
+  (`leak_events`, une seule ouverte par point et par type, une fausse
+  alerte ne compte jamais) ; pilotes (conversion seulement avec
+  consentement nommé et horodaté) ; pages preuve (jeton de 192 bits) ;
+  rapports de site ; usage mensuel par monnaie.
+  `src/lib/admin/exportOrganisation.test.ts` vérifie que chaque table
+  portant `organization_id` figure dans l'export d'organisation.
 
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le

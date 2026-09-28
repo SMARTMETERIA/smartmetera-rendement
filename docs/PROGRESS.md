@@ -61,6 +61,47 @@ Vérification de départ : typecheck, lint et tests unitaires verts.
 
 Comment tester à l'écran : rien à tester, phase sans code.
 
+## Phase G1 : modèle de données « Sites » — terminée
+
+Plan :
+1. Migration `0030_gardien_modele.sql` : offre `sites`, champs de facturation d'organisation (retenue à la source, remise fondateur, prix partenaire), réglages de plateforme (tarifs, seuils, délais) modifiables par le superadmin.
+2. Tables `sites`, `temperature_points`, `temperature_readings` (jamais supprimées), `quiet_windows`, `activity_data`, `leak_events`, `pilots`, `proof_pages`, `site_reports` ; compléments de `meters`, `devices` (flotte), `alerts` et `usage_monthly`.
+3. Clés étrangères composites (même organisation garantie), index sur chaque clé et sur `organization_id`, RLS de base dès la création ; `0031` pour les droits d'exécution.
+4. Champs de facturation et tarifs protégés (superadmin seulement) ; liste des tables exportées complétée et vérifiée par un test.
+5. Scénario SQL annulé en fin de transaction, avis de sécurité Supabase, tests existants verts.
+
+Fait : migrations `0030` (modèle), `0031` (droits) et `0032` (index des
+clés étrangères) appliquées sur la base de développement (toujours pas de
+base vierge, voir `BLOCKERS.md`, point 1). Scénario SQL annulé en fin de
+transaction, tout vérifié : prix de l'eau 4,89 € pour un site français et
+« à renseigner » pour un site marocain ; référence vers une autre
+organisation refusée ; appareil en stock ; DevEUI déduit de la référence ;
+un appareil ne peut pas être dans deux organisations ; référence invalide
+refusée ; relevé de température non supprimable ; pilote de 30 jours par
+défaut, un seul en cours par site, conversion automatique refusée sans nom
+ni horodatage ; une seule fuite ouverte par point et par type ; une fausse
+alerte ne peut pas porter d'économies ; jeton de page preuve de 48
+caractères ; usage mensuel en EUR et en MAD ; purge d'organisation
+complète. Un utilisateur ordinaire ne peut modifier ni la retenue à la
+source, ni les tarifs, ni les prix d'un site, mais peut modifier ses seuils
+et son prix de l'eau. Aucun nouvel avis de sécurité Supabase. Liste des
+tables exportées complétée et vérifiée par un test contre les migrations.
+Typecheck, lint, 299 tests unitaires et 4 tests RLS verts.
+
+Choix à signaler :
+- Réglages de plateforme dans une table `platform_settings` (et non dans
+  le code) pour que le superadmin puisse changer tarifs, seuils et délais
+  sans nouvelle version. Les réglages Gardien d'une organisation vivent
+  sous `settings.gardien` pour ne pas se mêler à ceux de l'offre Immeuble.
+- Un appareil à deux voies (Adeunis PULSE) occupe deux lignes de
+  `devices` (une par voie), comme dans l'existant Réseau.
+- Les fuites vivent dans `leak_events` ; `alerts` porte les capteurs muets
+  (type existant `compteur_muet`) et les températures.
+
+Comment tester à l'écran : rien de visible dans cette phase ;
+l'application doit fonctionner exactement comme avant (connexion, écrans
+existants).
+
 ---
 
 # Historique — offre Immeuble (en pause)

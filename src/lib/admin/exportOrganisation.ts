@@ -50,6 +50,15 @@ export const TABLES_EXPORTEES: TableExportee[] = [
   { table: "delivery_events", tri: ["id"], colonne: "organization_id" },
   { table: "building_balances", tri: ["id"], colonne: "organization_id" },
   { table: "usage_monthly", tri: ["id"], colonne: "organization_id" },
+  { table: "sites", tri: ["id"], colonne: "organization_id" },
+  { table: "temperature_points", tri: ["id"], colonne: "organization_id" },
+  { table: "temperature_readings", tri: ["id"], colonne: "organization_id" },
+  { table: "quiet_windows", tri: ["id"], colonne: "organization_id" },
+  { table: "activity_data", tri: ["id"], colonne: "organization_id" },
+  { table: "leak_events", tri: ["id"], colonne: "organization_id" },
+  { table: "pilots", tri: ["id"], colonne: "organization_id" },
+  { table: "proof_pages", tri: ["id"], colonne: "organization_id" },
+  { table: "site_reports", tri: ["id"], colonne: "organization_id" },
 ];
 
 export function nomFichierExport(slug: string, maintenant = new Date()): string {
