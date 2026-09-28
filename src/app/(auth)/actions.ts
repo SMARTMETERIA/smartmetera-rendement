@@ -20,6 +20,7 @@ import {
   consommerQuota,
   verifierCaptcha,
 } from "@/lib/securite/protection";
+import { retenueSourceParDefaut } from "@/lib/gardien/pays";
 
 export type EtatFormulaire<Champ extends string = string> =
   | { statut: "repos" }
@@ -45,16 +46,19 @@ function saisieSansMotDePasse(formData: FormData): Record<string, string> {
 const DUREE_ESSAI_JOURS = 30;
 
 function journalDev(): boolean {
-  return process.env.NODE_ENV !== "production" && !process.env.EMAIL_DEV_REDIRECT;
+  return (
+    process.env.NODE_ENV !== "production" && !process.env.EMAIL_DEV_REDIRECT
+  );
 }
 
 /**
- * Inscription autonome d'un partenaire : compte (mot de passe, adresse à
- * confirmer), organisation Immeuble en essai de 30 jours, rôle admin,
- * marque initialisée avec la raison sociale. Les envois aux occupants
- * restent bloqués tant que le superadmin n'a pas activé l'organisation.
+ * Inscription autonome d'un établissement (Gardien de l'eau) : compte (mot
+ * de passe, adresse à confirmer), organisation « sites » en essai de 30
+ * jours, rôle admin. Client direct : identité SmartMetera (pas de marque
+ * blanche). Maroc : retenue à la source par défaut des réglages de
+ * plateforme.
  */
-export async function inscrirePartenaire(
+export async function inscrireEtablissement(
   _etat: EtatFormulaire<keyof DonneesInscription>,
   formData: FormData,
 ): Promise<EtatFormulaire<keyof DonneesInscription>> {
@@ -85,6 +89,7 @@ async function inscrire(
     raisonSociale: String(formData.get("raisonSociale") ?? ""),
     nom: String(formData.get("nom") ?? ""),
     email: String(formData.get("email") ?? ""),
+    pays: String(formData.get("pays") ?? "FR"),
     telephone: String(formData.get("telephone") ?? ""),
     siren: String(formData.get("siren") ?? ""),
     motDePasse: String(formData.get("motDePasse") ?? ""),
@@ -128,13 +133,20 @@ async function inscrire(
   let organizationId: string | null = null;
   try {
     const finEssai = new Date(Date.now() + DUREE_ESSAI_JOURS * 86_400_000);
+    const { data: tarifs } = await admin
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "tarifs")
+      .maybeSingle();
     const { data: org, error: erreurOrg } = await admin
       .from("organizations")
       .insert({
         nom: d.raisonSociale,
-        kind: "immeuble",
+        kind: "sites",
         status: "essai",
         trial_ends_at: finEssai.toISOString(),
+        country: d.pays,
+        withholding_tax_pct: retenueSourceParDefaut(tarifs?.value, d.pays),
         siren: d.siren,
         contact_phone: d.telephone,
       })
@@ -150,22 +162,16 @@ async function inscrire(
     });
     if (erreurAdhesion) throw erreurAdhesion;
 
-    const { error: erreurMarque } = await admin.from("org_branding").insert({
-      organization_id: organizationId,
-      display_name: d.raisonSociale,
-      sender_name: d.raisonSociale,
-      reply_to_email: d.email,
-      support_email: d.email,
-      support_phone: d.telephone,
-    });
-    if (erreurMarque) throw erreurMarque;
-
     const rendu = emailConfirmationInscription(
       MARQUE_PLATEFORME,
       lienConfirmation(urlSite(), lien.properties.hashed_token, "signup"),
       d.raisonSociale,
     );
-    await envoyerEmail({ to: d.email, ...rendu, fromName: MARQUE_PLATEFORME.nom });
+    await envoyerEmail({
+      to: d.email,
+      ...rendu,
+      fromName: MARQUE_PLATEFORME.nom,
+    });
   } catch (err) {
     // Rien de partiel : ni compte orphelin, ni organisation sans admin.
     if (organizationId) {

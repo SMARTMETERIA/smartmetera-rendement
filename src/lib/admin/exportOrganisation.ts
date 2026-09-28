@@ -12,7 +12,11 @@ export interface TableExportee {
 
 export const TABLES_EXPORTEES: TableExportee[] = [
   { table: "organizations", tri: ["id"], colonne: "id" },
-  { table: "org_branding", tri: ["organization_id"], colonne: "organization_id" },
+  {
+    table: "org_branding",
+    tri: ["organization_id"],
+    colonne: "organization_id",
+  },
   { table: "memberships", tri: ["id"], colonne: "organization_id" },
   { table: "sectors", tri: ["id"], colonne: "organization_id" },
   { table: "sources", tri: ["id"], colonne: "organization_id" },
@@ -37,7 +41,11 @@ export const TABLES_EXPORTEES: TableExportee[] = [
   { table: "reports", tri: ["id"], colonne: "organization_id" },
   { table: "rapport_destinataires", tri: ["id"], colonne: "organization_id" },
   { table: "digest_hebdo_envois", tri: ["id"], colonne: "organization_id" },
-  { table: "checklist_activation_suivi", tri: ["id"], colonne: "organization_id" },
+  {
+    table: "checklist_activation_suivi",
+    tri: ["id"],
+    colonne: "organization_id",
+  },
   { table: "audit_log", tri: ["id"], colonne: "organization_id" },
   { table: "clients", tri: ["id"], colonne: "organization_id" },
   { table: "buildings", tri: ["id"], colonne: "organization_id" },
@@ -61,7 +69,10 @@ export const TABLES_EXPORTEES: TableExportee[] = [
   { table: "site_reports", tri: ["id"], colonne: "organization_id" },
 ];
 
-export function nomFichierExport(slug: string, maintenant = new Date()): string {
+export function nomFichierExport(
+  slug: string,
+  maintenant = new Date(),
+): string {
   const jour = maintenant.toISOString().slice(0, 10);
   return `export-${slug}-${jour}.ndjson`;
 }

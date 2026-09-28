@@ -5,7 +5,8 @@ import { journalDevActif } from "@/components/auth/AvisJournalDev";
 const MESSAGES_ERREUR: Record<string, string> = {
   lien_invalide:
     "Ce lien n'est plus valable (déjà utilisé ou expiré). Demandez-en un nouveau ci-dessous.",
-  google: "La connexion avec Google n'a pas abouti. Réessayez ou utilisez votre adresse e-mail.",
+  google:
+    "La connexion avec Google n'a pas abouti. Réessayez ou utilisez votre adresse e-mail.",
 };
 
 export default async function ConnexionPage({
@@ -26,16 +27,14 @@ export default async function ConnexionPage({
       <FormulaireConnexion message={message} journalDev={journalDevActif()} />
       <div className="text-muted-foreground max-w-sm space-y-2 text-center text-sm">
         <p>
-          Installateur, plombier ou prestataire de comptage ?{" "}
-          <Link href="/inscription" className="text-foreground underline underline-offset-4">
-            Créer un compte partenaire
-          </Link>
-        </p>
-        <p>
-          <Link href="/roi" className="underline underline-offset-4">
-            Calculateur de rendement et de retour sur investissement
+          Hôtel, camping, résidence ou salle de sport ?{" "}
+          <Link
+            href="/inscription"
+            className="text-foreground underline underline-offset-4"
+          >
+            Créer un compte
           </Link>{" "}
-          (sans compte)
+          (essai gratuit de 30 jours)
         </p>
       </div>
     </>

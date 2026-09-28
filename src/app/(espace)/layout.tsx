@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { getContexteUtilisateur } from "@/lib/auth/contexte";
+import { estAdminSites } from "@/lib/auth/espaces";
 import { NOM_PLATEFORME } from "@/lib/marque";
 import { LogoutButton } from "@/components/LogoutButton";
 
 /**
- * Espaces de l'offre Immeuble (partenaire, gestionnaire, occupant) et
- * compte personnel. Navigation selon le profil ; la marque blanche
- * complète (logo, couleurs) arrive en phase 6.
+ * Espaces Gardien de l'eau (sites), Immeuble (partenaire, gestionnaire,
+ * occupant) et compte personnel. Navigation selon l'offre et le profil ;
+ * la marque blanche complète (logo, couleurs) arrive en phase G7.
  */
 export default async function EspaceLayout({
   children,
@@ -15,6 +16,12 @@ export default async function EspaceLayout({
 }) {
   const ctx = await getContexteUtilisateur();
   const liens: { href: string; label: string }[] = [];
+  if (ctx.adhesion?.kind === "sites" || ctx.adhesionsSite.length > 0) {
+    liens.push({ href: "/sites", label: "Mes sites" });
+    if (estAdminSites(ctx)) {
+      liens.push({ href: "/sites/equipe", label: "Équipe" });
+    }
+  }
   if (ctx.adhesion?.kind === "immeuble") {
     liens.push(
       { href: "/immeuble", label: "Accueil" },
@@ -37,6 +44,7 @@ export default async function EspaceLayout({
 
   const nom =
     ctx.adhesion?.organizationName ??
+    ctx.adhesionsSite[0]?.organizationName ??
     ctx.adhesionsClient[0]?.organizationName ??
     NOM_PLATEFORME;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +12,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { inscrirePartenaire, type EtatFormulaire } from "@/app/(auth)/actions";
-import type { DonneesInscription } from "@/lib/auth/validation";
+import {
+  inscrireEtablissement,
+  type EtatFormulaire,
+} from "@/app/(auth)/actions";
+import type { DonneesInscription, Pays } from "@/lib/auth/validation";
 import { LONGUEUR_MIN_MOT_DE_PASSE } from "@/lib/auth/validation";
 import { Turnstile } from "./Turnstile";
 import { AvisJournalDev } from "./AvisJournalDev";
@@ -46,7 +49,12 @@ function ChampTexte({
     <div className="space-y-1.5">
       <Label htmlFor={nom}>
         {libelle}
-        {!requis && <span className="text-muted-foreground font-normal"> (facultatif)</span>}
+        {!requis && (
+          <span className="text-muted-foreground font-normal">
+            {" "}
+            (facultatif)
+          </span>
+        )}
       </Label>
       <Input
         id={nom}
@@ -61,7 +69,11 @@ function ChampTexte({
       {(erreur || aide) && (
         <p
           id={idAide}
-          className={erreur ? "text-destructive text-sm" : "text-muted-foreground text-sm"}
+          className={
+            erreur
+              ? "text-destructive text-sm"
+              : "text-muted-foreground text-sm"
+          }
         >
           {erreur ?? aide}
         </p>
@@ -70,8 +82,51 @@ function ChampTexte({
   );
 }
 
+function ChoixPays({
+  pays,
+  onChange,
+  erreur,
+}: {
+  pays: Pays;
+  onChange: (pays: Pays) => void;
+  erreur?: string;
+}) {
+  const options: { valeur: Pays; libelle: string }[] = [
+    { valeur: "FR", libelle: "France" },
+    { valeur: "MA", libelle: "Maroc" },
+  ];
+  return (
+    <fieldset className="space-y-1.5">
+      <legend className="text-sm leading-none font-medium">Pays</legend>
+      <div className="flex gap-2 pt-1">
+        {options.map((o) => (
+          <label
+            key={o.valeur}
+            className="has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:focus-visible]:ring-ring/50 flex flex-1 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm has-[:focus-visible]:ring-[3px]"
+          >
+            <input
+              type="radio"
+              name="pays"
+              value={o.valeur}
+              checked={pays === o.valeur}
+              onChange={() => onChange(o.valeur)}
+              className="accent-primary"
+            />
+            {o.libelle}
+          </label>
+        ))}
+      </div>
+      {erreur && <p className="text-destructive text-sm">{erreur}</p>}
+    </fieldset>
+  );
+}
+
 export function FormulaireInscription() {
-  const [etat, action, enCours] = useActionState(inscrirePartenaire, ETAT_INITIAL);
+  const [etat, action, enCours] = useActionState(
+    inscrireEtablissement,
+    ETAT_INITIAL,
+  );
+  const [pays, setPays] = useState<Pays>("FR");
 
   if (etat.statut === "succes") {
     return (
@@ -99,10 +154,11 @@ export function FormulaireInscription() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Créer un compte partenaire</CardTitle>
+        <CardTitle>Créer un compte</CardTitle>
         <CardDescription>
-          Pour les installateurs, plombiers et prestataires de comptage. Essai
-          gratuit de 30 jours, sans carte bancaire.
+          Pour les hôtels, campings, résidences, centres commerciaux et salles
+          de sport qui paient leur eau. Essai gratuit de 30 jours, sans carte
+          bancaire.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -114,11 +170,12 @@ export function FormulaireInscription() {
           )}
           <ChampTexte
             nom="raisonSociale"
-            libelle="Raison sociale"
+            libelle="Nom de l'établissement ou du groupe"
             autoComplete="organization"
             erreur={champs.raisonSociale}
             valeur={valeurs.raisonSociale}
           />
+          <ChoixPays pays={pays} onChange={setPays} erreur={champs.pays} />
           <ChampTexte
             nom="nom"
             libelle="Votre prénom et nom"
@@ -142,14 +199,16 @@ export function FormulaireInscription() {
             erreur={champs.telephone}
             valeur={valeurs.telephone}
           />
-          <ChampTexte
-            nom="siren"
-            libelle="SIREN"
-            requis={false}
-            aide="9 chiffres, sur votre extrait Kbis ou avis de situation."
-            erreur={champs.siren}
-            valeur={valeurs.siren}
-          />
+          {pays === "FR" && (
+            <ChampTexte
+              nom="siren"
+              libelle="SIREN"
+              requis={false}
+              aide="9 chiffres, sur votre extrait Kbis ou avis de situation."
+              erreur={champs.siren}
+              valeur={valeurs.siren}
+            />
+          )}
           <ChampTexte
             nom="motDePasse"
             libelle="Mot de passe"

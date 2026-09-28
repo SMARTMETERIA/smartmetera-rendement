@@ -90,6 +90,12 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
   rapports de site ; usage mensuel par monnaie.
   `src/lib/admin/exportOrganisation.test.ts` vérifie que chaque table
   portant `organization_id` figure dans l'export d'organisation.
+- `0033_roles_gardien.sql` à `0036_temperature_suppression_organisation.sql`
+  — rôles `directeur_site` et `technicien`, adhésions à portée site,
+  pays d'organisation, fonctions d'aide (`mes_sites`, `can_read_site`,
+  `site_role`, `peut_agir_site`), politiques de toutes les tables Gardien,
+  `pilotes_visibles()` (sans notes internes), `page_preuve_publique()` ;
+  le registre des températures ne se vide qu'avec l'organisation entière.
 
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le
@@ -141,6 +147,37 @@ le **vrai** projet Supabase (clés dans `.env.local`), vérifie qu'aucun ne
 peut lire ni écrire les données de l'autre, puis nettoie tout. Ces tests ne
 tournent pas avec `npm run test` (ils ont leur propre config
 `vitest.integration.config.ts`) car ils ont besoin du réseau et des clés.
+
+`src/test/integration/rls-gardien.test.ts` est la matrice du Gardien de
+l'eau : 2 organisations, une chaîne de 3 sites, un directeur limité à un
+site, un technicien, une page preuve valide et une expirée (18
+vérifications : lecture, écriture, pilotes sans notes internes, tarifs
+invisibles, page preuve sans connexion).
+
+### Rôles, connexion et inscription (Gardien de l'eau)
+
+- Rôles d'organisation : `admin_client` (administrateur), `agent`,
+  `lecteur`, `technicien` (tous les sites). Rôles à portée site
+  (`memberships.scope_type = 'site'`) : `directeur_site` (ses sites) et
+  `technicien` (un site). Superadmin de plateforme : `platform_admins`,
+  attribué par `scripts/grant-superadmin.sql`.
+- Connexion : e-mail et mot de passe, lien magique, Google (identifiants à
+  créer, voir `docs/BLOCKERS.md`). Mot de passe oublié, réinitialisation,
+  `/compte`. Après connexion, `/accueil` envoie chacun vers son espace
+  (`/sites` pour le Gardien).
+- Inscription autonome `/inscription` : établissement en France ou au
+  Maroc, organisation `sites` en essai de 30 jours, rôle administrateur ;
+  retenue à la source par défaut lue dans `platform_settings.tarifs`
+  (10 % au Maroc). CAPTCHA Turnstile vérifié côté serveur (le CAPTCHA de
+  Supabase Auth ne couvre pas la création de compte par l'API Admin).
+- Invitations : `/sites/equipe` (directeurs de site, techniciens, agents,
+  lecteurs, administrateurs). Lien de connexion envoyé par e-mail ; en
+  développement, les e-mails sont seulement écrits dans le journal
+  `/dev/emails`.
+- Page preuve : `page_preuve_publique(jeton)` la rend lisible sans
+  connexion tant qu'elle n'a pas expiré.
+- `src/test/sans-contournement.test.ts` échoue si l'ancien compte de
+  développement ou une connexion automatique réapparaît dans le code.
 
 ### Import CSV/Excel
 

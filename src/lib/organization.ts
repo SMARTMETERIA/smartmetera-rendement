@@ -25,6 +25,9 @@ export async function getCurrentOrganization(): Promise<CurrentOrganization> {
   if (ctx.adhesion.kind === "immeuble") {
     redirect("/immeuble");
   }
+  if (ctx.adhesion.kind === "sites") {
+    redirect("/sites");
+  }
 
   return {
     organizationId: ctx.adhesion.organizationId,

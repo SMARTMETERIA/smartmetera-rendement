@@ -102,6 +102,59 @@ Comment tester à l'écran : rien de visible dans cette phase ;
 l'application doit fonctionner exactement comme avant (connexion, écrans
 existants).
 
+## Phase G2 : rôles, sécurité et connexion — terminée
+
+Plan :
+1. Migrations `0033` (rôles directeur de site et technicien) et `0034` : adhésions à portée « site », fonctions d'aide (`mes_sites`, `can_read_site`, `site_role`), politiques de toutes les tables Gardien, page preuve lisible par lien signé non expiré sans connexion ; `0035` pour les droits.
+2. Contexte et aiguillage : offre `sites`, espace `/sites` minimal (sites accessibles), navigation filtrée par offre.
+3. Inscription autonome en offre `sites` (France ou Maroc, retenue à la source par défaut), invitations d'agents, directeurs de site et techniciens (`/sites/equipe`).
+4. Tests : matrice RLS d'intégration (2 organisations, chaîne de 3 sites, directeur limité à un site, technicien, page preuve expirée), test « `dev-superadmin` introuvable », tests des modules repris (envoi, liens, validation, aiguillage).
+5. README, avis de sécurité Supabase.
+
+Fait :
+- Migrations `0033` à `0036` appliquées sur la base de développement :
+  rôles `directeur_site` et `technicien`, adhésions à portée site, pays
+  d'organisation, fonctions d'aide, politiques de toutes les tables
+  Gardien, pilotes lisibles sans les notes internes (`pilotes_visibles`),
+  page preuve publique par jeton non expiré (`page_preuve_publique`) ;
+  le registre des températures ne se vide qu'avec l'organisation entière.
+- Superadmin : `platform_admins` et `scripts/grant-superadmin.sql`
+  (existant). `dev-superadmin` absent du code et de la base ; le test
+  `src/test/sans-contournement.test.ts` échoue s'il réapparaît.
+- Connexion (existant, repris) : mot de passe, lien magique, Google
+  (bouchon tant que les identifiants manquent), mot de passe oublié.
+- Inscription `/inscription` : établissement en France ou au Maroc,
+  organisation `sites` en essai de 30 jours, rôle administrateur, retenue
+  à la source de 10 % au Maroc. Vérifié en soumettant le vrai formulaire
+  (France et Maroc), puis nettoyé.
+- Espace `/sites` (liste des sites, ajout d'un site) et `/sites/equipe`
+  (invitations de directeurs de site, techniciens, agents, lecteurs,
+  administrateurs ; retrait d'accès). Aiguillage `/accueil` vers `/sites`,
+  navigation filtrée par offre. Vérifié avec des comptes jetables :
+  l'admin voit l'équipe, le directeur ne voit que son site et pas
+  l'équipe.
+- Tests : matrice RLS d'intégration (18 vérifications vertes), tests
+  unitaires des modules repris (envoi, liens, validation, aiguillage) et
+  nouveaux (invitations, sites, retenue). Typecheck, lint, 633 tests
+  unitaires et 22 tests RLS verts. Nouveaux avis de sécurité Supabase :
+  seulement des fonctions volontairement appelables (utilisateur connecté,
+  page preuve sans connexion).
+
+Point d'attention : la table des relevés est volumineuse ; les écrans d'un
+directeur de site doivent toujours filtrer par compteur (une lecture sans
+filtre est lente à cause des règles d'accès, comme pour l'offre Réseau).
+
+Comment tester à l'écran :
+1. Ouvrez la page « Créer un compte », choisissez la France, remplissez le
+   formulaire avec une adresse de test.
+2. Ouvrez la page du journal des e-mails (`/dev/emails`) et cliquez sur
+   « Confirmer mon adresse » : vous arrivez sur « Mes sites ».
+3. Ajoutez un site (par exemple « Hôtel du Port », Hôtel, Lyon).
+4. Dans « Équipe », invitez une deuxième adresse comme « Directeur de site »
+   de cet hôtel, puis ouvrez son invitation dans le journal des e-mails,
+   dans une fenêtre de navigation privée.
+5. Ce directeur ne voit que son hôtel, et pas l'onglet « Équipe ».
+
 ---
 
 # Historique — offre Immeuble (en pause)

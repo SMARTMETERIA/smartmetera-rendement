@@ -27,7 +27,8 @@ export async function userIdParEmail(
   const { data, error } = await admin.rpc("auth_user_id_par_email", {
     p_email: email,
   });
-  if (error) throw new Error(`Recherche du compte impossible : ${error.message}`);
+  if (error)
+    throw new Error(`Recherche du compte impossible : ${error.message}`);
   return (data as string | null) ?? null;
 }
 
@@ -93,7 +94,12 @@ export async function genererLienCompte(
   }
   return {
     userId: data.user.id,
-    lien: lienConfirmation(urlSite(), data.properties.hashed_token, type, suivant),
+    lien: lienConfirmation(
+      urlSite(),
+      data.properties.hashed_token,
+      type,
+      suivant,
+    ),
     type,
   };
 }

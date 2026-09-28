@@ -23,9 +23,26 @@ export function erreurMotDePasse(motDePasse: string): string | null {
   return null;
 }
 
-/** Numéro français : 10 chiffres (0X…), ou +33 suivi de 9 chiffres. */
-export function normaliserTelephone(telephone: string): string | null {
+export type Pays = "FR" | "MA";
+
+export const PAYS: readonly Pays[] = ["FR", "MA"];
+
+/**
+ * Numéro français : 10 chiffres (0X…), ou +33 suivi de 9 chiffres.
+ * Numéro marocain : 10 chiffres (05, 06, 07…), ou +212 suivi de 9 chiffres.
+ * Renvoie le format national à 10 chiffres.
+ */
+export function normaliserTelephone(
+  telephone: string,
+  pays: Pays = "FR",
+): string | null {
   const brut = telephone.replace(/[\s.\-()]/g, "");
+  if (pays === "MA") {
+    if (/^0[5-8]\d{8}$/.test(brut)) return brut;
+    if (/^\+212[5-8]\d{8}$/.test(brut)) return `0${brut.slice(4)}`;
+    if (/^00212[5-8]\d{8}$/.test(brut)) return `0${brut.slice(5)}`;
+    return null;
+  }
   if (/^0[1-9]\d{8}$/.test(brut)) return brut;
   if (/^\+33[1-9]\d{8}$/.test(brut)) return `0${brut.slice(3)}`;
   if (/^0033[1-9]\d{8}$/.test(brut)) return `0${brut.slice(4)}`;
@@ -51,7 +68,9 @@ export interface DonneesInscription {
   raisonSociale: string;
   nom: string;
   email: string;
+  pays: Pays;
   telephone: string;
+  /** France seulement. */
   siren: string | null;
   motDePasse: string;
 }
@@ -64,6 +83,7 @@ export function validerInscription(brut: {
   raisonSociale?: string;
   nom?: string;
   email?: string;
+  pays?: string;
   telephone?: string;
   siren?: string;
   motDePasse?: string;
@@ -73,12 +93,21 @@ export function validerInscription(brut: {
   const raisonSociale = (brut.raisonSociale ?? "").trim();
   const nom = (brut.nom ?? "").trim();
   const email = normaliserEmail(brut.email ?? "");
-  const telephone = normaliserTelephone(brut.telephone ?? "");
-  const siren = (brut.siren ?? "").replace(/\s/g, "");
+  const pays: Pays = brut.pays === "MA" ? "MA" : "FR";
+  const telephone = normaliserTelephone(brut.telephone ?? "", pays);
+  // Le SIREN n'existe qu'en France : ignoré pour un établissement marocain.
+  const siren = pays === "FR" ? (brut.siren ?? "").replace(/\s/g, "") : "";
   const motDePasse = brut.motDePasse ?? "";
 
+  if (
+    brut.pays !== undefined &&
+    !(PAYS as readonly string[]).includes(brut.pays)
+  ) {
+    erreurs.pays = "Choisissez la France ou le Maroc.";
+  }
   if (raisonSociale.length < 2 || raisonSociale.length > 120) {
-    erreurs.raisonSociale = "Indiquez la raison sociale de votre entreprise.";
+    erreurs.raisonSociale =
+      "Indiquez le nom de votre établissement ou de votre groupe.";
   }
   if (nom.length < 2 || nom.length > 120) {
     erreurs.nom = "Indiquez votre prénom et votre nom.";
@@ -88,7 +117,9 @@ export function validerInscription(brut: {
   }
   if (!telephone) {
     erreurs.telephone =
-      "Indiquez un numéro de téléphone français (10 chiffres).";
+      pays === "MA"
+        ? "Indiquez un numéro de téléphone marocain (10 chiffres, ou +212)."
+        : "Indiquez un numéro de téléphone français (10 chiffres).";
   }
   if (siren && !sirenValide(siren)) {
     erreurs.siren =
@@ -111,6 +142,7 @@ export function validerInscription(brut: {
       raisonSociale,
       nom,
       email,
+      pays,
       telephone: telephone!,
       siren: siren || null,
       motDePasse,

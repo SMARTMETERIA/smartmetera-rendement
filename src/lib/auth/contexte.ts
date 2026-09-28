@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type {
   AdhesionClient,
   AdhesionOrganisation,
+  AdhesionSite,
   ContexteUtilisateur,
   Offre,
 } from "./destination";
@@ -12,14 +13,16 @@ export type { ContexteUtilisateur } from "./destination";
 interface LigneAdhesion {
   organization_id: string;
   role: string;
-  scope_type: "organisation" | "client";
+  scope_type: "organisation" | "client" | "site";
   scope_id: string | null;
+  site_id: string | null;
   organizations: {
     nom: string;
     kind: Offre;
     status: string;
     trial_ends_at: string | null;
   } | null;
+  sites: { name: string } | null;
 }
 
 /**
@@ -37,7 +40,7 @@ export async function getContexteUtilisateur(): Promise<ContexteUtilisateur> {
       supabase
         .from("memberships")
         .select(
-          "organization_id, role, scope_type, scope_id, organizations(nom, kind, status, trial_ends_at)",
+          "organization_id, role, scope_type, scope_id, site_id, organizations(nom, kind, status, trial_ends_at), sites(name)",
         )
         .eq("user_id", user.id)
         .order("created_at"),
@@ -68,6 +71,15 @@ export async function getContexteUtilisateur(): Promise<ContexteUtilisateur> {
       organizationName: l.organizations?.nom ?? "",
       clientId: l.scope_id!,
     }));
+  const adhesionsSite: AdhesionSite[] = lignes
+    .filter((l) => l.scope_type === "site" && l.site_id)
+    .map((l) => ({
+      organizationId: l.organization_id,
+      organizationName: l.organizations?.nom ?? "",
+      siteId: l.site_id!,
+      siteName: l.sites?.name ?? "",
+      role: l.role,
+    }));
 
   return {
     userId: user.id,
@@ -75,6 +87,7 @@ export async function getContexteUtilisateur(): Promise<ContexteUtilisateur> {
     isPlatformAdmin: Boolean(admin),
     adhesion,
     adhesionsClient,
+    adhesionsSite,
     estOccupant: Array.isArray(occupations) && occupations.length > 0,
   };
 }
