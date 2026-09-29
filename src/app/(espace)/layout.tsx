@@ -6,6 +6,7 @@ import {
   peutPoser,
 } from "@/lib/auth/espaces";
 import { NOM_PLATEFORME } from "@/lib/marque";
+import { peutPrediagnostic } from "@/lib/gardien/prediagnosticServeur";
 import { LogoutButton } from "@/components/LogoutButton";
 
 /**
@@ -22,6 +23,7 @@ export default async function EspaceLayout({
   const liens: { href: string; label: string }[] = [];
   if (ctx.adhesion?.kind === "sites" || ctx.adhesionsSite.length > 0) {
     liens.push({ href: "/sites", label: "Mes sites" });
+    liens.push({ href: "/sites/alertes", label: "Alertes" });
     if (peutPoser(ctx)) {
       liens.push({ href: "/pose", label: "Poser un capteur" });
     }
@@ -32,6 +34,9 @@ export default async function EspaceLayout({
     if (estAdminSites(ctx)) {
       liens.push({ href: "/sites/equipe", label: "Équipe" });
     }
+  }
+  if (peutPrediagnostic(ctx)) {
+    liens.push({ href: "/prediagnostic", label: "Pré-diagnostic" });
   }
   if (ctx.adhesion?.kind === "immeuble") {
     liens.push(

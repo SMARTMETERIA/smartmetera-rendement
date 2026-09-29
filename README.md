@@ -122,6 +122,12 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
   `gardien-envois` toutes les 15 minutes.
 - `0045_marque_smartmeteria.sql` — la marque s'écrit « SmartMeteria »
   partout (message de protection de la mention « Propulsé par »).
+- `0046_gardien_espaces.sql`, `0047_droits_gardien_espaces.sql` — courbe
+  horaire d'un site (`courbe_horaire_site`), accord écrit de conversion
+  d'un pilote donné ou retiré par le client (`accepter_conversion_pilote`,
+  `retirer_conversion_pilote`, tracés dans le journal d'audit),
+  consultation superadmin journalisée (`journaliser_consultation`),
+  débits de référence du pré-diagnostic (`platform_settings.prediagnostic`).
 
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le
@@ -319,6 +325,36 @@ invisibles, page preuve sans connexion).
   première nuit, de première semaine, mensuel et de groupe ; fin de pilote
   avec page preuve lisible sans connexion ; conversion avec consentement,
   tâches sans ; première donnée ; journal en ajout seul).
+
+### Les espaces (Gardien de l'eau)
+
+- **Site** `/sites/[id]` (directeur et toute personne qui voit le site) :
+  économies depuis le début, état, compteur de pertes, courbe de 30 jours
+  avec la bande de nuit, pilote (accord écrit de conversion), points de
+  comptage et de température, saisie des nuitées du mois, historique des
+  fuites, rapports ; exports `/sites/[id]/exports/registre` (PDF),
+  `clef-verte` (PDF), `clef-verte-csv`, `breeam` (fiche Wat 03 : règles
+  réellement appliquées et journal des alertes).
+- **Groupe et partenaire** : « Mes sites » classe les sites par litres par
+  unité d'activité du mois dernier, avec alertes en cours, client et
+  points actifs (`src/lib/gardien/indicateursSites.ts`).
+- **Technicien** : `/sites/alertes` (fuites avec « Je m'en occupe »,
+  capteurs muets pour l'équipe seulement, températures).
+- **Flotte** : `/sites/appareils` (pile, radio, dernier message, capteurs
+  muets) ; onglet « Flotte » du superadmin (tous les appareils à
+  surveiller).
+- **Superadmin** : onglets « Pilotes » (création, jours restants,
+  anomalies, accord de conversion, prochaine action), « Usage mensuel »
+  (calcul et export CSV `/api/admin/usage?mois=AAAA-MM`, euros et dirhams,
+  remise fondateur, retenue à la source ; `src/lib/gardien/usage.ts`),
+  « Flotte », « Tâches » ; consultation d'une organisation
+  `/admin/organisations/[id]` et de ses sites, journalisée.
+- **Pré-diagnostic** `/prediagnostic` (superadmin, administrateur et agent
+  d'un partenaire) : coût d'une chasse d'eau qui fuit et d'une fuite
+  enterrée, coût du service par jour et par nuitée, phrase de synthèse,
+  PDF à la marque (`src/lib/gardien/prediagnostic.ts`).
+- **Tests** : `src/lib/gardien/espaces.test.ts` (usage, pré-diagnostic,
+  exports) et `src/test/integration/espaces-gardien.test.ts`.
 
 ### Import CSV/Excel
 

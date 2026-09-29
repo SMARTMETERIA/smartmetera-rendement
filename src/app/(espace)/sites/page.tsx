@@ -36,7 +36,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { PagePreuveBouton } from "@/components/sites/PagePreuveBouton";
 import { TITRES_RAPPORT, type TypeRapport } from "@/lib/gardien-rapports/contenus";
-import { moisLong } from "@/lib/gardien-envois/format";
+import { moisLong, nombre } from "@/lib/gardien-envois/format";
+import { dernierMoisComplet, indicateursSites } from "@/lib/gardien/indicateursSites";
+import { dateLocale } from "@/lib/moteur-gardien/temps";
 
 type Ligne = Record<string, unknown>;
 const un = <T,>(v: T | T[] | null | undefined): T | null =>
@@ -58,7 +60,7 @@ export default async function SitesPage() {
 
   let requeteSites = supabase
     .from("sites")
-    .select("id, name, type, city, country, active")
+    .select("id, name, type, city, country, active, timezone, activity_unit, capacity, occupancy_rate_default, clients(name)")
     .order("name");
   requeteSites = adhesion
     ? requeteSites.eq("organization_id", organizationId)
@@ -98,6 +100,28 @@ export default async function SitesPage() {
       .limit(12),
   ]);
   const nomSite = new Map((sites ?? []).map((s) => [s.id, s.name]));
+  const aujourdhui = dateLocale(new Date().getTime(), REGLAGES_PAYS[org?.country === "MA" ? "MA" : "FR"].fuseau);
+  const indicateurs = await indicateursSites(supabase, sites ?? [], aujourdhui);
+  const moisIndicateur = dernierMoisComplet(aujourdhui).debut;
+  const avecClients = (sites ?? []).some((s) => un(s.clients as Ligne | Ligne[] | null));
+  // Vue groupe : classement par litres par unité (le plus sobre en premier).
+  const sitesTries = [...(sites ?? [])].sort((a, b) => {
+    const la = indicateurs.get(a.id)?.litresParUnite ?? null;
+    const lb = indicateurs.get(b.id)?.litresParUnite ?? null;
+    if (la === null && lb === null) return a.name.localeCompare(b.name);
+    if (la === null) return 1;
+    if (lb === null) return -1;
+    return la - lb;
+  });
+  const { count: pointsActifs } = peutAjouter
+    ? await supabase
+        .from("meters")
+        .select("id", { count: "exact", head: true })
+        .in("site_id", siteIds)
+        .eq("type", "point_comptage")
+        .eq("actif", true)
+        .not("installed_at", "is", null)
+    : { count: null };
   const peutPreuve =
     peutAjouter || ctx.adhesionsSite.some((a) => a.role === "directeur_site");
   const sitesPreuve = (sites ?? [])
@@ -232,8 +256,12 @@ export default async function SitesPage() {
         <CardHeader>
           <CardTitle>Sites</CardTitle>
           <CardDescription>
+            {(sites ?? []).length > 1
+              ? "Classés du plus sobre au plus consommateur (litres par nuitée, emplacement ou couvert du mois dernier). "
+              : ""}
             Chaque site a son fuseau horaire et sa monnaie : la nuit, les
             alertes et les rapports suivent l&apos;heure locale.
+            {pointsActifs != null && ` Usage du mois : ${pointsActifs} point(s) de comptage actif(s).`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -249,33 +277,51 @@ export default async function SitesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nom</TableHead>
+                  {avecClients && <TableHead>Client</TableHead>}
                   <TableHead>Type</TableHead>
                   <TableHead>Ville</TableHead>
                   <TableHead>Pays</TableHead>
+                  <TableHead>Consommation {moisLong(moisIndicateur)}</TableHead>
+                  <TableHead>Alertes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(sites ?? []).map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-medium">
-                      {s.name}
-                      {!s.active && (
-                        <span className="text-muted-foreground font-normal">
-                          {" "}
-                          (désactivé)
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {LIBELLES_TYPE_SITE[s.type as TypeSite] ?? s.type}
-                    </TableCell>
-                    <TableCell>{s.city ?? "—"}</TableCell>
-                    <TableCell>
-                      {REGLAGES_PAYS[s.country as "FR" | "MA"]?.libelle ??
-                        s.country}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {sitesTries.map((s) => {
+                  const ind = indicateurs.get(s.id);
+                  const client = un(s.clients as Ligne | Ligne[] | null);
+                  return (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-medium">
+                        <Link href={`/sites/${s.id}`} className="hover:underline">
+                          {s.name}
+                        </Link>
+                        {!s.active && (
+                          <span className="text-muted-foreground font-normal">
+                            {" "}
+                            (désactivé)
+                          </span>
+                        )}
+                      </TableCell>
+                      {avecClients && <TableCell>{(client?.name as string | undefined) ?? "—"}</TableCell>}
+                      <TableCell>
+                        {LIBELLES_TYPE_SITE[s.type as TypeSite] ?? s.type}
+                      </TableCell>
+                      <TableCell>{s.city ?? "—"}</TableCell>
+                      <TableCell>
+                        {REGLAGES_PAYS[s.country as "FR" | "MA"]?.libelle ??
+                          s.country}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {ind?.litresParUnite != null && ind.unite
+                          ? `${nombre(ind.litresParUnite, 0)} L par ${ind.unite}${ind.estimation ? " (estimation)" : ""}`
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {ind?.alertes ? <Badge variant="destructive">{ind.alertes}</Badge> : "—"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

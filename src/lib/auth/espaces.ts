@@ -29,6 +29,18 @@ export async function getEspaceSites(): Promise<ContexteUtilisateur> {
   return ctx;
 }
 
+/**
+ * Pages d'un site, d'une fuite ou d'un rapport : membres Gardien, et le
+ * superadmin en lecture (consultation journalisée par la page).
+ */
+export async function getEspaceLecture(): Promise<ContexteUtilisateur> {
+  const ctx = await getContexteUtilisateur();
+  if (ctx.adhesion?.kind !== "sites" && ctx.adhesionsSite.length === 0 && !ctx.isPlatformAdmin) {
+    redirect("/accueil");
+  }
+  return ctx;
+}
+
 /** Organisation « sites » de l'espace : adhésion organisation, sinon celle du premier site. */
 export function organisationEspaceSites(ctx: ContexteUtilisateur): {
   organizationId: string;

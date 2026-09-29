@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { attribuerLot } from "@/app/(espace)/sites/appareils/actions";
 
 export interface LigneAppareil {
@@ -29,6 +30,8 @@ export interface LigneAppareil {
   site: string | null;
   pile: string;
   dernierMessage: string;
+  radio: string;
+  muet: boolean;
   qr: boolean;
   attribuable: boolean;
 }
@@ -148,6 +151,7 @@ export function TableAppareils({
             <TableHead>État</TableHead>
             <TableHead>Site</TableHead>
             <TableHead>Pile</TableHead>
+            <TableHead>Radio</TableHead>
             <TableHead>Dernier message</TableHead>
           </TableRow>
         </TableHeader>
@@ -169,7 +173,15 @@ export function TableAppareils({
               <TableCell>{a.etat}</TableCell>
               <TableCell>{a.site ?? "—"}</TableCell>
               <TableCell className="tabular-nums">{a.pile}</TableCell>
-              <TableCell>{a.dernierMessage}</TableCell>
+              <TableCell className="tabular-nums">{a.radio}</TableCell>
+              <TableCell>
+                {a.dernierMessage}
+                {a.muet && (
+                  <Badge variant="destructive" className="ml-2">
+                    Muet
+                  </Badge>
+                )}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -96,7 +97,15 @@ export function OrganisationsPanel({ organisations }: { organisations: Organisat
         <TableBody>
           {organisations.map((o) => (
             <TableRow key={o.id}>
-              <TableCell className="font-medium">{o.nom}</TableCell>
+              <TableCell className="font-medium">
+                {o.kind === "sites" ? (
+                  <Link href={`/admin/organisations/${o.id}`} className="hover:underline">
+                    {o.nom}
+                  </Link>
+                ) : (
+                  o.nom
+                )}
+              </TableCell>
               <TableCell>{LIBELLES_OFFRE[o.kind] ?? o.kind}</TableCell>
               <TableCell>
                 {LIBELLES_STATUT[o.status] ?? o.status}

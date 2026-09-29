@@ -9,6 +9,8 @@ import { emailValide, normaliserEmail } from "@/lib/auth/validation";
 import { urlSite } from "@/lib/auth/liens";
 import { envoyerEmail } from "@/lib/email/envoyer";
 import { NOM_PLATEFORME } from "@/lib/marque";
+import { usageMensuel } from "@/lib/gardien/usage";
+import type { Tarifs } from "@/lib/gardien-rapports/contenus";
 
 async function verifierSuperadmin(): Promise<{ userId: string } | { erreur: string }> {
   const supabase = await createClient();
@@ -172,4 +174,160 @@ export async function terminerTache(params: {
   if (error) return { erreur: "Mise à jour impossible. Réessayez." };
   revalidatePath("/admin");
   return { ok: true };
+}
+
+/** Pilote de 30 jours (par défaut) sur un site Gardien. */
+export async function creerPilote(params: {
+  siteId: string;
+  debut: string;
+  dureeJours: number;
+  remboursementSiRien: boolean;
+  prochaineAction: string;
+}): Promise<{ ok: true } | { erreur: string }> {
+  const verification = await verifierSuperadmin();
+  if ("erreur" in verification) return verification;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(params.debut)) return { erreur: "Date de début invalide." };
+  const duree = Math.round(params.dureeJours);
+  if (!Number.isFinite(duree) || duree < 1 || duree > 180) return { erreur: "Durée entre 1 et 180 jours." };
+  const supabase = await createClient();
+  const { data: site } = await supabase.from("sites").select("organization_id").eq("id", params.siteId).maybeSingle();
+  if (!site) return { erreur: "Site introuvable." };
+  const debut = new Date(`${params.debut}T08:00:00Z`);
+  const { error } = await supabase.from("pilots").insert({
+    organization_id: site.organization_id,
+    site_id: params.siteId,
+    started_at: debut.toISOString(),
+    ends_at: new Date(debut.getTime() + duree * 86_400_000).toISOString(),
+    setup_refund_if_nothing_found: params.remboursementSiRien,
+    next_action: params.prochaineAction.trim() || null,
+    created_by: verification.userId,
+  });
+  if (error) {
+    return { erreur: error.code === "23505" ? "Un pilote est déjà en cours sur ce site." : "Création impossible. Réessayez." };
+  }
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/** Suivi d'un pilote : prochaine action, prolongation, retrait. */
+export async function majPilote(params: {
+  piloteId: string;
+  prochaineAction: string;
+  statut: "en_cours" | "prolonge" | "retire" | "converti";
+  finProlongee: string | null;
+}): Promise<{ ok: true } | { erreur: string }> {
+  const verification = await verifierSuperadmin();
+  if ("erreur" in verification) return verification;
+  const supabase = await createClient();
+  const modification: Record<string, unknown> = {
+    next_action: params.prochaineAction.trim() || null,
+    status: params.statut,
+  };
+  if (params.statut === "prolonge" && params.finProlongee) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(params.finProlongee)) return { erreur: "Date de fin invalide." };
+    modification.ends_at = `${params.finProlongee}T08:00:00Z`;
+  }
+  if (params.statut === "converti") modification.converted_at = new Date().toISOString();
+  const { error } = await supabase.from("pilots").update(modification).eq("id", params.piloteId);
+  if (error) return { erreur: "Mise à jour impossible. Réessayez." };
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/**
+ * Usage mensuel de chaque organisation Gardien (facturation manuelle) :
+ * calculé à partir des poses, des sondes et des tarifs, enregistré dans
+ * usage_monthly (une ligne par monnaie).
+ */
+export async function calculerUsageMensuel(params: { mois: string }): Promise<{ ok: true; lignes: number } | { erreur: string }> {
+  const verification = await verifierSuperadmin();
+  if ("erreur" in verification) return verification;
+  if (!/^\d{4}-\d{2}$/.test(params.mois)) return { erreur: "Mois invalide." };
+  const admin = createAdminClient();
+  const debut = `${params.mois}-01`;
+  const d = new Date(`${debut}T12:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() + 1);
+  const fin = d.toISOString().slice(0, 10);
+
+  const [{ data: reglage }, { data: orgs }] = await Promise.all([
+    admin.from("platform_settings").select("value").eq("key", "tarifs").maybeSingle(),
+    admin.from("organizations").select("id, founder_discount_pct, withholding_tax_pct").eq("kind", "sites"),
+  ]);
+  const tarifs = (reglage?.value ?? {}) as Record<string, Tarifs>;
+  let lignes = 0;
+  for (const org of orgs ?? []) {
+    const [{ data: sites }, { data: compteurs }, { data: sondes }, { data: passerelles }, { data: pilotes }] = await Promise.all([
+      admin.from("sites").select("id, name, currency, price_overrides").eq("organization_id", org.id),
+      admin
+        .from("meters")
+        .select("site_id, installed_at")
+        .eq("organization_id", org.id)
+        .eq("type", "point_comptage")
+        .eq("actif", true)
+        .not("installed_at", "is", null),
+      admin
+        .from("temperature_points")
+        .select("site_id")
+        .eq("organization_id", org.id)
+        .eq("active", true)
+        .not("device_id", "is", null),
+      admin.from("devices").select("site_id").eq("organization_id", org.id).eq("kit", "C").in("provisioning_status", ["pose", "actif"]),
+      admin
+        .from("pilots")
+        .select("site_id")
+        .eq("organization_id", org.id)
+        .in("status", ["en_cours", "prolonge"])
+        .lt("started_at", `${fin}T00:00:00Z`),
+    ]);
+    if (!sites?.length) continue;
+    const usages = usageMensuel({
+      debutMois: debut,
+      finMois: fin,
+      tarifs,
+      remiseFondateurPct: Number(org.founder_discount_pct ?? 0),
+      retenuePct: Number(org.withholding_tax_pct ?? 0),
+      sites: sites.map((s) => ({
+        id: s.id,
+        nom: s.name,
+        monnaie: s.currency === "MAD" ? "MAD" : "EUR",
+        surcharges: ((s.price_overrides ?? {}) as Record<string, Tarifs>)[s.currency] ?? null,
+        avecPasserelle: (passerelles ?? []).some((p) => p.site_id === s.id),
+        poses: (compteurs ?? []).filter((m) => m.site_id === s.id).map((m) => m.installed_at as string),
+        sondes: (sondes ?? []).filter((p) => p.site_id === s.id).length,
+        pilote: (pilotes ?? []).some((p) => p.site_id === s.id),
+      })),
+    });
+    for (const u of usages) {
+      if (!u.pointsActifs && !u.sondes) continue;
+      const { error } = await admin.from("usage_monthly").upsert(
+        {
+          organization_id: org.id,
+          period: debut,
+          currency: u.monnaie,
+          active_points: u.pointsActifs,
+          active_meters: u.pointsActifs,
+          setup_points: u.misesEnService,
+          temperature_points: u.sondes,
+          amount_ht: u.ht,
+          amount_eur_ht: u.monnaie === "EUR" ? u.ht : 0,
+          withholding_tax_amount: u.retenue,
+          gross_amount: u.brut,
+          computed_at: new Date().toISOString(),
+          details: {
+            lignes: u.lignes,
+            remise: u.remise,
+            net: u.net,
+            retenue_pct: u.retenuePct,
+            incomplet: u.incomplet,
+            sites_en_pilote: u.sitesEnPilote,
+          },
+        },
+        { onConflict: "organization_id,period,currency" },
+      );
+      if (error) return { erreur: `Enregistrement impossible : ${error.message}` };
+      lignes++;
+    }
+  }
+  revalidatePath("/admin");
+  return { ok: true, lignes };
 }

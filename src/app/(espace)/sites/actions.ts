@@ -62,3 +62,59 @@ export async function creerPagePreuve(siteId: string): Promise<{ ok: true; url: 
   if (!reponse.ok || !corps.token) return { erreur: "Création impossible. Réessayez." };
   return { ok: true, url: `${urlSite()}/preuve/${corps.token}` };
 }
+
+/** Nuitées, emplacements occupés ou couverts du mois (1er du mois). */
+export async function enregistrerActivite(params: {
+  siteId: string;
+  mois: string;
+  quantite: string;
+}): Promise<Resultat> {
+  await getEspaceSites();
+  if (!/^\d{4}-\d{2}$/.test(params.mois)) return { erreur: "Mois invalide." };
+  const quantite = Number(params.quantite.replace(",", ".").replace(/\s/g, ""));
+  if (!Number.isFinite(quantite) || quantite < 0 || quantite > 10_000_000) {
+    return { erreur: "Indiquez un nombre (par exemple 1 350)." };
+  }
+  const supabase = await createClient();
+  const { data: site } = await supabase.from("sites").select("organization_id").eq("id", params.siteId).maybeSingle();
+  if (!site) return { erreur: "Site introuvable." };
+  const { error } = await supabase.from("activity_data").upsert(
+    {
+      organization_id: site.organization_id,
+      site_id: params.siteId,
+      date: `${params.mois}-01`,
+      period: "mois",
+      quantity: quantite,
+    },
+    { onConflict: "site_id,date,period" },
+  );
+  if (error) return { erreur: "Votre rôle ne permet pas de saisir l'activité de ce site." };
+  revalidatePath(`/sites/${params.siteId}`);
+  return { ok: true, message: "Enregistré." };
+}
+
+/** Consentement écrit du client à la conversion automatique du pilote. */
+export async function consentirConversion(params: {
+  piloteId: string;
+  siteId: string;
+  nom: string;
+  accepte: boolean;
+}): Promise<Resultat> {
+  await getEspaceSites();
+  const supabase = await createClient();
+  const { error } = params.accepte
+    ? await supabase.rpc("accepter_conversion_pilote", { p_pilot_id: params.piloteId, p_nom: params.nom })
+    : await supabase.rpc("retirer_conversion_pilote", { p_pilot_id: params.piloteId });
+  if (error) {
+    return {
+      erreur:
+        error.code === "42501"
+          ? "Seul l'administrateur ou le directeur du site peut donner cet accord."
+          : error.code === "22023"
+            ? error.message
+            : "Enregistrement impossible. Réessayez.",
+    };
+  }
+  revalidatePath(`/sites/${params.siteId}`);
+  return { ok: true };
+}

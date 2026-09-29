@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getEspaceSites, peutAgirFuite } from "@/lib/auth/espaces";
+import { getEspaceLecture, peutAgirFuite } from "@/lib/auth/espaces";
 import { FuitesEnCours, type FuiteAffichee } from "@/components/sites/FuitesEnCours";
 import {
   LIBELLES_STATUT_FUITE,
@@ -20,7 +20,7 @@ const un = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? 
 
 /** Fiche d'une fuite : ouverte par le lien de l'alerte (« Je m'en occupe »). */
 export default async function FuitePage({ params }: { params: Promise<{ id: string }> }) {
-  const ctx = await getEspaceSites();
+  const ctx = await getEspaceLecture();
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const supabase = await createClient();

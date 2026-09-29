@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getEspaceSites } from "@/lib/auth/espaces";
+import { getEspaceLecture } from "@/lib/auth/espaces";
 import { urlSite } from "@/lib/auth/liens";
 import { vueRapport, type ContenuRapport } from "@/lib/gardien-rapports/affichage";
 import { VueRapportEcran } from "@/components/rapports/VueRapportEcran";
@@ -12,7 +12,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** Lecture d'un rapport de site ; la première ouverture est notée. */
 export default async function RapportPage({ params }: { params: Promise<{ id: string }> }) {
-  await getEspaceSites();
+  await getEspaceLecture();
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const supabase = await createClient();

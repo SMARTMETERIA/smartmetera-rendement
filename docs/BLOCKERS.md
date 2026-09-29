@@ -93,3 +93,11 @@ Chaque point est contourné dans le code par un bouchon marqué
     aussi en développement : vos sites d'essai reçoivent leurs rapports
     (première nuit, première semaine, mensuel) et leurs alertes dans le
     journal des envois. Rien ne part réellement (mode « journal »).
+22. **Accord écrit de conversion d'un pilote** — la phrase que le client
+    coche sur la page de son site (« J'accepte que la surveillance
+    continue avec l'abonnement à la fin du pilote… ») est à faire valider
+    avec les conditions de pilote (plan, section 6, point 11). Composant
+    `ConsentementPilote`, marqué `TODO(RAYAN)`.
+23. **Facturation pendant un pilote** — l'export d'usage compte les
+    abonnements des sites en pilote et les signale (colonne « Sites en
+    pilote ») : décider s'ils sont facturés, offerts ou remboursés.

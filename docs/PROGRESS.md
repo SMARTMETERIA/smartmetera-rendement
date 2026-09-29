@@ -352,6 +352,62 @@ Comment tester à l'écran (avec `npm run dev`) :
 5. Le lendemain matin d'une pose, un « Rapport » apparaît dans « Mes
    sites » : ouvrez-le, puis « Version à imprimer (PDF) ».
 
+## Phase G6 : les espaces — terminée
+
+Plan :
+1. Migration `0046` : courbe horaire d'un site, consentement de conversion d'un pilote par le client, consultation superadmin journalisée, réglages du pré-diagnostic ; `0047` pour les droits.
+2. Espace site `/sites/[id]` (directeur) : économies, état, compteur de pertes, courbe 30 jours avec la bande de nuit, fuites et historique, points, saisie des nuitées ; exports registre des températures (PDF), Clef Verte (CSV, PDF), BREEAM Wat 03.
+3. Groupe et partenaire sur « Mes sites » (classement par litres par nuitée, clients, usage du mois), page « Alertes » du technicien, flotte complète.
+4. Superadmin : pilotes (création, suivi, prochaine action), usage mensuel et export CSV (EUR, MAD, remise, retenue), flotte, consultation journalisée ; pré-diagnostic (superadmin et partenaire) avec PDF à la marque.
+5. Tests (usage, pré-diagnostic, exports) et parcours de chaque rôle sur des données jetables ; README.
+
+Fait :
+- Base : migrations `0046` et `0047` appliquées.
+- Site (directeur) : économies depuis le début en grand, état « sous
+  surveillance » ou « fuite en cours » avec le compteur de pertes, courbe
+  de 30 jours avec la bande de nuit, pilote avec accord écrit de
+  conversion (donné ou retiré par l'administrateur ou le directeur,
+  horodaté, tracé), points de comptage et de température, saisie des
+  nuitées, historique des fuites, rapports.
+- Exports : registre des températures (PDF, « fichier sanitaire »), Clef
+  Verte (litres par nuitée par mois, PDF et tableur), fiche BREEAM Wat 03
+  (système en place, règles réellement appliquées, journal des alertes).
+- Groupe et partenaire : sites classés par litres par unité d'activité,
+  alertes en cours, clients, points actifs ; technicien : page
+  « Alertes » ; flotte : pile, radio, dernier message, capteurs muets.
+- Superadmin : pilotes (création, suivi, prochaine action), usage mensuel
+  et export CSV (euros et dirhams, remise fondateur, retenue à la source,
+  tarif manquant signalé), flotte, tâches, consultation journalisée d'une
+  organisation et de ses sites.
+- Pré-diagnostic (superadmin et partenaire) : chasse d'eau qui fuit et
+  fuite enterrée (valeurs du plan), coût du service par jour et par
+  nuitée, phrase de synthèse, PDF à la marque.
+- Tests : 9 tests de modules (usage, pré-diagnostic, exports), 3 tests
+  d'intégration (courbe, accord de conversion, consultation) ; parcours
+  de chaque rôle (administrateur, directeur, technicien, superadmin) sur
+  des données jetables : 21 écrans sans erreur. Typecheck, lint, 978
+  tests unitaires et 52 tests d'intégration verts.
+
+Correction : la page « Alertes » est à l'adresse `/sites/alertes`
+(`/alertes` appartient à l'offre Réseau).
+
+Aucune dépendance ajoutée.
+
+Reste pour plus tard : marque blanche complète (phase G7) ; données de
+démonstration (phase G9) ; questions 22 et 23 de `docs/BLOCKERS.md`.
+
+Comment tester à l'écran (avec `npm run dev`) :
+1. Dans « Mes sites », cliquez sur le nom d'un site : sa page s'ouvre
+   avec les économies, l'état, la courbe des 30 derniers jours et vos
+   capteurs.
+2. En bas de cette page, saisissez les nuitées du mois dernier et
+   cliquez « Enregistrer ».
+3. Cliquez « Fiche BREEAM Wat 03 (PDF) » : un document s'ouvre.
+4. Ouvrez « Pré-diagnostic », remplissez le nom d'un hôtel et le prix de
+   l'eau : le résultat s'affiche ; « Télécharger le PDF ».
+5. Ouvrez « Alertes » : les fuites en cours de vos sites avec le bouton
+   « Je m'en occupe ».
+
 ---
 
 # Historique — offre Immeuble (en pause)

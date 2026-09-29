@@ -36,13 +36,16 @@ interface Appareil {
   battery_pct: number | null;
   battery_low: boolean | null;
   last_seen_at: string | null;
+  rssi: number | null;
+  snr: number | null;
   qr_code: string | null;
   sites: { name: string; timezone: string } | null;
 }
 
 /**
  * Appareils de l'organisation : import du stock, attribution d'un lot à un
- * site, planche d'étiquettes QR. La vue flotte complète arrive en G6.
+ * site, planche d'étiquettes QR ; flotte : pile, radio, dernier message,
+ * capteurs muets.
  */
 export default async function AppareilsPage() {
   const ctx = await getEspaceSites();
@@ -50,11 +53,11 @@ export default async function AppareilsPage() {
   const { organizationId } = organisationEspaceSites(ctx);
   const supabase = await createClient();
 
-  const [{ data: appareils }, { data: sites }] = await Promise.all([
+  const [{ data: appareils }, { data: sites }, { data: muets }] = await Promise.all([
     supabase
       .from("devices")
       .select(
-        "id, device_ref, canal, model, provisioning_status, battery_pct, battery_low, last_seen_at, qr_code, sites(name, timezone)",
+        "id, device_ref, canal, model, provisioning_status, battery_pct, battery_low, last_seen_at, rssi, snr, qr_code, sites(name, timezone)",
       )
       .eq("organization_id", organizationId)
       .neq("provisioning_status", "retire")
@@ -66,7 +69,17 @@ export default async function AppareilsPage() {
       .eq("organization_id", organizationId)
       .eq("active", true)
       .order("name"),
+    supabase
+      .from("alerts")
+      .select("donnees")
+      .eq("organization_id", organizationId)
+      .eq("type", "compteur_muet")
+      .in("statut", ["ouverte", "acquittee"]),
   ]);
+  const appareilsMuets = new Set(
+    (muets ?? []).map((m) => (m.donnees as { device_id?: string } | null)?.device_id).filter(Boolean),
+  );
+  const nombreFr = (n: number) => new Intl.NumberFormat("fr-FR").format(n);
 
   const lignes: LigneAppareil[] = (
     (appareils ?? []) as unknown as Appareil[]
@@ -85,6 +98,11 @@ export default async function AppareilsPage() {
       a.last_seen_at,
       a.sites?.timezone ?? "Europe/Paris",
     ),
+    radio:
+      a.rssi !== null
+        ? `${nombreFr(Number(a.rssi))} dBm${a.snr !== null ? ` · ${nombreFr(Number(a.snr))} dB` : ""}`
+        : "—",
+    muet: appareilsMuets.has(a.id),
     qr: Boolean(a.qr_code),
     attribuable: ["en_stock", "attribue"].includes(a.provisioning_status),
   }));

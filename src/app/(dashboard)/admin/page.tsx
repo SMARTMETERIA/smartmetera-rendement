@@ -17,6 +17,12 @@ import { ChecklistActivation } from "@/components/admin/ChecklistActivation";
 import { JournalAudit } from "@/components/admin/JournalAudit";
 import { ReceptionCapteurs } from "@/components/admin/ReceptionCapteurs";
 import { TachesPanel, type Tache } from "@/components/admin/TachesPanel";
+import { PilotesPanel, type PiloteSuivi } from "@/components/admin/PilotesPanel";
+import { UsagePanel, type LigneUsageAdmin } from "@/components/admin/UsagePanel";
+import { Badge } from "@/components/ui/badge";
+
+const dateCourte = (iso: string) =>
+  new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeZone: "Europe/Paris" }).format(new Date(iso));
 
 export default async function AdminPage() {
   const ctx = await getContexteUtilisateur();
@@ -25,6 +31,10 @@ export default async function AdminPage() {
   }
 
   const supabase = await createClient();
+  const precedent = new Date();
+  precedent.setUTCDate(1);
+  precedent.setUTCMonth(precedent.getUTCMonth() - 1);
+  const moisFacture = precedent.toISOString().slice(0, 7) + "-01";
 
   const [
     { data: organisations },
@@ -36,6 +46,11 @@ export default async function AdminPage() {
     { data: reception },
     { data: inconnues },
     { data: taches },
+    { data: pilotes },
+    { data: sitesGardien },
+    { data: usage },
+    { data: appareils },
+    { data: muets },
   ] = await Promise.all([
     supabase
       .from("organizations")
@@ -85,7 +100,60 @@ export default async function AdminPage() {
       .order("status")
       .order("created_at", { ascending: false })
       .limit(100),
+    supabase
+      .from("pilots")
+      .select("id, started_at, ends_at, status, anomalies_found, consent_at, consent_by_name, setup_refund_if_nothing_found, next_action, sites(name), organizations(nom)")
+      .order("started_at", { ascending: false })
+      .limit(100),
+    supabase.from("sites").select("id, name, organizations!inner(kind)").eq("organizations.kind", "sites").order("name"),
+    supabase
+      .from("usage_monthly")
+      .select("id, currency, active_points, setup_points, temperature_points, amount_ht, withholding_tax_amount, details, organizations(nom)")
+      .eq("period", moisFacture),
+    supabase
+      .from("devices")
+      .select("id, device_ref, model, provisioning_status, battery_pct, battery_low, last_seen_at, organizations!inner(nom, kind)")
+      .eq("organizations.kind", "sites")
+      .neq("provisioning_status", "retire")
+      .limit(2000),
+    supabase.from("alerts").select("donnees").eq("type", "compteur_muet").in("statut", ["ouverte", "acquittee"]).not("site_id", "is", null),
   ]);
+  const nom = (o: unknown) => ((Array.isArray(o) ? o[0] : o) as { nom?: string; name?: string } | null);
+  const maintenant = new Date().getTime();
+  const listePilotes: PiloteSuivi[] = (pilotes ?? []).map((p) => ({
+    id: p.id,
+    site: nom(p.sites)?.name ?? "—",
+    organisation: nom(p.organizations)?.nom ?? "—",
+    debut: dateCourte(p.started_at),
+    fin: dateCourte(p.ends_at),
+    joursRestants: Math.max(0, Math.ceil((Date.parse(p.ends_at) - maintenant) / 86_400_000)),
+    statut: p.status,
+    anomalies: p.anomalies_found,
+    consentement: p.consent_at ? `${p.consent_by_name}, ${dateCourte(p.consent_at)}` : null,
+    remboursement: p.setup_refund_if_nothing_found,
+    prochaineAction: p.next_action ?? "",
+  }));
+  const lignesUsage: LigneUsageAdmin[] = (usage ?? []).map((u) => {
+    const d = (u.details ?? {}) as Record<string, unknown>;
+    return {
+      id: u.id,
+      organisation: nom(u.organizations)?.nom ?? "—",
+      monnaie: u.currency,
+      pointsActifs: u.active_points,
+      misesEnService: u.setup_points,
+      sondes: u.temperature_points,
+      ht: Number(u.amount_ht),
+      retenue: Number(u.withholding_tax_amount),
+      net: Number(d.net ?? u.amount_ht),
+      incomplet: d.incomplet === true,
+    };
+  });
+  const idsMuets = new Set((muets ?? []).map((m) => (m.donnees as { device_id?: string } | null)?.device_id));
+  const flotte = appareils ?? [];
+  const aSurveiller = flotte.filter(
+    (a) => idsMuets.has(a.id) || a.battery_low || (a.battery_pct !== null && Number(a.battery_pct) < 20),
+  );
+  const parEtat = (etat: string) => flotte.filter((a) => a.provisioning_status === etat).length;
   const listeTaches: Tache[] = (taches ?? []).map((t) => {
     const org = Array.isArray(t.organizations) ? t.organizations[0] : t.organizations;
     return {
@@ -124,7 +192,80 @@ export default async function AdminPage() {
           <TabsTrigger value="taches">
             Tâches ({listeTaches.filter((t) => t.status === "a_faire").length})
           </TabsTrigger>
+          <TabsTrigger value="pilotes">Pilotes</TabsTrigger>
+          <TabsTrigger value="usage">Usage mensuel</TabsTrigger>
+          <TabsTrigger value="flotte">Flotte</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="pilotes" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Suivi des pilotes</CardTitle>
+              <CardDescription>
+                Pilotes en cours, jours restants, anomalies trouvées, accord
+                écrit de conversion et prochaine action.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PilotesPanel
+                pilotes={listePilotes}
+                sites={(sitesGardien ?? []).map((s) => ({ id: s.id, name: s.name }))}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="usage" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Usage mensuel et facturation</CardTitle>
+              <CardDescription>
+                Mises en service, abonnements, sondes, remise fondateur et
+                retenue à la source, en euros et en dirhams. Pas de paiement en
+                ligne : l&apos;export sert à facturer à la main.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UsagePanel mois={moisFacture.slice(0, 7)} lignes={lignesUsage} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="flotte" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Flotte</CardTitle>
+              <CardDescription>
+                {parEtat("en_stock")} en stock · {parEtat("attribue")} attribués · {parEtat("pose")} posés en
+                attente · {parEtat("actif")} actifs. À surveiller : capteurs muets et piles faibles.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {aSurveiller.length === 0 ? (
+                <p className="text-muted-foreground text-sm">Aucun appareil à surveiller.</p>
+              ) : (
+                <ul className="divide-y rounded-lg border">
+                  {aSurveiller.map((a) => (
+                    <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+                      <span>
+                        <span className="font-mono">{a.device_ref}</span> — {a.model ?? "—"} ({nom(a.organizations)?.nom})
+                      </span>
+                      <span className="flex gap-2">
+                        {idsMuets.has(a.id) && <Badge variant="destructive">Muet</Badge>}
+                        {(a.battery_low || (a.battery_pct !== null && Number(a.battery_pct) < 20)) && (
+                          <Badge variant="secondary">Pile faible</Badge>
+                        )}
+                        <span className="text-muted-foreground">
+                          {a.last_seen_at ? `dernier message ${dateCourte(a.last_seen_at)}` : "aucun message"}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="taches" className="pt-4">
           <Card>
