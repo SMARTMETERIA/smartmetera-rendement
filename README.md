@@ -128,6 +128,10 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
   `retirer_conversion_pilote`, tracés dans le journal d'audit),
   consultation superadmin journalisée (`journaliser_consultation`),
   débits de référence du pré-diagnostic (`platform_settings.prediagnostic`).
+- `0048_marque_blanche.sql`, `0049_droits_marque_blanche.sql` — espace de
+  stockage public `marques` (logos ; écriture par l'administrateur de
+  l'organisation, dossier = identifiant de l'organisation) et
+  `marque_publique(slug)` pour la page de connexion d'un partenaire.
 
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le
@@ -355,6 +359,28 @@ invisibles, page preuve sans connexion).
   PDF à la marque (`src/lib/gardien/prediagnostic.ts`).
 - **Tests** : `src/lib/gardien/espaces.test.ts` (usage, pré-diagnostic,
   exports) et `src/test/integration/espaces-gardien.test.ts`.
+
+### Marque blanche
+
+- **Marque** (`src/lib/marque.ts`) : nom affiché, logo, couleur
+  principale et d'accent, nom d'expéditeur, adresse de réponse, pied de
+  page, mention « Propulsé par SmartMeteria » (active par défaut,
+  modifiable seulement par le superadmin). Une couleur trop claire est
+  foncée automatiquement jusqu'à un contraste de 4,5:1 (`couleurLisible`).
+- **Thème** : `variablesTheme()` produit les variables CSS
+  (`--primary`, `--primary-foreground`, `--ring`, `--chart-1`…) posées par
+  `EnveloppeMarque` sur les espaces, la connexion `/p/[slug]/connexion`,
+  les pages preuve. Aucune couleur écrite dans les composants.
+- **Écran « Ma marque »** `/sites/marque` (administrateur) : aperçu en
+  direct, contrôle de lisibilité, logo déposé dans l'espace `marques`.
+- **Partout** : e-mails et SMS (nom d'expéditeur, nom de la marque),
+  PDF (rapports, pages preuve, pré-diagnostic, exports), pages preuve.
+  Prix partenaire par point (`organizations.partner_price_per_point`)
+  appliqué dans l'usage mensuel à la place des abonnements.
+- **Tests** : `src/lib/gardien/marqueBlanche.test.ts`,
+  `src/test/integration/marque-blanche.test.ts` (logos, marque publique,
+  mention protégée).
+- **Vérification des fonctions Deno** : `npm run typecheck:fonctions`.
 
 ### Import CSV/Excel
 

@@ -232,7 +232,7 @@ async function marqueOrganisation(ctx: Contexte, orgId: string): Promise<Marque>
   const org = ctx.organisations.get(orgId);
   const { data } = await ctx.admin
     .from("org_branding")
-    .select("display_name, primary_color, logo_path, legal_footer, show_powered_by, reply_to_email")
+    .select("display_name, primary_color, accent_color, logo_path, legal_footer, show_powered_by, reply_to_email, sender_name")
     .eq("organization_id", orgId)
     .maybeSingle();
   const marque = data ? marqueDepuisBranding(org?.nom ?? "", data as LigneMarque) : MARQUE_PLATEFORME;
@@ -275,7 +275,7 @@ async function envoyer(
       sujet: canal === "email" ? rendu.sujet : null,
       texte,
       html: canal === "email" ? rendu.html : null,
-      expediteur: marque.nom,
+      expediteur: marque.expediteur,
       repondreA: marque.repondreA,
     },
     ctx.config,

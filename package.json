@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:rls": "vitest run --config vitest.integration.config.ts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "typecheck:fonctions": "tsc -p scripts/deno/tsconfig.json"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

@@ -408,6 +408,50 @@ Comment tester à l'écran (avec `npm run dev`) :
 5. Ouvrez « Alertes » : les fuites en cours de vos sites avec le bouton
    « Je m'en occupe ».
 
+## Phase G7 : marque blanche — terminée
+
+Plan (la phase 6 du plan Immeuble n'a pas été faite : construction ici) :
+1. Migration `0048` : espace de stockage public des logos (écriture par l'administrateur de l'organisation), marque publique par identifiant d'URL pour la page de connexion ; `0049` pour les droits.
+2. Thème par variables CSS calculées depuis la marque (couleur assombrie automatiquement jusqu'à un contraste de 4,5:1), en-tête à la marque dans les espaces, les pages preuve et la connexion `/p/[slug]/connexion`.
+3. Écran « Ma marque » (nom affiché, logo, couleurs avec contrôle du contraste, nom d'expéditeur, adresse de réponse, pied de page) ; mention « Propulsé par SmartMeteria » modifiable seulement par le superadmin.
+4. E-mails, SMS, PDF, pages preuve et pré-diagnostics à la marque (nom d'expéditeur) ; prix partenaire par point dans l'export d'usage.
+5. Tests (contraste, thème, usage partenaire) et vérification avec deux partenaires de démonstration ; README.
+
+Fait :
+- Base : migrations `0048` et `0049` appliquées (logos, marque publique).
+- Thème à la marque sur les espaces, la page de connexion du partenaire
+  `/p/[slug]/connexion` et les pages preuve ; couleur foncée
+  automatiquement si elle n'est pas lisible (contraste de 4,5:1).
+- Écran « Ma marque » (administrateur) avec aperçu et contrôle de
+  lisibilité ; mention « Propulsé par SmartMeteria » protégée.
+- E-mails (nom d'expéditeur), SMS, PDF, pages preuve et pré-diagnostics à
+  la marque du partenaire ; e-mails de connexion à la marque aussi pour
+  les partenaires Gardien ; prix partenaire par point dans l'usage.
+- Vérification avec deux partenaires de démonstration (« Camping Pro »
+  et « Hydro Services ») : connexion, en-tête, « Ma marque », page preuve,
+  PDF et SMS portent chacun leur marque, jamais celle de l'autre.
+- Tests : 11 tests de modules, 3 tests d'intégration ; nouvelle commande
+  `npm run typecheck:fonctions` (types des fonctions Deno). Typecheck,
+  lint, 996 tests unitaires et 55 tests d'intégration verts.
+
+Aucune dépendance ajoutée.
+
+Reste pour plus tard : passe de design (phase G8, palette et polices
+SmartMeteria) ; la fonction `gardien-envois` sera redéployée avec le nom
+d'expéditeur à la fin de la session.
+
+Comment tester à l'écran (avec `npm run dev`, compte administrateur) :
+1. Ouvrez « Ma marque » : changez le nom affiché et la couleur, regardez
+   l'aperçu à droite.
+2. Choisissez une couleur très claire (jaune pâle) : un message indique
+   qu'elle sera foncée pour rester lisible.
+3. Ajoutez votre logo, puis « Enregistrer la marque » : l'en-tête de
+   toutes les pages prend votre logo et vos couleurs.
+4. Ouvrez l'adresse de connexion indiquée sur cette page dans une
+   fenêtre de navigation privée : la page de connexion est à votre marque.
+5. Créez une page preuve depuis « Mes sites » : elle porte aussi votre
+   marque.
+
 ---
 
 # Historique — offre Immeuble (en pause)

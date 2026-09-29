@@ -251,7 +251,10 @@ export async function calculerUsageMensuel(params: { mois: string }): Promise<{ 
 
   const [{ data: reglage }, { data: orgs }] = await Promise.all([
     admin.from("platform_settings").select("value").eq("key", "tarifs").maybeSingle(),
-    admin.from("organizations").select("id, founder_discount_pct, withholding_tax_pct").eq("kind", "sites"),
+    admin
+      .from("organizations")
+      .select("id, founder_discount_pct, withholding_tax_pct, partner_price_per_point")
+      .eq("kind", "sites"),
   ]);
   const tarifs = (reglage?.value ?? {}) as Record<string, Tarifs>;
   let lignes = 0;
@@ -286,6 +289,7 @@ export async function calculerUsageMensuel(params: { mois: string }): Promise<{ 
       tarifs,
       remiseFondateurPct: Number(org.founder_discount_pct ?? 0),
       retenuePct: Number(org.withholding_tax_pct ?? 0),
+      prixPartenaireParPoint: org.partner_price_per_point == null ? null : Number(org.partner_price_per_point),
       sites: sites.map((s) => ({
         id: s.id,
         nom: s.name,

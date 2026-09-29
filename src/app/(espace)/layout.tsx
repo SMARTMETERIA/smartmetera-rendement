@@ -5,14 +5,17 @@ import {
   peutGererAppareils,
   peutPoser,
 } from "@/lib/auth/espaces";
-import { NOM_PLATEFORME } from "@/lib/marque";
+import { MARQUE_PLATEFORME, NOM_PLATEFORME } from "@/lib/marque";
+import { createClient } from "@/lib/supabase/server";
+import { marqueOrganisation, organisationDeMarque } from "@/lib/gardien/marqueOrganisation";
+import { EnteteMarque, EnveloppeMarque } from "@/components/marque/EnveloppeMarque";
 import { peutPrediagnostic } from "@/lib/gardien/prediagnosticServeur";
 import { LogoutButton } from "@/components/LogoutButton";
 
 /**
  * Espaces Gardien de l'eau (sites), Immeuble (partenaire, gestionnaire,
  * occupant) et compte personnel. Navigation selon l'offre et le profil ;
- * la marque blanche complète (logo, couleurs) arrive en phase G7.
+ * logo, couleurs et pied de page à la marque de l'organisation.
  */
 export default async function EspaceLayout({
   children,
@@ -33,6 +36,9 @@ export default async function EspaceLayout({
     }
     if (estAdminSites(ctx)) {
       liens.push({ href: "/sites/equipe", label: "Équipe" });
+    }
+    if (ctx.adhesion?.kind === "sites" && ctx.adhesion.role === "admin_client") {
+      liens.push({ href: "/sites/marque", label: "Ma marque" });
     }
   }
   if (peutPrediagnostic(ctx)) {
@@ -63,12 +69,16 @@ export default async function EspaceLayout({
     ctx.adhesionsSite[0]?.organizationName ??
     ctx.adhesionsClient[0]?.organizationName ??
     NOM_PLATEFORME;
+  const orgMarque = organisationDeMarque(ctx);
+  const chargee = orgMarque ? await marqueOrganisation(await createClient(), orgMarque) : MARQUE_PLATEFORME;
+  // Client direct sans marque : identité SmartMeteria, avec son propre nom en tête.
+  const marque = chargee === MARQUE_PLATEFORME ? { ...MARQUE_PLATEFORME, nom } : chargee;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b bg-white">
+    <EnveloppeMarque marque={marque} className="flex min-h-screen flex-col">
+      <header className="bg-background border-b">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <span className="text-lg font-semibold tracking-tight">{nom}</span>
+          <EnteteMarque marque={marque} />
           <LogoutButton />
         </div>
         <nav className="mx-auto flex max-w-5xl flex-wrap gap-1 px-4 pb-2 sm:px-6">
@@ -86,6 +96,11 @@ export default async function EspaceLayout({
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
         {children}
       </main>
-    </div>
+      {marque.afficherPropulse && orgMarque && (
+        <footer className="text-muted-foreground mx-auto w-full max-w-5xl px-4 pb-6 text-xs sm:px-6">
+          {marque.piedDePage ? `${marque.piedDePage} · ` : ""}Propulsé par {NOM_PLATEFORME}
+        </footer>
+      )}
+    </EnveloppeMarque>
   );
 }

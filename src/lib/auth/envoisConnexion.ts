@@ -43,11 +43,11 @@ export async function chargerMarque(
   const { data } = await admin
     .from("organizations")
     .select(
-      "nom, kind, org_branding(display_name, primary_color, logo_path, legal_footer, show_powered_by, reply_to_email)",
+      "nom, kind, org_branding(display_name, primary_color, accent_color, logo_path, legal_footer, show_powered_by, reply_to_email, sender_name)",
     )
     .eq("id", organizationId)
     .maybeSingle();
-  if (!data || data.kind !== "immeuble") return MARQUE_PLATEFORME;
+  if (!data || !["immeuble", "sites"].includes(data.kind)) return MARQUE_PLATEFORME;
   const branding = (data.org_branding ?? null) as unknown as LigneMarque | null;
   return marqueDepuisBranding(data.nom, branding);
 }
@@ -162,7 +162,7 @@ export async function envoyerLienConnexion(
   await envoyerEmail({
     to: email,
     ...rendu,
-    fromName: marque.nom,
+    fromName: marque.expediteur,
     replyTo: marque.repondreA,
   });
 }

@@ -36,6 +36,10 @@ export interface Marque {
   afficherPropulse: boolean;
   /** Adresse de réponse, ou null. */
   repondreA: string | null;
+  /** Nom d'expéditeur des e-mails (défaut : nom affiché). */
+  expediteur: string;
+  /** Couleur d'accent, #RRGGBB. */
+  accent: string;
 }
 
 export const MARQUE_PLATEFORME: Marque = {
@@ -45,6 +49,8 @@ export const MARQUE_PLATEFORME: Marque = {
   piedDePage: null,
   afficherPropulse: false,
   repondreA: null,
+  expediteur: NOM_PLATEFORME,
+  accent: COULEURS_PLATEFORME.turquoise,
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -74,6 +80,40 @@ export function couleurTexteSur(fond: string): string {
     : COULEURS_NEUTRES.texte;
 }
 
+/** Contraste minimal texte / fond (WCAG AA). */
+export const CONTRASTE_MINIMUM = 4.5;
+
+/**
+ * Couleur de marque rendue lisible : assombrie pas à pas tant que ni le
+ * blanc ni l'encre n'atteignent un contraste de 4,5:1 sur elle.
+ */
+export function couleurLisible(hex: string): string {
+  if (!HEX.test(hex)) return COULEURS_PLATEFORME.bleu;
+  let [r, v, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const versHex = () => `#${[r, v, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
+  for (let i = 0; i < 60; i++) {
+    const c = versHex();
+    if (rapportContraste(c, couleurTexteSur(c)) >= CONTRASTE_MINIMUM) return i === 0 ? hex : c;
+    [r, v, b] = [r, v, b].map((x) => Math.floor(x * 0.93));
+  }
+  return versHex();
+}
+
+/** Variables CSS du thème à la marque (boutons, anneaux de focus, courbes). */
+export function variablesTheme(marque: Marque): Record<string, string> {
+  const primaire = couleurLisible(marque.couleur);
+  const texte = couleurTexteSur(primaire);
+  return {
+    "--primary": primaire,
+    "--primary-foreground": texte,
+    "--ring": primaire,
+    "--chart-1": primaire,
+    "--chart-2": couleurLisible(marque.accent),
+    "--sidebar-primary": primaire,
+    "--sidebar-primary-foreground": texte,
+  };
+}
+
 export interface LigneMarque {
   display_name: string | null;
   primary_color: string | null;
@@ -81,6 +121,8 @@ export interface LigneMarque {
   legal_footer: string | null;
   show_powered_by: boolean | null;
   reply_to_email: string | null;
+  sender_name?: string | null;
+  accent_color?: string | null;
 }
 
 /**
@@ -96,12 +138,18 @@ export function marqueDepuisBranding(
       ? branding.primary_color
       : COULEURS_PLATEFORME.bleu;
   const logo = branding?.logo_path ?? null;
+  const nom = branding?.display_name?.trim() || nomOrganisation;
   return {
-    nom: branding?.display_name?.trim() || nomOrganisation,
-    couleur,
+    nom,
+    couleur: couleurLisible(couleur),
     logoUrl: logo && /^https:\/\//.test(logo) ? logo : null,
     piedDePage: branding?.legal_footer?.trim() || null,
     afficherPropulse: branding?.show_powered_by ?? true,
     repondreA: branding?.reply_to_email?.trim() || null,
+    expediteur: branding?.sender_name?.trim() || nom,
+    accent:
+      branding?.accent_color && HEX.test(branding.accent_color)
+        ? branding.accent_color
+        : COULEURS_PLATEFORME.turquoise,
   };
 }

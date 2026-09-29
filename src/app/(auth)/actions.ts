@@ -248,7 +248,7 @@ export async function demanderReinitialisation(
       await envoyerEmail({
         to: email,
         ...rendu,
-        fromName: marque.nom,
+        fromName: marque.expediteur,
         replyTo: marque.repondreA,
       });
     }

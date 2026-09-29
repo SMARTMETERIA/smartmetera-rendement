@@ -54,6 +54,12 @@ export function usageMensuel(p: {
   sites: SiteUsage[];
   remiseFondateurPct: number;
   retenuePct: number;
+  /**
+   * Marque blanche : prix par point facturé au partenaire (en euros, de 6 à
+   * 9 € selon le partenaire). Remplace les abonnements ; au Maroc, à
+   * paramétrer (ligne « à paramétrer »).
+   */
+  prixPartenaireParPoint?: number | null;
 }): UsageMonnaie[] {
   const parMonnaie = new Map<MonnaieUsage, SiteUsage[]>();
   for (const s of p.sites) parMonnaie.set(s.monnaie, [...(parMonnaie.get(s.monnaie) ?? []), s]);
@@ -92,7 +98,14 @@ export function usageMensuel(p: {
           ajouter(`${s.nom} : mise en service, point`, duMois.length, val(t.mise_en_service_point), false);
         }
       }
-      if (actifs.length) {
+      if (actifs.length && p.prixPartenaireParPoint != null) {
+        ajouter(
+          `${s.nom} : prix partenaire, point`,
+          actifs.length,
+          monnaie === "EUR" ? val(p.prixPartenaireParPoint) : null,
+          true,
+        );
+      } else if (actifs.length) {
         ajouter(`${s.nom} : abonnement, premier point`, 1, val(t.abonnement_premier_point), true);
         ajouter(`${s.nom} : abonnement, point supplémentaire`, actifs.length - 1, val(t.abonnement_point_supplementaire), true);
       }

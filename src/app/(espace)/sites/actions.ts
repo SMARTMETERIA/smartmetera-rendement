@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getEspaceSites } from "@/lib/auth/espaces";
 import { validerNouveauSite } from "@/lib/gardien/sites";
 import { urlSite } from "@/lib/auth/liens";
+import { validerMarque } from "@/lib/gardien/marqueSaisie";
 
 export type Resultat = { ok: true; message?: string } | { erreur: string };
 
@@ -117,4 +118,34 @@ export async function consentirConversion(params: {
   }
   revalidatePath(`/sites/${params.siteId}`);
   return { ok: true };
+}
+
+/**
+ * Marque de l'organisation (administrateur) : nom affiché, couleurs, logo,
+ * expéditeur, adresse de réponse, pied de page. La mention « Propulsé par »
+ * reste réservée au superadmin (protégée par la base).
+ */
+export async function enregistrerMarque(champs: {
+  nomAffiche: string;
+  couleur: string;
+  accent: string;
+  logo: string | null;
+  expediteur: string;
+  repondreA: string;
+  piedDePage: string;
+}): Promise<Resultat> {
+  const ctx = await getEspaceSites();
+  const adhesion = ctx.adhesion?.kind === "sites" ? ctx.adhesion : null;
+  if (!adhesion || adhesion.role !== "admin_client") {
+    return { erreur: "Seul l'administrateur de l'organisation peut modifier la marque." };
+  }
+  const validation = validerMarque(champs);
+  if (!validation.ok) return { erreur: validation.erreur };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("org_branding")
+    .upsert({ organization_id: adhesion.organizationId, ...validation.ligne }, { onConflict: "organization_id" });
+  if (error) return { erreur: "Enregistrement impossible. Réessayez." };
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Marque enregistrée." };
 }

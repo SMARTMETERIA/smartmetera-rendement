@@ -73,7 +73,7 @@ export async function demanderChangementAdresse(
       await envoyerEmail({
         to: cible === "nouvelle" ? nouvelle : user.email,
         ...rendu,
-        fromName: marque.nom,
+        fromName: marque.expediteur,
         replyTo: marque.repondreA,
       });
     }
