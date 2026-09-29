@@ -269,7 +269,7 @@ export default async function ParametresPage() {
               <CardTitle>Utilisateurs</CardTitle>
               <CardDescription>
                 Rôles : administrateur, agent, lecteur. Les superadmins
-                SmartMetera sont gérés à part.
+                SmartMeteria sont gérés à part.
               </CardDescription>
             </CardHeader>
             <CardContent>

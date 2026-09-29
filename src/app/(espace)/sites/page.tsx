@@ -32,6 +32,11 @@ import {
   totalEconomies,
 } from "@/lib/gardien/fuites";
 import type { StatutFuite, TypeFuite } from "@/lib/moteur-gardien/analyse";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { PagePreuveBouton } from "@/components/sites/PagePreuveBouton";
+import { TITRES_RAPPORT, type TypeRapport } from "@/lib/gardien-rapports/contenus";
+import { moisLong } from "@/lib/gardien-envois/format";
 
 type Ligne = Record<string, unknown>;
 const un = <T,>(v: T | T[] | null | undefined): T | null =>
@@ -71,7 +76,7 @@ export default async function SitesPage() {
       .maybeSingle(),
   ]);
   const siteIds = (sites ?? []).map((s) => s.id);
-  const [{ data: fuitesBrutes }, { data: reparees }] = await Promise.all([
+  const [{ data: fuitesBrutes }, { data: reparees }, { data: rapports }] = await Promise.all([
     supabase
       .from("leak_events")
       .select(
@@ -85,7 +90,19 @@ export default async function SitesPage() {
       .select("saved_m3, saved_amount, currency")
       .in("site_id", siteIds)
       .eq("status", "reparee"),
+    supabase
+      .from("site_reports")
+      .select("id, site_id, kind, period, opened_at")
+      .in("site_id", siteIds)
+      .order("created_at", { ascending: false })
+      .limit(12),
   ]);
+  const nomSite = new Map((sites ?? []).map((s) => [s.id, s.name]));
+  const peutPreuve =
+    peutAjouter || ctx.adhesionsSite.some((a) => a.role === "directeur_site");
+  const sitesPreuve = (sites ?? [])
+    .filter((s) => peutAjouter || ctx.adhesionsSite.some((a) => a.siteId === s.id && a.role === "directeur_site"))
+    .map((s) => ({ id: s.id, name: s.name }));
   const fuites: FuiteAffichee[] = ((fuitesBrutes ?? []) as Ligne[]).map((f) => {
     const site = un(f.sites as Ligne | Ligne[] | null);
     const compteur = un(f.meters as Ligne | Ligne[] | null);
@@ -169,6 +186,45 @@ export default async function SitesPage() {
               sites={(sites ?? []).map((s) => ({ id: s.id, name: s.name }))}
             />
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Rapports</CardTitle>
+          <CardDescription>
+            Première nuit, première semaine, chaque mois le 1er à 8 h, et fin
+            de pilote. Aussi envoyés par e-mail.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(rapports ?? []).length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              Le premier rapport arrive le lendemain matin de la pose.
+            </p>
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {(rapports ?? []).map((r) => (
+                <li key={r.id}>
+                  <Link
+                    href={`/rapports/${r.id}`}
+                    className="hover:bg-muted flex flex-wrap items-center justify-between gap-2 p-3 text-sm"
+                  >
+                    <span>
+                      <span className="font-medium">
+                        {r.kind === "mensuel"
+                          ? `Rapport de ${moisLong(r.period)}`
+                          : TITRES_RAPPORT[r.kind as TypeRapport]}
+                      </span>{" "}
+                      — {nomSite.get(r.site_id)}
+                    </span>
+                    {!r.opened_at && <Badge variant="secondary">Nouveau</Badge>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {peutPreuve && <PagePreuveBouton sites={sitesPreuve} />}
         </CardContent>
       </Card>
 

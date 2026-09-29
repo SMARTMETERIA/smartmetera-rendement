@@ -66,10 +66,10 @@ export default async function ImmeublePage() {
           </CardTitle>
           <CardDescription>
             {essai
-              ? `Essai gratuit jusqu'au ${finEssai ?? "—"}. Les relevés ne seront envoyés aux occupants qu'après activation de votre compte par SmartMetera.`
+              ? `Essai gratuit jusqu'au ${finEssai ?? "—"}. Les relevés ne seront envoyés aux occupants qu'après activation de votre compte par SmartMeteria.`
               : ctx.adhesion.status === "actif"
                 ? "Votre compte est activé."
-                : "Contactez SmartMetera pour réactiver votre compte."}
+                : "Contactez SmartMeteria pour réactiver votre compte."}
           </CardDescription>
         </CardHeader>
       </Card>

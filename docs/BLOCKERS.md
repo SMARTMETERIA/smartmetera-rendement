@@ -21,9 +21,9 @@ Chaque point est contourné dans le code par un bouchon marqué
 4. **Turnstile** — créer les clés Cloudflare Turnstile
    (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`). Sans elles,
    la case anti-robot de l'inscription est ignorée.
-5. **Orthographe de la marque** — « SmartMetera » (plan) ou
-   « SmartMeteria » (écrans Réseau, domaine) ? Centralisé dans
-   `NOM_PLATEFORME` (`src/lib/marque.ts`).
+5. ~~**Orthographe de la marque**~~ — résolu le 29 septembre 2026 :
+   « SmartMeteria » partout (`NOM_PLATEFORME`, écrans, e-mails, documents ;
+   message de la base corrigé par la migration `0045`).
 6. **Mots de passe divulgués** — activer la protection dans le tableau de
    bord Supabase (Authentication > Sign In / Providers > Email > « Prevent
    use of leaked passwords »). Action manuelle, signalée par l'avis de
@@ -55,9 +55,9 @@ Chaque point est contourné dans le code par un bouchon marqué
 13. **Trames réelles** — envoyer quelques trames réelles de chaque capteur
     (elles sont aussi visibles dans « trames d'appareils inconnus » si le
     capteur n'est pas encore dans le stock) pour les ajouter aux tests.
-14. **Notification de première donnée** — l'assistant prévient sur le
-    téléphone tant que la page reste ouverte ; l'envoi par SMS ou e-mail
-    quand la page est fermée arrive avec l'interface `notify()` (phase G5).
+14. ~~**Notification de première donnée**~~ — résolu en phase G5 : la
+    fonction `gardien-envois` prévient le technicien par e-mail et SMS
+    (journalisés tant que l'envoi réel n'est pas activé, voir 17 et 18).
 15. **Températures d'eau chaude** — vérifier dans les textes les seuils
     par type de point (55 °C en sortie de production et 50 °C sur la
     boucle de retour, valeurs du plan ; point éloigné : vide) et le délai
@@ -68,3 +68,28 @@ Chaque point est contourné dans le code par un bouchon marqué
     (fuite de nuit, débit continu, rupture, fermeture, capteur muet) dans
     `platform_settings`, clé `seuils` ; à ajuster après les premiers
     pilotes, sans nouvelle version du code.
+17. **Fournisseurs SMS, appel vocal et WhatsApp** — à choisir (plan,
+    section 6, point 5). En attendant, ces messages sont seulement écrits
+    dans le journal des envois (`notify()`, `src/lib/gardien-envois/notify.ts`,
+    marqué `TODO(RAYAN)`). Pour chacun : clés côté serveur uniquement
+    (secrets des fonctions Supabase), numéro ou expéditeur à déclarer,
+    modèle de message WhatsApp à faire valider par Meta pour le Maroc.
+18. **Activer les vrais envois d'e-mails du Gardien** — secrets de la
+    fonction `gardien-envois` dans Supabase (Edge Functions > Secrets) :
+    `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (domaine vérifié chez Resend),
+    `GARDIEN_URL_APP` (adresse publique de l'application) et
+    `GARDIEN_ENVOIS_MODE` (`redirection` + `GARDIEN_EMAIL_REDIRECT` pour
+    recevoir tous les messages sur une adresse de test ; `reel` en
+    production seulement). Sans ces secrets, tout reste journalisé.
+19. **Critères eau de la Clef Verte** — à vérifier auprès de Teragir
+    (plan, section 6, point 7). Le rapport mensuel donne les litres par
+    nuitée, sans seuil ni jugement tant que les critères ne sont pas
+    confirmés.
+20. **Heure du Maroc sur le serveur** — la base horaire la plus récente
+    (2026c) place le Maroc à GMT+0 depuis le 20 septembre 2026. Les calculs
+    suivent la base horaire du serveur ; à vérifier sur le premier site
+    marocain (la nuit de 2 h à 5 h doit correspondre à l'heure locale).
+21. **Rapports sur la base de développement** — la tâche planifiée tourne
+    aussi en développement : vos sites d'essai reçoivent leurs rapports
+    (première nuit, première semaine, mensuel) et leurs alertes dans le
+    journal des envois. Rien ne part réellement (mode « journal »).

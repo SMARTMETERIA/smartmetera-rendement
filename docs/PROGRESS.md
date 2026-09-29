@@ -42,7 +42,7 @@ mettre à jour `CLAUDE.md` ; écrire la synthèse et la liste de rattrapage.
 | E-mails (G5) | envoi centralisé `src/lib/email/envoyer.ts` (journal `/dev/emails` en développement), gabarits à la marque, Edge Function `notifications` |
 | Rapports PDF (G5) | Edge Function `reports` (`pdf-lib`), déclencheur mensuel pg_cron |
 | Pré-diagnostic (G6) | calculateur `/roi` (`src/lib/roi/calculateurRoi.ts`) |
-| Marque blanche (G7) | `org_branding`, mention « Propulsé par SmartMetera » protégée, `src/lib/marque.ts` |
+| Marque blanche (G7) | `org_branding`, mention « Propulsé par SmartMeteria » protégée, `src/lib/marque.ts` |
 
 ### Rattrapage version 2 (règle de la section 0)
 
@@ -239,7 +239,7 @@ Fait :
   apprentissage 7 à 14 nuits avec seuils doublés et 3 nuits), débit
   continu, rupture (dès la première heure connue), mode fermeture, fin de
   fuite automatique après 2 nuits normales, capteur muet (36 h ou 6 h,
-  adressé au partenaire ou à SmartMetera), température sous le seuil,
+  adressé au partenaire ou à SmartMeteria), température sous le seuil,
   rappel des analyses (seulement si le délai est renseigné), indicateur
   par activité (estimation signalée).
 - Argent : compteur de pertes en direct (depuis la détection, par jour,
@@ -287,6 +287,70 @@ Comment tester à l'écran (avec `npm run dev`) :
 5. Cliquez « C'est réparé » : la fuite disparaît et la ligne
    « Économies grâce aux fuites réparées » affiche 18 m³ et le montant
    (88,02 € avec le prix par défaut de 4,89 €/m³).
+
+## Phase G5 : alertes, rapports et moments de vente — terminée
+
+Plan :
+1. Migration `0043` : journal des envois (ajout seul), téléphone d'alerte des membres, tâches du superadmin, suivi d'ouverture des rapports, tâche planifiée ; `0044` pour les droits.
+2. Modules purs : `notify()` (e-mail par Resend, SMS, appel et WhatsApp en attente de fournisseur, tout journalisé par défaut), destinataires et escalade (2 h, 12 h), messages ; contenus des rapports (première nuit, première semaine, mensuel, fin de pilote, groupe) et de la page preuve (coût du service, retour sur investissement).
+3. Fonction `gardien-envois` (toutes les 15 minutes) : alertes et escalade, capteurs muets, températures, première donnée, rapports à 8 h heure du site, fin de pilote (J+25, J+30), rapports non ouverts.
+4. Écrans : fiche d'une fuite, rapport (courbe, PDF, ouverture suivie), page preuve publique et PDF, journal des envois, téléphone d'alerte, tâches du superadmin.
+5. Tests à valeurs connues et test de bout en bout contre la fonction déployée ; README.
+
+Fait :
+- Marque : « SmartMeteria » partout (décision de Rayan) — écrans,
+  e-mails, documents, plan ; message de la base corrigé (migration `0045`).
+- Base : migrations `0043` à `0045` appliquées ; fonction `gardien-envois`
+  déployée (version 1), tâche toutes les 15 minutes. Mode « journal » :
+  rien ne part réellement, tout est écrit dans le journal des envois.
+- Alertes : fuite → e-mail et SMS au technicien avec le lieu, l'heure de
+  début, le débit, le coût en cours et le coût par mois si rien n'est
+  fait, bouton « Je m'en occupe » ; appel (France) ou WhatsApp (Maroc)
+  après 2 h ; directeur après 12 h ; une fuite prise en charge n'est plus
+  relancée. Capteur muet au partenaire ou à SmartMeteria. Température
+  basse, rappel des analyses, première donnée après une pose.
+- Rapports à 8 h, heure du site : première nuit (courbe de la nuit),
+  première semaine, mensuel le 1er (économies depuis le début en grand,
+  fuites du mois, comparaison au mois précédent et à l'an dernier,
+  litres par nuitée, comparaison anonyme à partir de 5 sites, registre des
+  températures, section Clef Verte, conseil, phrase « Aucune fuite ce
+  mois… »), synthèse de groupe. Page web, PDF, ouverture suivie.
+- Pilotes : à J+25 résumé « Ce que 30 jours de surveillance ont trouvé »
+  et page preuve (lien sans connexion, PDF, coût du service par jour et
+  par nuitée, retour sur investissement en jours), au client et à
+  SmartMeteria ; à J+30 conversion seulement avec consentement écrit
+  (message de confirmation), sinon tâche « appel de conversion » ; tâche
+  « remboursement et retrait » si rien n'a été trouvé. Tâche « rapports
+  non ouverts depuis 2 mois ».
+- Écrans : fiche d'une fuite, rapport, page preuve, journal des envois,
+  téléphone d'alerte dans « Mon compte », page preuve à la demande sur
+  « Mes sites », onglet « Tâches » du superadmin.
+- Tests : 70 tests des modules d'envoi et de rapport (escalade, messages
+  en euros et en dirhams, coût du service, retour sur investissement,
+  comparaison, vues, PDF, téléphone) ; 11 tests de bout en bout contre la
+  fonction déployée (voir README) ; écrans vérifiés avec des comptes
+  jetables. Typecheck, lint, 948 tests unitaires et 49 tests
+  d'intégration verts ; types des deux fonctions Deno vérifiés.
+
+Aucune dépendance ajoutée (PDF avec `pdf-lib`, déjà présent).
+
+Reste pour plus tard : fournisseurs SMS, appel et WhatsApp, et activation
+des vrais e-mails (`docs/BLOCKERS.md`, points 17 et 18) ; espaces
+complets par rôle et vue groupe détaillée (phase G6).
+
+Comment tester à l'écran (avec `npm run dev`) :
+1. Dans « Mon compte », tapez votre numéro de portable et cliquez
+   « Enregistrer le numéro ».
+2. Dans « Mes sites », cliquez « Simuler une fuite » : la fuite apparaît
+   avec son compteur de pertes.
+3. Attendez un quart d'heure, puis ouvrez « Journal des envois » : vous
+   y voyez l'e-mail et le SMS d'alerte qui seraient partis (rien n'est
+   réellement envoyé pendant les essais).
+4. Dans « Mes sites », cliquez « Créer une page preuve » : ouvrez le lien
+   dans une fenêtre de navigation privée, il s'affiche sans connexion ;
+   « Télécharger en PDF » donne la même page à imprimer.
+5. Le lendemain matin d'une pose, un « Rapport » apparaît dans « Mes
+   sites » : ouvrez-le, puis « Version à imprimer (PDF) ».
 
 ---
 

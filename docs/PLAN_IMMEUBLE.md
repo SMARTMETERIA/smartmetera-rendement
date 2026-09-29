@@ -1,4 +1,4 @@
-# SmartMetera : plan de construction « Immeuble », marque blanche et mise en ligne
+# SmartMeteria : plan de construction « Immeuble », marque blanche et mise en ligne
 
 > En pause depuis le 25 septembre 2026, remplacé par docs/PLAN_GARDIEN.md
 
@@ -20,11 +20,11 @@ Lis CLAUDE.md, docs/PLAN_IMMEUBLE.md et docs/PROGRESS.md s'il existe. Applique l
 
 ### Ce qui existe
 
-Les prompts 0 à 8 du guide « SmartMetera Rendement » sont exécutés : application multi-tenant Next.js (App Router, TypeScript strict, Tailwind, shadcn/ui, Recharts) et Supabase (Postgres, Auth, Storage, Edge Functions, pg_cron), import CSV universel avec modèles de colonnes, webhooks LoRaWAN et décodeurs, moteur de bilan et de débit de nuit, alertes et e-mails Resend, boîte mail entrante, rapports PDF, RPQS, plan d'actions, espace superadmin, calculateur de ROI. Ce produit vise les régies d'eau : on l'appelle désormais l'offre **Réseau**.
+Les prompts 0 à 8 du guide « SmartMeteria Rendement » sont exécutés : application multi-tenant Next.js (App Router, TypeScript strict, Tailwind, shadcn/ui, Recharts) et Supabase (Postgres, Auth, Storage, Edge Functions, pg_cron), import CSV universel avec modèles de colonnes, webhooks LoRaWAN et décodeurs, moteur de bilan et de débit de nuit, alertes et e-mails Resend, boîte mail entrante, rapports PDF, RPQS, plan d'actions, espace superadmin, calculateur de ROI. Ce produit vise les régies d'eau : on l'appelle désormais l'offre **Réseau**.
 
 ### Ce qui change
 
-SmartMetera ajoute une seconde offre, **Immeuble** : une plateforme en marque blanche pour des partenaires (installateurs, plombiers, petits prestataires de comptage, distributeurs) qui possèdent déjà des compteurs posés, leurs données et leurs clients (syndics, bailleurs, gestionnaires). Le partenaire importe ses données ; la plateforme produit l'information mensuelle des occupants, la note annuelle, le registre des envois (preuve de conformité), les alertes fuite et le bilan d'immeuble. Occupants et syndics voient la marque du partenaire, jamais SmartMetera (sauf la mention « Propulsé par SmartMetera »).
+SmartMeteria ajoute une seconde offre, **Immeuble** : une plateforme en marque blanche pour des partenaires (installateurs, plombiers, petits prestataires de comptage, distributeurs) qui possèdent déjà des compteurs posés, leurs données et leurs clients (syndics, bailleurs, gestionnaires). Le partenaire importe ses données ; la plateforme produit l'information mensuelle des occupants, la note annuelle, le registre des envois (preuve de conformité), les alertes fuite et le bilan d'immeuble. Occupants et syndics voient la marque du partenaire, jamais SmartMeteria (sauf la mention « Propulsé par SmartMeteria »).
 
 Un immeuble est un petit réseau : compteur général = entrée ; compteurs des logements = sorties ; écart = eau perdue de l'immeuble. Réutilise le moteur existant partout où c'est possible.
 
@@ -68,7 +68,7 @@ Tout arbitrage se fait en faveur de ce test.
 | E-mail mensuel | Il contient les chiffres essentiels : l'occupant est informé sans se connecter. Le portail est un bonus. |
 | Déchiffrement radio | Hors v1. On lit des exports déjà déchiffrés par les logiciels fabricants, et les flux LoRaWAN existants. |
 | Calendrier d'envoi | Génération le 1er du mois à 6 h (heure de Paris), fenêtre de contrôle de 48 h pour le partenaire, envoi le 3 à 9 h sauf annulation. Paramétrable par organisation. |
-| Marque blanche v1 | Logo, couleurs, nom affiché, nom d'expéditeur, adresse de réponse, pied de page légal. URL par identifiant : `/p/[slug]`. E-mails envoyés depuis le domaine vérifié de SmartMetera avec le nom du partenaire. Domaines propres des partenaires : v2. |
+| Marque blanche v1 | Logo, couleurs, nom affiché, nom d'expéditeur, adresse de réponse, pied de page légal. URL par identifiant : `/p/[slug]`. E-mails envoyés depuis le domaine vérifié de SmartMeteria avec le nom du partenaire. Domaines propres des partenaires : v2. |
 | Essai | Inscription autonome d'un partenaire → statut `essai` de 30 jours. Envois aux occupants bloqués tant que le superadmin n'a pas activé l'organisation (accord de traitement des données signé). |
 | Garde-fou d'envoi | Un e-mail part seulement si `EMAIL_SENDING_ENABLED=true` (production uniquement) ET organisation `actif` ET `sending_enabled` ET `dpa_signed_at` renseigné. Sinon : statut `bloque` avec motif. |
 | Facturation | Table d'usage mensuel et export CSV. Pas de Stripe. |
@@ -174,18 +174,18 @@ Critère de fin : en local, cycle complet vérifié : génération, aperçu, ann
 
 ### Phase 6 : marque blanche
 
-- Thème dynamique : variables CSS calculées depuis `org_branding` (nuances dérivées de la couleur principale, couleur de texte choisie pour un contraste d'au moins 4,5:1, assombrissement automatique si besoin). Sans réglage : thème SmartMetera.
+- Thème dynamique : variables CSS calculées depuis `org_branding` (nuances dérivées de la couleur principale, couleur de texte choisie pour un contraste d'au moins 4,5:1, assombrissement automatique si besoin). Sans réglage : thème SmartMeteria.
 - Pages publiques à la marque : `/p/[slug]/connexion` et `/p/[slug]/lien` (demande de lien magique). Après connexion, l'interface prend la marque de l'organisation de l'utilisateur.
 - E-mails : expéditeur `"{sender_name}" <releves@{MAIL_DOMAIN}>`, réponse vers `reply_to_email`, logo hébergé dans Storage. PDF à la marque.
-- Mention « Propulsé par SmartMetera » en pied de page, active par défaut.
-- Les écrans superadmin gardent l'identité SmartMetera.
+- Mention « Propulsé par SmartMeteria » en pied de page, active par défaut.
+- Les écrans superadmin gardent l'identité SmartMeteria.
 
 Critère de fin : deux partenaires de démonstration aux marques différentes affichent chacun leur logo et leurs couleurs dans le portail, les e-mails et les PDF.
 
 ### Phase 7 : les espaces
 
 - **Partenaire** : tableau de bord (immeubles, compteurs actifs, part des compteurs remontés sur 7 jours, alertes ouvertes, état des envois du mois : prêts, envoyés, bloqués ; eau perdue estimée du mois en m³ et en €) ; clients ; immeubles (fiche : bilan, logements, compteurs, alertes, envois) ; logement (compteurs, occupants, historique) ; import ; envois (calendrier, aperçu, fenêtre de contrôle, registre, attestations) ; paramètres (marque, expéditeur, prix de l'eau, seuils, calendrier) ; usage du mois.
-- **Parcours de démarrage du partenaire**, visible tant qu'il n'est pas terminé : 1. importer les compteurs ; 2. importer les occupants ; 3. régler la marque ; 4. voir un relevé ; 5. accord de traitement des données ; 6. activation par SmartMetera.
+- **Parcours de démarrage du partenaire**, visible tant qu'il n'est pas terminé : 1. importer les compteurs ; 2. importer les occupants ; 3. régler la marque ; 4. voir un relevé ; 5. accord de traitement des données ; 6. activation par SmartMeteria.
 - **Gestionnaire** : ses immeubles, bilans, alertes, attestations d'envoi, notes annuelles.
 - **Occupant**, pensé d'abord pour le téléphone : une page avec le chiffre du mois et sa comparaison, l'historique sur 13 mois, la moyenne de l'immeuble, les alertes, les préférences (canal, alertes).
 - **Superadmin** : organisations (offre, statut, fin d'essai, activation des envois, date de l'accord), usage mensuel et export CSV de facturation (0,30 € par compteur, minimum 99 €), consultation en lecture seule d'une organisation, journalisée dans `audit_log`.
@@ -196,7 +196,7 @@ Critère de fin : chaque rôle navigue sur les données de démonstration sans �
 ### Phase 8 : passe de design (ancien prompt B)
 
 - Commence par un plan de design dans `docs/DESIGN.md` : palette (4 à 6 couleurs nommées), typographies et leurs rôles, principe de mise en page, principes. Relis-le contre ce brief, corrige ce qui ressemble à un modèle générique, puis seulement implémente.
-- Brief : outil de professionnels du comptage d'eau et d'énergie. Deux visages : SmartMetera (superadmin, pages d'inscription, e-mails système), avec bleu #1B4F8A, turquoise #0FA3A3, encre #0A2540, Fraunces pour les titres et Manrope pour le texte ; les partenaires, qui imposent leurs couleurs via les variables de la phase 6. Aucune couleur écrite en dur dans les composants.
+- Brief : outil de professionnels du comptage d'eau et d'énergie. Deux visages : SmartMeteria (superadmin, pages d'inscription, e-mails système), avec bleu #1B4F8A, turquoise #0FA3A3, encre #0A2540, Fraunces pour les titres et Manrope pour le texte ; les partenaires, qui imposent leurs couleurs via les variables de la phase 6. Aucune couleur écrite en dur dans les composants.
 - Occupant : calme, lisible, un grand chiffre, zéro jargon. Partenaire : dense et efficace, tableaux de données, statuts clairs.
 - Un seul élément mémorable : la visualisation du bilan d'immeuble (eau entrée contre eau attribuée aux logements). Le reste reste sobre. Évite le kit de cartes SaaS identiques, les dégradés décoratifs et les étiquettes en majuscules.
 - Chiffres : format français (espace insécable pour les milliers, virgule décimale, « m³ »), chiffres tabulaires dans les tableaux.
@@ -227,7 +227,7 @@ Claude Code prépare tout et rédige `docs/MISE_EN_LIGNE.md` avec les étapes ma
 - Resend : domaine d'envoi vérifié (SPF, DKIM, DMARC en `p=none` pour démarrer), point d'entrée du webhook et son secret.
 - Sentry : `@sentry/nextjs`, envoi des source maps, `sendDefaultPii: false`, filtre qui masque e-mails et noms, étiquette `organization_id` seulement.
 - Sécurité : en-têtes (CSP, HSTS, `frame-ancestors`, `Referrer-Policy`), limitation de débit sur `/inscription` et `/api/auth/lien`, vérification des signatures de webhooks, clé `service_role` côté serveur uniquement, audit des dépendances.
-- Pages légales en modèles marqués « à faire valider » : mentions légales (`TODO(RAYAN)` : entité), CGU et CGV SaaS, politique de confidentialité, modèle d'accord de sous-traitance (article 28 du RGPD) entre le partenaire et SmartMetera, registre des traitements dans `docs/`.
+- Pages légales en modèles marqués « à faire valider » : mentions légales (`TODO(RAYAN)` : entité), CGU et CGV SaaS, politique de confidentialité, modèle d'accord de sous-traitance (article 28 du RGPD) entre le partenaire et SmartMeteria, registre des traitements dans `docs/`.
 - Données : durée de conservation paramétrable (`TODO(RAYAN)` : à valider) ; suppression des données personnelles d'un occupant après la fin de son occupation selon ce paramètre ; export complet d'une organisation étendu aux tables Immeuble.
 - Surveillance : table d'état des tâches planifiées et récapitulatif quotidien au superadmin (tâches réussies, e-mails envoyés et en échec, essais qui se terminent).
 - Guide d'exploitation `docs/RUNBOOK.md` : déployer, revenir en arrière, ajouter un partenaire, activer ses envois, incident e-mail, tâche planifiée en échec, restauration.

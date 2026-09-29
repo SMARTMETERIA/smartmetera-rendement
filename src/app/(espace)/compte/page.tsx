@@ -1,4 +1,6 @@
 import { getContexteUtilisateur } from "@/lib/auth/contexte";
+import { createClient } from "@/lib/supabase/server";
+import { TelephoneAlerte } from "@/components/auth/TelephoneAlerte";
 import { journalDevActif } from "@/components/auth/AvisJournalDev";
 import {
   Card,
@@ -21,6 +23,19 @@ export default async function ComptePage({
 }) {
   const ctx = await getContexteUtilisateur();
   const { adresse } = await searchParams;
+  const gardien = ctx.adhesion?.kind === "sites" || ctx.adhesionsSite.length > 0;
+  let telephone: string | null = null;
+  let pays = "FR";
+  if (gardien && ctx.userId) {
+    const supabase = await createClient();
+    const orgId = ctx.adhesion?.kind === "sites" ? ctx.adhesion.organizationId : ctx.adhesionsSite[0]?.organizationId;
+    const [{ data: adhesions }, { data: org }] = await Promise.all([
+      supabase.from("memberships").select("alert_phone").eq("user_id", ctx.userId).not("alert_phone", "is", null).limit(1),
+      supabase.from("organizations").select("country").eq("id", orgId ?? "").maybeSingle(),
+    ]);
+    telephone = (adhesions?.[0]?.alert_phone as string | undefined) ?? null;
+    pays = org?.country === "MA" ? "MA" : "FR";
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -49,6 +64,21 @@ export default async function ComptePage({
           <ChangerAdresse journalDev={journalDevActif()} />
         </CardContent>
       </Card>
+
+      {gardien && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Téléphone d&apos;alerte</CardTitle>
+            <CardDescription>
+              Pour recevoir les alertes de fuite par SMS, puis un appel (ou un
+              message WhatsApp au Maroc) si personne ne s&apos;en occupe.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TelephoneAlerte actuel={telephone} pays={pays} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

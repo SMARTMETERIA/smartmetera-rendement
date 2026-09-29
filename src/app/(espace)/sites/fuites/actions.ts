@@ -14,12 +14,13 @@ const MESSAGES: Record<string, string> = {
   "22023": "Cette fuite a déjà été traitée. Rechargez la page.",
 };
 
-async function appeler(fonction: string, params: Record<string, unknown>): Promise<Resultat> {
+async function appeler(fonction: string, params: { p_leak_id: string } & Record<string, unknown>): Promise<Resultat> {
   await getEspaceSites();
   const supabase = await createClient();
   const { error } = await supabase.rpc(fonction, params);
   if (error) return { erreur: MESSAGES[error.code ?? ""] ?? "Action impossible. Réessayez." };
   revalidatePath("/sites");
+  revalidatePath(`/fuites/${params.p_leak_id}`);
   return { ok: true };
 }
 

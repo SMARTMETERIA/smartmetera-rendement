@@ -42,14 +42,14 @@ describe("mode d'envoi des e-mails", () => {
 describe("expéditeur", () => {
   it("met le nom du partenaire devant l'adresse de la plateforme", () => {
     expect(
-      formaterExpediteur("Camping Pro", "SmartMetera <releves@exemple.fr>"),
+      formaterExpediteur("Camping Pro", "SmartMeteria <releves@exemple.fr>"),
     ).toBe('"Camping Pro" <releves@exemple.fr>');
   });
 
   it("garde l'expéditeur de la plateforme sans nom", () => {
     expect(
-      formaterExpediteur(undefined, "SmartMetera <releves@exemple.fr>"),
-    ).toBe("SmartMetera <releves@exemple.fr>");
+      formaterExpediteur(undefined, "SmartMeteria <releves@exemple.fr>"),
+    ).toBe("SmartMeteria <releves@exemple.fr>");
   });
 
   it("neutralise les caractères qui cassent l'en-tête", () => {

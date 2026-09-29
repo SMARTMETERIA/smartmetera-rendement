@@ -1,4 +1,4 @@
-# SmartMetera : plan de construction « Gardien de l'eau » (version 2)
+# SmartMeteria : plan de construction « Gardien de l'eau » (version 2)
 
 Version 2, 26 septembre 2026. Ce fichier remplace la version 1 du 25 septembre. Il est la source de vérité du projet. `docs/PLAN_IMMEUBLE.md` reste en pause (rien n'est supprimé).
 
@@ -22,7 +22,7 @@ Version 2, 26 septembre 2026. Ce fichier remplace la version 1 du 25 septembre. 
 ## 1. Contexte (pour Claude Code)
 
 ### Ce qui existe
-- Les prompts 0 à 8 du guide « SmartMetera Rendement » : application multi-tenant Next.js (App Router, TypeScript strict, Tailwind, shadcn/ui, Recharts) et Supabase (Postgres, Auth, Storage, Edge Functions, pg_cron), import CSV universel, webhooks LoRaWAN (dont ChirpStack) et décodeurs de capteurs d'impulsions, moteur de débit de nuit et d'alertes, e-mails Resend, rapports PDF, espace superadmin. C'est l'offre **Réseau** (régies d'eau) : **en pause**.
+- Les prompts 0 à 8 du guide « SmartMeteria Rendement » : application multi-tenant Next.js (App Router, TypeScript strict, Tailwind, shadcn/ui, Recharts) et Supabase (Postgres, Auth, Storage, Edge Functions, pg_cron), import CSV universel, webhooks LoRaWAN (dont ChirpStack) et décodeurs de capteurs d'impulsions, moteur de débit de nuit et d'alertes, e-mails Resend, rapports PDF, espace superadmin. C'est l'offre **Réseau** (régies d'eau) : **en pause**.
 - Une partie de `docs/PLAN_IMMEUBLE.md` (voir `docs/PROGRESS.md` et `docs/AUDIT.md`). L'offre **Immeuble** est **en pause**. Tout ce qui a déjà été construit est conservé et réutilisé quand c'est utile.
 - Les phases déjà réalisées de la version 1 de ce plan (voir `docs/PROGRESS.md`).
 
@@ -34,7 +34,7 @@ Le **Gardien de l'eau** est le registre eau des établissements qui paient eux-m
 4. compare les sites d'une même chaîne ou d'un même type ;
 5. se revend en marque blanche par des partenaires (fabricants de systèmes pour campings, installateurs, distributeurs).
 
-Matériel (acheté à des fabricants, jamais fabriqué par SmartMetera) :
+Matériel (acheté à des fabricants, jamais fabriqué par SmartMeteria) :
 - **Kit A** : Adeunis PULSE NB-IoT/LTE-M, pour les compteurs à sortie impulsion en France, sans passerelle ;
 - **Kit C** : Milesight EM300-DI LoRaWAN + passerelle 4G, pour les grands sites et pour tout le Maroc (pas de NB-IoT connu au Maroc) ;
 - **Sonde de température** LoRaWAN sur l'eau chaude sanitaire ;
@@ -101,7 +101,7 @@ Pas de paiement en ligne en v1 : un export d'usage mensuel sert à facturer à l
 | Températures | Seuils paramétrables par point. Défauts : 55 °C en sortie de production, 50 °C sur la boucle de retour. `TODO(RAYAN)` : vérifier les seuils et les fréquences exactes dans les textes. |
 | Pilotes | 30 jours par défaut. Passage automatique en abonnement uniquement si le client l'a accepté par écrit au début du pilote (case cochée, horodatée, avec son nom). Sinon, une tâche d'appel est créée pour Rayan. |
 | Promesses | Aucune garantie de détection. Mention « surveillance fondée sur les données transmises par les capteurs » dans les rapports, les alertes et les pages preuve. |
-| Marque blanche | Pour les partenaires : logo, couleurs, nom d'expéditeur (réutilise le travail du plan Immeuble s'il existe). Clients directs : identité SmartMetera. |
+| Marque blanche | Pour les partenaires : logo, couleurs, nom d'expéditeur (réutilise le travail du plan Immeuble s'il existe). Clients directs : identité SmartMeteria. |
 | Facturation | Table d'usage mensuel et export CSV. Pas de Stripe. |
 | Hébergement | Supabase région Paris, Vercel région `cdg1`, broker MQTT et serveur LoRaWAN dans l'Union européenne. |
 
@@ -169,7 +169,7 @@ Réutilise le moteur de débit de nuit existant, calculé à l'heure locale de c
 - **Débit continu** : jamais sous 5 L/h pendant 24 h, hors `quiet_windows`.
 - **Rupture** : débit horaire supérieur à 3 fois le maximum observé sur 30 jours et à 500 L/h. Alerte immédiate.
 - **(v2) Mode fermeture** : pendant `closed_periods`, toute consommation au-dessus de 2 L/h pendant 2 h déclenche une alerte immédiate de type `fuite_fermeture` (seuils paramétrables).
-- **Compteur muet** : aucune donnée depuis 36 h (réseau mobile) ou 6 h (LoRaWAN horaire). **(v2)** Alerte distincte d'une fuite, envoyée au partenaire ou à SmartMetera, jamais au client en premier.
+- **Compteur muet** : aucune donnée depuis 36 h (réseau mobile) ou 6 h (LoRaWAN horaire). **(v2)** Alerte distincte d'une fuite, envoyée au partenaire ou à SmartMeteria, jamais au client en premier.
 - **Fin de fuite** : réparation détectée quand le débit de nuit revient à la ligne de base 2 nuits de suite, ou déclarée par l'utilisateur.
 - **(v2) Compteur de pertes en direct** : pour chaque fuite ouverte, coût cumulé depuis la détection et coût projeté par mois si rien n'est fait, avec la même méthode prudente, affichée.
 - **Économies (méthode prudente)** : excès de débit × 24 h × délai de découverte évité (défaut 30 jours, paramétrable par le superadmin) × prix du m³ du site. Texte de méthode enregistré et affiché partout.
@@ -210,13 +210,13 @@ Critère de fin : alerte simulée reçue par e-mail (SMS et appel journalisés),
 Critère de fin : chaque rôle navigue sur les données de démonstration sans écran vide ni erreur ; le pré-diagnostic produit son PDF.
 
 ### Phase G7 : marque blanche
-Réutilise la phase 6 du plan Immeuble si elle a été faite ; sinon : `org_branding` (nom affiché, logo, couleurs, nom d'expéditeur, adresse de réponse, mention « Propulsé par SmartMetera » active par défaut) ; thème par variables CSS avec un contraste d'au moins 4,5:1 ; pages `/p/[slug]/connexion` ; e-mails, SMS, PDF, pages preuve et pré-diagnostics à la marque du partenaire. **(v2)** Prix partenaire par point appliqué dans l'export d'usage.
+Réutilise la phase 6 du plan Immeuble si elle a été faite ; sinon : `org_branding` (nom affiché, logo, couleurs, nom d'expéditeur, adresse de réponse, mention « Propulsé par SmartMeteria » active par défaut) ; thème par variables CSS avec un contraste d'au moins 4,5:1 ; pages `/p/[slug]/connexion` ; e-mails, SMS, PDF, pages preuve et pré-diagnostics à la marque du partenaire. **(v2)** Prix partenaire par point appliqué dans l'export d'usage.
 
 Critère de fin : deux partenaires de démonstration affichent chacun leur marque partout.
 
 ### Phase G8 : passe de design
 - Commence par un plan de design dans `docs/DESIGN.md` (palette de 4 à 6 couleurs, typographies, mise en page, principes), relis-le contre ce brief, corrige ce qui fait générique, puis implémente.
-- Identité SmartMetera : bleu #1B4F8A, turquoise #0FA3A3, encre #0A2540, Fraunces pour les titres, Manrope pour le texte. Les partenaires imposent leurs couleurs via les variables. Aucune couleur en dur.
+- Identité SmartMeteria : bleu #1B4F8A, turquoise #0FA3A3, encre #0A2540, Fraunces pour les titres, Manrope pour le texte. Les partenaires imposent leurs couleurs via les variables. Aucune couleur en dur.
 - **(v2) Les trois moments forts** à soigner en priorité : le feu vert de la pose ; l'alerte avec le compteur de pertes qui tourne ; le compteur d'économies. La page preuve doit se comprendre en 10 secondes : un grand chiffre, une phrase, une courbe.
 - Technicien et directeur de site : d'abord pour le téléphone.
 - Chiffres au format français (espace insécable, virgule décimale, « m³ », « € », « MAD »), chiffres tabulaires dans les tableaux.

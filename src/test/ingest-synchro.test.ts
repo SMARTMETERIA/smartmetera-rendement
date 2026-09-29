@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import {
   COPIES,
+  dossiers,
   modulesAReproduire,
   versDeno,
 } from "../../scripts/synchroniser-ingest.mjs";
@@ -12,19 +13,18 @@ import {
  * des modules testés. Ce test échoue si une copie manque ou diverge :
  * lancer « node scripts/synchroniser-ingest.mjs » puis redéployer.
  */
-const racine = path.resolve(import.meta.dirname, "../..");
-
 describe.each(COPIES)("copie de $source dans $cible", (copie) => {
   const modules: string[] = modulesAReproduire(copie);
+  const { source, cible } = dossiers(copie);
 
   it("trouve les modules", () => {
     expect(modules.length).toBeGreaterThan(0);
   });
 
   it.each(modules)("%s est à jour", (rel) => {
-    const deno = path.join(racine, copie.cible, rel);
+    const deno = path.join(cible, rel);
     expect(existsSync(deno), `${rel} absent de la fonction`).toBe(true);
-    const attendu = versDeno(readFileSync(path.join(racine, copie.source, rel), "utf8"));
+    const attendu = versDeno(readFileSync(path.join(source, rel), "utf8"));
     expect(readFileSync(deno, "utf8").replace(/\r\n/g, "\n")).toBe(
       attendu.replace(/\r\n/g, "\n"),
     );

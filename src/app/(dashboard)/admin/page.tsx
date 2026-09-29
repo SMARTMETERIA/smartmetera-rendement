@@ -16,6 +16,7 @@ import { ModelesSourcesPanel } from "@/components/admin/ModelesSourcesPanel";
 import { ChecklistActivation } from "@/components/admin/ChecklistActivation";
 import { JournalAudit } from "@/components/admin/JournalAudit";
 import { ReceptionCapteurs } from "@/components/admin/ReceptionCapteurs";
+import { TachesPanel, type Tache } from "@/components/admin/TachesPanel";
 
 export default async function AdminPage() {
   const ctx = await getContexteUtilisateur();
@@ -34,6 +35,7 @@ export default async function AdminPage() {
     { data: audit },
     { data: reception },
     { data: inconnues },
+    { data: taches },
   ] = await Promise.all([
     supabase
       .from("organizations")
@@ -77,7 +79,25 @@ export default async function AdminPage() {
       .select("id, received_at, channel, device_ref")
       .order("received_at", { ascending: false })
       .limit(20),
+    supabase
+      .from("admin_tasks")
+      .select("id, kind, status, due_at, created_at, details, organizations(nom)")
+      .order("status")
+      .order("created_at", { ascending: false })
+      .limit(100),
   ]);
+  const listeTaches: Tache[] = (taches ?? []).map((t) => {
+    const org = Array.isArray(t.organizations) ? t.organizations[0] : t.organizations;
+    return {
+      id: t.id,
+      kind: t.kind,
+      status: t.status,
+      due_at: t.due_at,
+      created_at: t.created_at,
+      details: (t.details ?? {}) as Record<string, unknown>,
+      organisation: (org as { nom?: string } | null)?.nom ?? "—",
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -101,7 +121,26 @@ export default async function AdminPage() {
           <TabsTrigger value="checklist">Checklist J0-J5</TabsTrigger>
           <TabsTrigger value="audit">Journal d&apos;audit</TabsTrigger>
           <TabsTrigger value="reception">Réception des capteurs</TabsTrigger>
+          <TabsTrigger value="taches">
+            Tâches ({listeTaches.filter((t) => t.status === "a_faire").length})
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="taches" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tâches</CardTitle>
+              <CardDescription>
+                Pilotes à convertir par téléphone (sans consentement écrit),
+                remboursements prévus, clients qui n&apos;ouvrent plus leurs
+                rapports.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TachesPanel taches={listeTaches} />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="reception" className="pt-4">
           <Card>

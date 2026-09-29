@@ -413,7 +413,7 @@ async function traiterSite(ctx: Contexte, site: Site): Promise<Bilan> {
       donnees: {
         ...a.donnees,
         cle: a.cle,
-        // Capteur muet : au partenaire (ou à SmartMetera), jamais au client
+        // Capteur muet : au partenaire (ou à SmartMeteria), jamais au client
         // en premier (plan, phase G4). Envoi en phase G5.
         destinataire: a.type === "compteur_muet" ? (partenaire ? "partenaire" : "smartmetera") : "site",
       },

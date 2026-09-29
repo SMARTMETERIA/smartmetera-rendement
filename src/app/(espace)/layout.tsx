@@ -27,6 +27,7 @@ export default async function EspaceLayout({
     }
     if (peutGererAppareils(ctx)) {
       liens.push({ href: "/sites/appareils", label: "Appareils" });
+      liens.push({ href: "/sites/envois", label: "Journal des envois" });
     }
     if (estAdminSites(ctx)) {
       liens.push({ href: "/sites/equipe", label: "Équipe" });

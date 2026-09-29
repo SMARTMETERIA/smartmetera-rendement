@@ -9,6 +9,7 @@
 // À n'importer que depuis du code serveur.
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { formaterExpediteur } from "./expediteur";
 
 export interface MessageEmail {
   to: string;
@@ -37,20 +38,7 @@ export function choisirModeEnvoi(env: Env): ModeEnvoi {
   return resendConfigure && env.EMAIL_DEV_REDIRECT ? "redirection" : "journal";
 }
 
-/**
- * En-tête From : le nom du partenaire devant l'adresse d'envoi vérifiée de
- * la plateforme. RESEND_FROM_EMAIL peut déjà contenir un nom
- * (« SmartMetera <releves@…> ») : on n'en garde que l'adresse.
- */
-export function formaterExpediteur(
-  fromName: string | undefined,
-  resendFrom: string,
-): string {
-  const adresse = resendFrom.match(/<([^>]+)>/)?.[1] ?? resendFrom.trim();
-  if (!fromName) return resendFrom.trim();
-  const nomPropre = fromName.replace(/["<>\r\n]/g, "").trim();
-  return nomPropre ? `"${nomPropre}" <${adresse}>` : adresse;
-}
+export { formaterExpediteur };
 
 export const DOSSIER_JOURNAL = path.join(process.cwd(), ".emails-dev");
 

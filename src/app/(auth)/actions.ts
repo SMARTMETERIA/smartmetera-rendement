@@ -54,7 +54,7 @@ function journalDev(): boolean {
 /**
  * Inscription autonome d'un établissement (Gardien de l'eau) : compte (mot
  * de passe, adresse à confirmer), organisation « sites » en essai de 30
- * jours, rôle admin. Client direct : identité SmartMetera (pas de marque
+ * jours, rôle admin. Client direct : identité SmartMeteria (pas de marque
  * blanche). Maroc : retenue à la source par défaut des réglages de
  * plateforme.
  */

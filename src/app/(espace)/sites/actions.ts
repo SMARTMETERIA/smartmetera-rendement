@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getEspaceSites } from "@/lib/auth/espaces";
 import { validerNouveauSite } from "@/lib/gardien/sites";
+import { urlSite } from "@/lib/auth/liens";
 
 export type Resultat = { ok: true; message?: string } | { erreur: string };
 
@@ -33,4 +34,31 @@ export async function creerSite(params: {
   if (error) return { erreur: "Création du site impossible. Réessayez." };
   revalidatePath("/sites");
   return { ok: true };
+}
+
+/**
+ * Page preuve à la demande (30 derniers jours) : administrateur ou agent de
+ * l'organisation, ou directeur du site. Construite par la fonction
+ * gardien-envois (mêmes calculs que la page de fin de pilote).
+ */
+export async function creerPagePreuve(siteId: string): Promise<{ ok: true; url: string } | { erreur: string }> {
+  const ctx = await getEspaceSites();
+  const autorise =
+    (ctx.adhesion?.kind === "sites" && ["admin_client", "agent"].includes(ctx.adhesion.role)) ||
+    ctx.adhesionsSite.some((a) => a.siteId === siteId && a.role === "directeur_site");
+  if (!autorise) return { erreur: "Votre rôle ne permet pas de créer une page preuve." };
+  const supabase = await createClient();
+  const { data: site } = await supabase.from("sites").select("id").eq("id", siteId).maybeSingle();
+  if (!site) return { erreur: "Site introuvable." };
+  const reponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/gardien-envois`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ page_preuve: siteId }),
+  });
+  const corps = (await reponse.json().catch(() => ({}))) as { token?: string };
+  if (!reponse.ok || !corps.token) return { erreur: "Création impossible. Réessayez." };
+  return { ok: true, url: `${urlSite()}/preuve/${corps.token}` };
 }

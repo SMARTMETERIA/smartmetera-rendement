@@ -155,3 +155,21 @@ async function supprimerDossier(
   }
   if (fichiers.length > 0) await admin.storage.from(bucket).remove(fichiers);
 }
+
+/** Tâche du superadmin (pilote, rapports non ouverts) : faite ou annulée. */
+export async function terminerTache(params: {
+  tacheId: string;
+  statut: "faite" | "annulee";
+}): Promise<{ ok: true } | { erreur: string }> {
+  const verification = await verifierSuperadmin();
+  if ("erreur" in verification) return verification;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("admin_tasks")
+    .update({ status: params.statut, done_at: new Date().toISOString(), done_by: verification.userId })
+    .eq("id", params.tacheId)
+    .eq("status", "a_faire");
+  if (error) return { erreur: "Mise à jour impossible. Réessayez." };
+  revalidatePath("/admin");
+  return { ok: true };
+}

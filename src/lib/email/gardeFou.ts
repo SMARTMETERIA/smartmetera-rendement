@@ -18,7 +18,7 @@ export function motifBlocageEnvoi(
   }
   if (org.status !== "actif") {
     return org.status === "essai"
-      ? "Organisation en période d'essai : envois non activés par SmartMetera."
+      ? "Organisation en période d'essai : envois non activés par SmartMeteria."
       : "Organisation suspendue.";
   }
   if (!org.dpa_signed_at) {

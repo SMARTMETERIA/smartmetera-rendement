@@ -5,7 +5,7 @@ suffit de suivre les étapes dans l'ordre. Durée : environ une heure.
 
 Le serveur LoRaWAN reçoit les messages radio des capteurs Milesight
 EM300-DI (kit C) et des sondes de température, via la passerelle 4G posée
-sur le site, puis les transmet à SmartMetera. Un seul serveur sert tous
+sur le site, puis les transmet à SmartMeteria. Un seul serveur sert tous
 les clients.
 
 > Alternative sans serveur à gérer : The Things Stack Cloud (payant),
@@ -88,23 +88,23 @@ Station ») selon ce que votre passerelle utilise, et les ports **80** et
 2. Région : EU868 ; version LoRaWAN et paramètres régionaux : ceux de la
    fiche technique du capteur ; activation : OTAA.
 3. Onglet « Codec » :
-   - EM300-DI : facultatif (SmartMetera décode lui-même les impulsions) ;
+   - EM300-DI : facultatif (SmartMeteria décode lui-même les impulsions) ;
    - sonde de température : **obligatoire**. Collez le décodeur ChirpStack
      publié par le fabricant de la sonde. Il doit produire un champ
      `temperature` en °C. TODO(RAYAN) : modèle de sonde à choisir.
 
 ## 6. Créer l'application et ajouter les capteurs
 
-1. Menu « Applications » → « Add application », nom : `SmartMetera`.
+1. Menu « Applications » → « Add application », nom : `SmartMeteria`.
 2. Pour chaque capteur : « Add device », DevEUI et AppKey (fournis par le
    fabricant avec le capteur), profil créé à l'étape 5.
-3. Le DevEUI doit aussi être dans le stock SmartMetera (écran
+3. Le DevEUI doit aussi être dans le stock SmartMeteria (écran
    « Appareils », import CSV) : c'est lui qui relie le capteur au bon
    client.
 
-## 7. Envoyer les données à SmartMetera
+## 7. Envoyer les données à SmartMeteria
 
-1. Dans l'application `SmartMetera` : onglet « Integrations » → « HTTP ».
+1. Dans l'application `SmartMeteria` : onglet « Integrations » → « HTTP ».
 2. « Payload encoding » : **JSON**.
 3. « Event endpoint URL(s) » : l'adresse « LoRaWAN » de la carte
    « Réception des capteurs », en remplaçant `generic` par `chirpstack` :
@@ -134,7 +134,7 @@ lui-même (EM300-DI : oui).
 
 - La passerelle n'apparaît pas : vérifiez le port ouvert (1700 ou 3001) et
   l'adresse saisie dans la passerelle.
-- Les messages arrivent dans ChirpStack mais pas dans SmartMetera :
+- Les messages arrivent dans ChirpStack mais pas dans SmartMeteria :
   vérifiez l'adresse de l'intégration HTTP (jeton complet, sans espace).
-  Un capteur absent du stock est gardé côté SmartMetera dans les « trames
+  Un capteur absent du stock est gardé côté SmartMeteria dans les « trames
   d'appareils inconnus » (visible par le superadmin) pendant 30 jours.

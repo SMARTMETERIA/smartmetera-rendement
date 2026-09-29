@@ -114,6 +114,14 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
   déclencheur, `registre_temperatures`, une seule alerte Gardien en cours
   par clé, détecteurs SQL de l'offre Réseau limités aux organisations
   hors Gardien, tâche `gardien-moteur` toutes les heures (10e minute).
+- `0043_gardien_envois.sql`, `0044_droits_gardien_envois.sql` — journal des
+  envois (`envois`, ajout seul, un message par destinataire et par canal),
+  téléphone d'alerte des membres (`mon_telephone_alerte`), tâches du
+  superadmin (`admin_tasks`), suivi d'ouverture des rapports
+  (`marquer_rapport_ouvert`, sans compter le superadmin), tâche
+  `gardien-envois` toutes les 15 minutes.
+- `0045_marque_smartmeteria.sql` — la marque s'écrit « SmartMeteria »
+  partout (message de protection de la mention « Propulsé par »).
 
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le
@@ -253,7 +261,7 @@ invisibles, page preuve sans connexion).
   apprentissage) ; mode fermeture (plus de 2 L/h pendant 2 h pendant
   `closed_periods`) ; fin de fuite après 2 nuits revenues sous le seuil ;
   capteur muet (36 h en cellulaire, 6 h en LoRaWAN), adressé au
-  partenaire ou à SmartMetera, jamais au client en premier.
+  partenaire ou à SmartMeteria, jamais au client en premier.
 - **Argent** : compteur de pertes en direct (`coutFuite` : coût depuis la
   détection, par jour, par mois projeté, par an) et économies d'une fuite
   réparée (excès × 24 h × délai de découverte évité × prix du m³ du
@@ -271,6 +279,46 @@ invisibles, page preuve sans connexion).
 - **Limite connue** : les sites sont traités l'un après l'autre dans une
   seule exécution ; au-delà de quelques centaines de sites, découper par
   lots (paramètre `site_id` ou pagination).
+
+### Alertes, rapports et moments de vente (Gardien de l'eau)
+
+- **Fonction `gardien-envois`**, toutes les 15 minutes (clé « anon »,
+  `verify_jwt` actif) : alertes de fuite par e-mail et SMS au technicien
+  (à défaut, administrateur et agent), appel vocal (France) ou WhatsApp
+  (Maroc) après 2 h sans « Je m'en occupe », escalade au directeur après
+  12 h (`platform_settings.alertes`) ; capteur muet au partenaire ou à
+  SmartMeteria ; température basse et rappel des analyses ; première
+  donnée après une pose ; rapports à 8 h (heure du site) : première nuit,
+  première semaine, mensuel le 1er, synthèse de groupe (2 sites ou plus) ;
+  pilotes : résumé et page preuve à J+25, conversion à J+30 seulement avec
+  consentement écrit (sinon tâche « appel de conversion »), tâche de
+  remboursement si rien n'a été trouvé ; tâche « rapports non ouverts
+  depuis 2 mois ». Un appel `service_role` peut imposer `maintenant`,
+  `organization_id`, `sections`, ou créer une page preuve (`page_preuve`).
+- **`notify()`** (`src/lib/gardien-envois/notify.ts`) : un seul point
+  d'envoi. Mode `GARDIEN_ENVOIS_MODE` (secret de la fonction) : `journal`
+  par défaut (rien ne part), `redirection`, `reel`. SMS, appel et WhatsApp
+  sont journalisés tant qu'aucun fournisseur n'est choisi (`TODO(RAYAN)`).
+  Chaque message laisse une ligne dans `envois` (écran « Journal des
+  envois » pour l'administrateur et l'agent).
+- **Modules partagés** (testés, copiés dans la fonction par
+  `node scripts/synchroniser-ingest.mjs`) : `src/lib/gardien-envois`
+  (destinataires, escalade, messages, gabarit d'e-mail à la marque) et
+  `src/lib/gardien-rapports` (contenus figés des rapports et de la page
+  preuve, coût du service, retour sur investissement, comparaison
+  anonyme à partir de 5 sites, vue commune page et PDF).
+- **Écrans** : `/fuites/[id]` (lien des alertes), `/rapports/[id]` et son
+  PDF, `/preuve/[jeton]` et son PDF (sans connexion, sans donnée
+  personnelle), « Mes sites » (rapports, page preuve à la demande),
+  `/sites/envois`, téléphone d'alerte dans « Mon compte », onglet
+  « Tâches » du superadmin.
+- **Tests** : `src/lib/gardien-envois/*.test.ts`,
+  `src/lib/gardien-rapports/*.test.ts` et
+  `src/test/integration/envois-gardien.test.ts` (fuite simulée : SMS et
+  e-mail, appel à 2 h, directeur à 12 h, « Je m'en occupe » ; rapports de
+  première nuit, de première semaine, mensuel et de groupe ; fin de pilote
+  avec page preuve lisible sans connexion ; conversion avec consentement,
+  tâches sans ; première donnée ; journal en ajout seul).
 
 ### Import CSV/Excel
 

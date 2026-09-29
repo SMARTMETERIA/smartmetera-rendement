@@ -9,6 +9,7 @@ import { emailChangementAdresse } from "@/lib/email/emailsConnexion";
 import { envoyerEmail } from "@/lib/email/envoyer";
 import { MARQUE_PLATEFORME } from "@/lib/marque";
 import { consommerQuota } from "@/lib/securite/protection";
+import { formaterTelephone, normaliserTelephone } from "@/lib/gardien/telephone";
 
 export type Resultat = { ok: true; message: string } | { erreur: string };
 
@@ -120,4 +121,22 @@ export async function supprimerMonCompte(confirmation: string): Promise<Resultat
   }
   await supabase.auth.signOut();
   return { ok: true, message: "Compte supprimé." };
+}
+
+/**
+ * Téléphone d'alerte (SMS, appel, WhatsApp) pour toutes les adhésions
+ * Gardien de la personne connectée ; vide pour l'effacer.
+ */
+export async function enregistrerTelephoneAlerte(saisie: string, pays: string): Promise<Resultat> {
+  const telephone = normaliserTelephone(saisie, pays);
+  if (!telephone.ok) return { erreur: telephone.erreur };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("mon_telephone_alerte", { p_phone: telephone.numero });
+  if (error) return { erreur: "Enregistrement impossible. Réessayez." };
+  return {
+    ok: true,
+    message: telephone.numero
+      ? `Numéro enregistré : ${formaterTelephone(telephone.numero)}.`
+      : "Numéro effacé : vous ne recevrez plus que des e-mails.",
+  };
 }

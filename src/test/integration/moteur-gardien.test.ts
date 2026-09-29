@@ -235,7 +235,7 @@ describe("moteur du Gardien de bout en bout", () => {
     expect(Number(fuite.saved_amount)).toBe(81);
   });
 
-  it("signale le capteur muet (au partenaire ou à SmartMetera) et la température basse", async () => {
+  it("signale le capteur muet (au partenaire ou à SmartMeteria) et la température basse", async () => {
     const { data: alertes } = await admin
       .from("alerts")
       .select("type, statut, titre, donnees")

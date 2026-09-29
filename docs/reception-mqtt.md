@@ -2,7 +2,7 @@
 
 Guide pas à pas. Le capteur Adeunis PULSE du kit A envoie ses relevés par
 le réseau mobile (NB-IoT ou LTE-M) à un **broker MQTT**. Le broker les
-transfère à SmartMetera par une règle d'envoi HTTP. Aucune passerelle
+transfère à SmartMeteria par une règle d'envoi HTTP. Aucune passerelle
 n'est nécessaire sur le site.
 
 Source : guide Adeunis « User Guide PULSE MQTTS NB-IoT/LTE-M » v1.1
@@ -28,7 +28,7 @@ Dans la console du broker : créez un identifiant et un mot de passe pour
 les capteurs, et téléchargez le **certificat du serveur** (fichier
 `.pem`).
 
-## 3. Créer la règle de transfert vers SmartMetera
+## 3. Créer la règle de transfert vers SmartMeteria
 
 - Adresse : l'adresse « MQTT » de la carte « Réception des capteurs »
   (espace Superadmin), de la forme
@@ -65,7 +65,7 @@ réseau.
 
 ## 5. Vérifier
 
-L'IMEI du capteur doit être dans le stock SmartMetera (écran « Appareils »,
+L'IMEI du capteur doit être dans le stock SmartMeteria (écran « Appareils »,
 import CSV). Posez le capteur avec l'assistant « Poser un capteur » :
 l'écran annonce l'heure de la première donnée, puis passe à « Données
 reçues » et au feu vert après le robinet test.
