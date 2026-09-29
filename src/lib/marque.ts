@@ -109,6 +109,7 @@ export function variablesTheme(marque: Marque): Record<string, string> {
     "--ring": primaire,
     "--chart-1": primaire,
     "--chart-2": couleurLisible(marque.accent),
+    "--accent-marque": couleurLisible(marque.accent),
     "--sidebar-primary": primaire,
     "--sidebar-primary-foreground": texte,
   };

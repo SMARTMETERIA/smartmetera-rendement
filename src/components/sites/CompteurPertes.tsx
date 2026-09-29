@@ -5,9 +5,10 @@ import { coutFuite, methodePertes, type Monnaie } from "@/lib/moteur-gardien/eco
 import { formaterMontant, formaterVolume } from "@/lib/gardien/fuites";
 
 /**
- * Compteur de pertes en direct d'une fuite ouverte : depuis la détection,
- * par jour et par mois si rien n'est fait, avec la méthode prudente.
- * Démarre à l'heure du rendu serveur (même affichage des deux côtés).
+ * Compteur de pertes en direct d'une fuite ouverte (moment fort de
+ * docs/DESIGN.md) : l'argent perdu depuis la détection en très grand, qui
+ * augmente chaque seconde ; le coût par mois si rien n'est fait ; la
+ * méthode prudente juste dessous. Démarre à l'heure du rendu serveur.
  */
 export function CompteurPertes({
   excesLph,
@@ -34,38 +35,27 @@ export function CompteurPertes({
     depuisMs: Date.parse(depuis),
     maintenantMs: maintenant,
   });
+  const perdu = cout.coutCumule !== null ? formaterMontant(cout.coutCumule, monnaie) : formaterVolume(cout.m3Cumules);
+  const parMois =
+    cout.coutMensuelProjete !== null
+      ? formaterMontant(cout.coutMensuelProjete, monnaie)
+      : formaterVolume(cout.m3ParJour * 30);
+  const parJour = cout.coutParJour !== null ? formaterMontant(cout.coutParJour, monnaie) : formaterVolume(cout.m3ParJour);
 
   return (
-    <div className="bg-destructive/5 space-y-1 rounded-lg p-3">
+    <div className="bg-destructive/5 space-y-2 rounded-lg p-4">
+      <p className="text-destructive font-heading text-4xl font-semibold tabular-nums sm:text-5xl" aria-live="off">
+        {perdu}
+      </p>
       <p className="text-sm">
-        Perdu depuis la détection :{" "}
-        <span className="text-destructive text-lg font-semibold tabular-nums">
-          {cout.coutCumule !== null
-            ? formaterMontant(cout.coutCumule, monnaie)
-            : formaterVolume(cout.m3Cumules)}
-        </span>
+        perdus depuis la détection
         {cout.coutCumule !== null && (
-          <span className="text-muted-foreground tabular-nums">
-            {" "}
-            ({formaterVolume(cout.m3Cumules)})
-          </span>
+          <span className="text-muted-foreground tabular-nums"> ({formaterVolume(cout.m3Cumules)})</span>
         )}
       </p>
       <p className="text-sm">
-        Si rien n&apos;est fait :{" "}
-        <span className="font-medium tabular-nums">
-          {cout.coutMensuelProjete !== null
-            ? `${formaterMontant(cout.coutMensuelProjete, monnaie)} par mois`
-            : `${formaterVolume(cout.m3ParJour * 30)} par mois`}
-        </span>
-        <span className="text-muted-foreground tabular-nums">
-          {" "}
-          (
-          {cout.coutParJour !== null
-            ? `${formaterMontant(cout.coutParJour, monnaie)} par jour`
-            : `${formaterVolume(cout.m3ParJour)} par jour`}
-          )
-        </span>
+        Si rien n&apos;est fait : <span className="font-semibold tabular-nums">{parMois} par mois</span>
+        <span className="text-muted-foreground tabular-nums"> ({parJour} par jour)</span>
       </p>
       <p className="text-muted-foreground text-xs">{methodePertes(excesLph, prixM3, monnaie)}</p>
     </div>

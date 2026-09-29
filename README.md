@@ -382,6 +382,17 @@ invisibles, page preuve sans connexion).
   mention protégée).
 - **Vérification des fonctions Deno** : `npm run typecheck:fonctions`.
 
+### Design
+
+Plan et règles : [`docs/DESIGN.md`](./docs/DESIGN.md) (palette
+SmartMeteria, Fraunces pour les titres et les grands chiffres, Manrope
+pour le texte, trois moments forts, téléphone d'abord). Thème de base
+dans `src/app/globals.css` ; `src/test/theme-contraste.test.ts` vérifie
+le contraste AA de chaque texte sur son fond. Squelettes de chargement
+(`loading.tsx`) sur les pages du Gardien ; animations coupées si
+`prefers-reduced-motion`. Les PDF gardent les polices standard (pas de
+dépendance de polices embarquées).
+
 ### Import CSV/Excel
 
 Page `/import` : assistant en 5 étapes (modèle → fichier → mapping → aperçu

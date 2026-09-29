@@ -50,7 +50,7 @@ function Fuite({ fuite, rendueA }: { fuite: FuiteAffichee; rendueA: number }) {
   return (
     <li className="space-y-3 rounded-lg border p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-semibold">
+        <h3 className="text-lg font-semibold">
           {LIBELLES_TYPE_FUITE[fuite.type]} — {fuite.site}
           {fuite.zone ? `, ${fuite.zone}` : ""}
         </h3>
@@ -72,20 +72,30 @@ function Fuite({ fuite, rendueA }: { fuite: FuiteAffichee; rendueA: number }) {
         rendueA={rendueA}
       />
       {fuite.peutAgir && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {fuite.status === "ouverte" && (
-            <Button disabled={enCours} onClick={() => agir(() => prendreEnCharge(fuite.id))}>
+            <Button
+              className="h-11 w-full text-base sm:w-auto"
+              disabled={enCours}
+              onClick={() => agir(() => prendreEnCharge(fuite.id))}
+            >
               Je m&apos;en occupe
             </Button>
           )}
           <Button
             variant="outline"
+            className="h-11 w-full sm:w-auto"
             disabled={enCours}
             onClick={() => agir(() => declarerReparee(fuite.id))}
           >
             C&apos;est réparé
           </Button>
-          <Button variant="ghost" disabled={enCours} onClick={() => setMotifOuvert((v) => !v)}>
+          <Button
+            variant="ghost"
+            className="h-11 w-full sm:w-auto"
+            disabled={enCours}
+            onClick={() => setMotifOuvert((v) => !v)}
+          >
             Fausse alerte
           </Button>
         </div>

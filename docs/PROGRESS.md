@@ -452,6 +452,47 @@ Comment tester à l'écran (avec `npm run dev`, compte administrateur) :
 5. Créez une page preuve depuis « Mes sites » : elle porte aussi votre
    marque.
 
+## Phase G8 : passe de design — terminée
+
+Plan :
+1. `docs/DESIGN.md` : palette, typographies, mise en page, principes, les trois moments forts, relecture contre le brief.
+2. Thème de base SmartMeteria (bleu, turquoise, encre, papier, brique, vert) en variables CSS ; Fraunces pour les titres et les grands chiffres, Manrope pour le texte (`next/font`, sans dépendance) ; chiffres tabulaires.
+3. Moments forts : compteur d'économies en tête de « Mes sites » et de chaque site, compteur de pertes de l'alerte en très grand, feu vert de la pose, page preuve lisible en dix secondes.
+4. Téléphone d'abord (boutons pleine largeur, navigation défilante), squelettes de chargement, `prefers-reduced-motion`, focus visible.
+5. Tests et vérification des écrans ; README.
+
+Fait :
+- `docs/DESIGN.md` écrit puis relu contre le brief (ce qui faisait
+  générique est listé et corrigé).
+- Thème de base SmartMeteria (bleu, turquoise, encre, papier, brique pour
+  l'argent perdu, vert pour « tout va bien »), Fraunces pour les titres et
+  les grands chiffres, Manrope pour le texte, chiffres tabulaires.
+- Moments forts : compteur d'économies de tous les sites en tête de
+  « Mes sites » et de chaque site ; compteur de pertes de l'alerte en très
+  grand, couleur brique ; bouton « Je m'en occupe » pleine largeur sur
+  téléphone ; feu vert de la pose agrandi ; grand chiffre de la page
+  preuve et des rapports en Fraunces.
+- Navigation défilante sur téléphone, squelettes de chargement,
+  animations coupées si la personne le demande, focus visible à la
+  couleur de la marque, contraste AA vérifié par un test.
+- Parcours de chaque rôle et des deux marques de démonstration refaits
+  sans erreur. Typecheck, lint et 1 015 tests unitaires verts.
+
+Aucune dépendance ajoutée (polices chargées par Next).
+
+Reste pour plus tard : polices SmartMeteria dans les PDF (demanderait une
+dépendance d'intégration de polices).
+
+Comment tester à l'écran (avec `npm run dev`) :
+1. Ouvrez « Mes sites » : en haut, le montant des économies en très
+   grand, puis « Tout est sous surveillance » ou la fuite en cours.
+2. Cliquez « Simuler une fuite » : le montant perdu, en grand et en
+   couleur brique, augmente chaque seconde.
+3. Sur votre téléphone, ouvrez la même page : les boutons « Je m'en
+   occupe » et « C'est réparé » prennent toute la largeur.
+4. Ouvrez un site : son grand chiffre d'économies et son état en couleur.
+5. Faites une pose de capteur : le feu vert s'affiche en grand disque.
+
 ---
 
 # Historique — offre Immeuble (en pause)

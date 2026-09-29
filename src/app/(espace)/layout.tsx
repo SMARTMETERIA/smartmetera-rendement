@@ -81,7 +81,7 @@ export default async function EspaceLayout({
           <EnteteMarque marque={marque} />
           <LogoutButton />
         </div>
-        <nav className="mx-auto flex max-w-5xl flex-wrap gap-1 px-4 pb-2 sm:px-6">
+        <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-2 whitespace-nowrap sm:flex-wrap sm:px-6">
           {liens.map((lien) => (
             <Link
               key={lien.href}

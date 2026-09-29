@@ -27,7 +27,6 @@ import { FuitesEnCours, type FuiteAffichee } from "@/components/sites/FuitesEnCo
 import { SimulerFuite } from "@/components/sites/SimulerFuite";
 import {
   MENTION_SURVEILLANCE,
-  formaterMontant,
   formaterVolume,
   totalEconomies,
 } from "@/lib/gardien/fuites";
@@ -36,7 +35,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { PagePreuveBouton } from "@/components/sites/PagePreuveBouton";
 import { TITRES_RAPPORT, type TypeRapport } from "@/lib/gardien-rapports/contenus";
-import { moisLong, nombre } from "@/lib/gardien-envois/format";
+import { moisLong, montantRond as formaterMontantRond, nombre } from "@/lib/gardien-envois/format";
 import { dernierMoisComplet, indicateursSites } from "@/lib/gardien/indicateursSites";
 import { dateLocale } from "@/lib/moteur-gardien/temps";
 
@@ -169,11 +168,25 @@ export default async function SitesPage() {
         </p>
       </div>
 
-      <Card>
+      <section className="space-y-1" aria-label="Économies">
+        <p className="text-muted-foreground text-sm">Économies depuis le début, tous sites</p>
+        <p className="text-primary font-heading text-5xl font-semibold tabular-nums sm:text-6xl">
+          {economies.length === 0
+            ? formaterMontantRond(0, pays === "MA" ? "MAD" : "EUR")
+            : economies
+                .map((e) => (e.montant !== null ? formaterMontantRond(e.montant, e.monnaie) : formaterVolume(e.m3)))
+                .join(" + ")}
+        </p>
+        <p className="text-muted-foreground text-xs">
+          Méthode prudente : excès de débit × 24 h × délai de découverte évité × prix du m³ du site.
+        </p>
+      </section>
+
+      <Card className={fuites.length ? "border-destructive/40" : undefined}>
         <CardHeader>
-          <CardTitle>
+          <CardTitle className="text-xl">
             {fuites.length === 0
-              ? "Aucune fuite en cours"
+              ? "Tout est sous surveillance"
               : fuites.length === 1
                 ? "1 fuite en cours"
                 : `${fuites.length} fuites en cours`}
@@ -183,27 +196,10 @@ export default async function SitesPage() {
         <CardContent className="space-y-4">
           {fuites.length === 0 ? (
             <p className="text-sm">
-              Votre eau est sous surveillance jour et nuit.
+              Votre eau est surveillée jour et nuit : vous êtes prévenu dès qu&apos;une fuite apparaît.
             </p>
           ) : (
             <FuitesEnCours fuites={fuites} rendueA={rendueA} />
-          )}
-          {economies.length > 0 && (
-            <p className="text-sm">
-              Économies grâce aux fuites réparées :{" "}
-              {economies
-                .map((e) =>
-                  e.montant !== null
-                    ? `${formaterMontant(e.montant, e.monnaie)} (${formaterVolume(e.m3)})`
-                    : formaterVolume(e.m3),
-                )
-                .join(" et ")}
-              <span className="text-muted-foreground">
-                {" "}
-                — méthode prudente : excès de débit × 24 h × délai de
-                découverte évité × prix du m³ du site.
-              </span>
-            </p>
           )}
           {simulation && (
             <SimulerFuite

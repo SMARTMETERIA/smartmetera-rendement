@@ -15,7 +15,7 @@ export function VueRapportEcran({ vue, actions }: { vue: VueRapport; actions?: R
       </header>
       {vue.chiffre && (
         <div>
-          <p className="text-primary text-5xl font-bold tabular-nums">{vue.chiffre.valeur}</p>
+          <p className="text-primary font-heading text-5xl font-semibold tabular-nums sm:text-6xl">{vue.chiffre.valeur}</p>
           <p className="text-muted-foreground text-sm">{vue.chiffre.libelle}</p>
         </div>
       )}

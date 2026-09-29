@@ -191,7 +191,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
         <Card>
           <CardHeader>
             <CardDescription>Économies depuis le début</CardDescription>
-            <CardTitle className="text-primary text-4xl tabular-nums">
+            <CardTitle className="text-primary font-heading text-5xl font-semibold tabular-nums">
               {eco?.montant != null ? montantRond(eco.montant, monnaie) : eco ? volume(eco.m3) : montantRond(0, monnaie)}
             </CardTitle>
           </CardHeader>
@@ -202,7 +202,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
         <Card>
           <CardHeader>
             <CardDescription>État</CardDescription>
-            <CardTitle className="text-2xl">
+            <CardTitle className={ouvertes.length === 0 ? "text-succes text-2xl" : "text-destructive text-2xl"}>
               {ouvertes.length === 0 ? "Sous surveillance" : ouvertes.length === 1 ? "Fuite en cours" : `${ouvertes.length} fuites en cours`}
             </CardTitle>
           </CardHeader>

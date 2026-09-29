@@ -87,7 +87,7 @@ export function SuiviPose({
     >
       {affichage.etape === "feu_vert" ? (
         <>
-          <div className="bg-succes text-succes-foreground motion-safe:animate-in motion-safe:zoom-in-50 flex size-44 items-center justify-center rounded-full text-3xl font-bold">
+          <div className="bg-succes text-succes-foreground motion-safe:animate-in motion-safe:zoom-in-50 font-heading flex size-56 items-center justify-center rounded-full text-4xl font-semibold shadow-lg motion-safe:duration-500">
             Feu vert
           </div>
           <h1 className="text-2xl font-semibold">
