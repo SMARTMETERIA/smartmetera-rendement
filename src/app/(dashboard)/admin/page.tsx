@@ -15,6 +15,7 @@ import { InviterUtilisateur } from "@/components/admin/InviterUtilisateur";
 import { ModelesSourcesPanel } from "@/components/admin/ModelesSourcesPanel";
 import { ChecklistActivation } from "@/components/admin/ChecklistActivation";
 import { JournalAudit } from "@/components/admin/JournalAudit";
+import { ReceptionCapteurs } from "@/components/admin/ReceptionCapteurs";
 
 export default async function AdminPage() {
   const ctx = await getContexteUtilisateur();
@@ -31,10 +32,14 @@ export default async function AdminPage() {
     { data: checklistItems },
     { data: checklistSuivi },
     { data: audit },
+    { data: reception },
+    { data: inconnues },
   ] = await Promise.all([
     supabase
       .from("organizations")
-      .select("id, nom, kind, status, trial_ends_at, lineaire_reseau_km, nb_abonnes, zone_repartition_eaux, prix_m3_eur, created_at")
+      .select(
+        "id, nom, kind, status, trial_ends_at, lineaire_reseau_km, nb_abonnes, zone_repartition_eaux, prix_m3_eur, created_at",
+      )
       .order("created_at", { ascending: false }),
     supabase
       .from("import_templates")
@@ -42,7 +47,9 @@ export default async function AdminPage() {
       .order("nom"),
     supabase
       .from("sources")
-      .select("id, nom, organization_id, default_template_id, organizations(nom)")
+      .select(
+        "id, nom, organization_id, default_template_id, organizations(nom)",
+      )
       .eq("type", "email_entrant")
       .order("nom"),
     supabase
@@ -50,18 +57,34 @@ export default async function AdminPage() {
       .select("id, jour, ordre, titre, description")
       .order("jour")
       .order("ordre"),
-    supabase.from("checklist_activation_suivi").select("organization_id, item_id, fait, fait_le"),
+    supabase
+      .from("checklist_activation_suivi")
+      .select("organization_id, item_id, fait, fait_le"),
     supabase
       .from("audit_log")
-      .select("id, organization_id, user_id, action, entite, entite_id, created_at, organizations(nom)")
+      .select(
+        "id, organization_id, user_id, action, entite, entite_id, created_at, organizations(nom)",
+      )
       .order("created_at", { ascending: false })
       .limit(50),
+    supabase
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "reception")
+      .maybeSingle(),
+    supabase
+      .from("unknown_frames")
+      .select("id, received_at, channel, device_ref")
+      .order("received_at", { ascending: false })
+      .limit(20),
   ]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Espace superadmin</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Espace superadmin
+        </h1>
         <p className="text-muted-foreground text-sm">
           Onboarding client : organisations, fiche de collecte, invitations,
           modèles de sources, checklist d&apos;activation J0-J5, journal
@@ -77,7 +100,32 @@ export default async function AdminPage() {
           <TabsTrigger value="modeles">Modèles de sources</TabsTrigger>
           <TabsTrigger value="checklist">Checklist J0-J5</TabsTrigger>
           <TabsTrigger value="audit">Journal d&apos;audit</TabsTrigger>
+          <TabsTrigger value="reception">Réception des capteurs</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="reception" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Réception des capteurs</CardTitle>
+              <CardDescription>
+                Gardien de l&apos;eau : adresses du broker MQTT (kit A) et du
+                serveur LoRaWAN (kit C, sondes).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ReceptionCapteurs
+                supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}
+                jetons={
+                  (reception?.value ?? null) as {
+                    jeton_mqtt?: string;
+                    jeton_lorawan?: string;
+                  } | null
+                }
+                inconnues={inconnues ?? []}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="organisations" className="pt-4">
           <Card>
@@ -85,8 +133,8 @@ export default async function AdminPage() {
               <CardTitle>Organisations</CardTitle>
               <CardDescription>
                 Toutes les organisations (régies et partenaires). Exporter
-                télécharge toutes leurs données ; la suppression exige un
-                export de moins de 24 heures.
+                télécharge toutes leurs données ; la suppression exige un export
+                de moins de 24 heures.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -100,8 +148,8 @@ export default async function AdminPage() {
             <CardHeader>
               <CardTitle>Fiche de collecte</CardTitle>
               <CardDescription>
-                Modèle Excel (Service, Secteurs, Compteurs, Sources) — import
-                en un clic pour peupler une organisation.
+                Modèle Excel (Service, Secteurs, Compteurs, Sources) — import en
+                un clic pour peupler une organisation.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -128,14 +176,19 @@ export default async function AdminPage() {
         <TabsContent value="modeles" className="pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Modèles assignés aux sources (boîte mail entrante)</CardTitle>
+              <CardTitle>
+                Modèles assignés aux sources (boîte mail entrante)
+              </CardTitle>
               <CardDescription>
-                Chaque source email_entrant a besoin d&apos;un modèle de
-                mapping par défaut pour importer automatiquement.
+                Chaque source email_entrant a besoin d&apos;un modèle de mapping
+                par défaut pour importer automatiquement.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ModelesSourcesPanel sources={sourcesEmail ?? []} modeles={modeles ?? []} />
+              <ModelesSourcesPanel
+                sources={sourcesEmail ?? []}
+                modeles={modeles ?? []}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -144,7 +197,9 @@ export default async function AdminPage() {
           <Card>
             <CardHeader>
               <CardTitle>Checklist d&apos;activation</CardTitle>
-              <CardDescription>Parcours d&apos;onboarding standard, J0 à J5.</CardDescription>
+              <CardDescription>
+                Parcours d&apos;onboarding standard, J0 à J5.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ChecklistActivation

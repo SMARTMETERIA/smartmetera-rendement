@@ -31,7 +31,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { LABEL_DECODEUR } from "@/lib/ingest/decoders/index";
+import {
+  DECODEURS_LORAWAN_IMPULSIONS,
+  LABEL_DECODEUR,
+} from "@/lib/ingest/decoders/index";
 import type { CodeDecodeur } from "@/lib/ingest/types";
 
 interface Device {
@@ -103,7 +106,10 @@ export function DevicesPanel({
       organization_id: organizationId,
       source_id: form.source_id,
       meter_id: form.meter_id,
-      dev_eui: form.dev_eui.trim().toUpperCase().replace(/[^0-9A-F]/g, ""),
+      dev_eui: form.dev_eui
+        .trim()
+        .toUpperCase()
+        .replace(/[^0-9A-F]/g, ""),
       canal: form.canal.trim() || null,
       decodeur: form.decodeur,
       litres_par_impulsion: Number(form.litres_par_impulsion),
@@ -120,7 +126,10 @@ export function DevicesPanel({
 
   async function basculerActif(device: Device) {
     const supabase = createClient();
-    await supabase.from("devices").update({ actif: !device.actif }).eq("id", device.id);
+    await supabase
+      .from("devices")
+      .update({ actif: !device.actif })
+      .eq("id", device.id);
     router.refresh();
   }
 
@@ -193,7 +202,13 @@ export function DevicesPanel({
       {peutGerer && (
         <Dialog open={ouvert} onOpenChange={setOuvert}>
           <DialogTrigger
-            render={<Button type="button" variant="outline" disabled={sourcesWebhook.length === 0} />}
+            render={
+              <Button
+                type="button"
+                variant="outline"
+                disabled={sourcesWebhook.length === 0}
+              />
+            }
           >
             + Nouvel équipement
           </DialogTrigger>
@@ -211,7 +226,9 @@ export function DevicesPanel({
                 <Label>Source webhook</Label>
                 <Select
                   value={form.source_id}
-                  onValueChange={(v) => v && setForm((f) => ({ ...f, source_id: v }))}
+                  onValueChange={(v) =>
+                    v && setForm((f) => ({ ...f, source_id: v }))
+                  }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -226,22 +243,30 @@ export function DevicesPanel({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dev-eui">DevEUI (16 caractères hexadécimaux)</Label>
+                <Label htmlFor="dev-eui">
+                  DevEUI (16 caractères hexadécimaux)
+                </Label>
                 <Input
                   id="dev-eui"
                   value={form.dev_eui}
-                  onChange={(e) => setForm((f) => ({ ...f, dev_eui: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, dev_eui: e.target.value }))
+                  }
                   placeholder="0018B2000000ABCD"
                   className="font-mono"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="canal">Canal (optionnel, capteur multi-voies)</Label>
+                <Label htmlFor="canal">
+                  Canal (optionnel, capteur multi-voies)
+                </Label>
                 <Input
                   id="canal"
                   value={form.canal}
-                  onChange={(e) => setForm((f) => ({ ...f, canal: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, canal: e.target.value }))
+                  }
                   placeholder="A, B, 1, 2..."
                 />
               </div>
@@ -249,7 +274,9 @@ export function DevicesPanel({
                 <Label>Compteur associé</Label>
                 <Select
                   value={form.meter_id}
-                  onValueChange={(v) => v && setForm((f) => ({ ...f, meter_id: v }))}
+                  onValueChange={(v) =>
+                    v && setForm((f) => ({ ...f, meter_id: v }))
+                  }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Choisir un compteur" />
@@ -267,13 +294,15 @@ export function DevicesPanel({
                 <Label>Décodeur</Label>
                 <Select
                   value={form.decodeur}
-                  onValueChange={(v) => v && setForm((f) => ({ ...f, decodeur: v as CodeDecodeur }))}
+                  onValueChange={(v) =>
+                    v && setForm((f) => ({ ...f, decodeur: v as CodeDecodeur }))
+                  }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(LABEL_DECODEUR) as CodeDecodeur[]).map((d) => (
+                    {DECODEURS_LORAWAN_IMPULSIONS.map((d) => (
                       <SelectItem key={d} value={d}>
                         {LABEL_DECODEUR[d]}
                       </SelectItem>
@@ -290,14 +319,16 @@ export function DevicesPanel({
                   min="0.001"
                   value={form.litres_par_impulsion}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, litres_par_impulsion: e.target.value }))
+                    setForm((f) => ({
+                      ...f,
+                      litres_par_impulsion: e.target.value,
+                    }))
                   }
                   required
                 />
                 <p className="text-muted-foreground text-xs">
                   Poids d&apos;impulsion du compteur mécanique raccordé (souvent
-                  1, 10 ou 100 L/impulsion — voir la documentation du
-                  compteur).
+                  1, 10 ou 100 L/impulsion — voir la documentation du compteur).
                 </p>
               </div>
               <DialogFooter>

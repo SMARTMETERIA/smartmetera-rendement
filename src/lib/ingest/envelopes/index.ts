@@ -3,8 +3,9 @@ import { parseEnveloppeTtn } from "./ttn";
 import { parseEnveloppeChirpstack } from "./chirpstack";
 import { parseEnveloppeLiveObjects } from "./liveobjects";
 import { parseEnveloppeGenerique } from "./generic";
+import { parseEnveloppeMqtt } from "./mqtt";
 
-export type Plateforme = "ttn" | "chirpstack" | "liveobjects" | "generic";
+export type Plateforme = "ttn" | "chirpstack" | "liveobjects" | "generic" | "mqtt";
 
 export const PARSEURS_ENVELOPPE: Record<
   Plateforme,
@@ -14,6 +15,7 @@ export const PARSEURS_ENVELOPPE: Record<
   chirpstack: parseEnveloppeChirpstack,
   liveobjects: parseEnveloppeLiveObjects,
   generic: parseEnveloppeGenerique,
+  mqtt: parseEnveloppeMqtt,
 };
 
 export function estErreurEnveloppe(

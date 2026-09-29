@@ -26,11 +26,30 @@ export function parseEnveloppeTtn(
     (typeof b.received_at === "string" && b.received_at) ||
     new Date().toISOString();
 
+  // Meilleure réception parmi les passerelles (uplink_message.rx_metadata).
+  let rssi: number | undefined;
+  let snr: number | undefined;
+  if (Array.isArray(uplink.rx_metadata)) {
+    for (const rx of uplink.rx_metadata as Record<string, unknown>[]) {
+      if (typeof rx?.rssi === "number" && (rssi === undefined || rx.rssi > rssi)) {
+        rssi = rx.rssi;
+        snr = typeof rx.snr === "number" ? rx.snr : snr;
+      }
+    }
+  }
+
   return {
     devEui: devEui.toUpperCase(),
     fPort: typeof uplink.f_port === "number" ? uplink.f_port : undefined,
     fCnt: typeof uplink.f_cnt === "number" ? uplink.f_cnt : undefined,
     payload: base64ToBytes(uplink.frm_payload),
     recuLe,
+    rssi,
+    snr,
+    // Valeurs décodées par le formateur de charge utile de l'appareil.
+    objet:
+      typeof uplink.decoded_payload === "object" && uplink.decoded_payload !== null
+        ? (uplink.decoded_payload as Record<string, unknown>)
+        : undefined,
   };
 }

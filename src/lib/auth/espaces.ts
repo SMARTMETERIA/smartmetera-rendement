@@ -47,6 +47,23 @@ export function organisationEspaceSites(ctx: ContexteUtilisateur): {
   };
 }
 
+/** Pose de capteurs : admin, agent ou technicien (organisation ou site). */
+export function peutPoser(ctx: ContexteUtilisateur): boolean {
+  return (
+    (ctx.adhesion?.kind === "sites" &&
+      ["admin_client", "agent", "technicien"].includes(ctx.adhesion.role)) ||
+    ctx.adhesionsSite.some((a) => a.role === "technicien")
+  );
+}
+
+/** Stock et attribution des appareils : admin ou agent de l'organisation. */
+export function peutGererAppareils(ctx: ContexteUtilisateur): boolean {
+  return (
+    ctx.adhesion?.kind === "sites" &&
+    ["admin_client", "agent"].includes(ctx.adhesion.role)
+  );
+}
+
 /** Admin de l'organisation « sites » (gère l'équipe et les sites). */
 export function estAdminSites(ctx: ContexteUtilisateur): boolean {
   return (

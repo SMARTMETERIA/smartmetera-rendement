@@ -2,7 +2,10 @@
 // plateformes réseau non couvertes nativement, la saisie manuelle de test,
 // et le testeur de trame de /parametres/sources.
 //   { "dev_eui": "0018B2...", "payload_hex": "46200001..." | "payload_base64": "...",
-//     "port"?: number, "fcnt"?: number, "horodatage"?: "2026-...Z" }
+//     "port"?: number, "fcnt"?: number, "horodatage"?: "2026-...Z",
+//     "objet"?: { "temperature": 57.2 }, "rssi"?: number, "snr"?: number }
+// « objet » : valeurs déjà décodées (sondes de température) ; le payload
+// peut alors être vide ("payload_hex": "").
 import type { EnveloppeUplink, ErreurEnveloppe } from "../types";
 import { base64ToBytes, hexToBytes } from "../bytes";
 
@@ -34,5 +37,11 @@ export function parseEnveloppeGenerique(
     payload,
     recuLe:
       typeof b.horodatage === "string" ? b.horodatage : new Date().toISOString(),
+    rssi: typeof b.rssi === "number" ? b.rssi : undefined,
+    snr: typeof b.snr === "number" ? b.snr : undefined,
+    objet:
+      typeof b.objet === "object" && b.objet !== null
+        ? (b.objet as Record<string, unknown>)
+        : undefined,
   };
 }

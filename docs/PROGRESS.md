@@ -155,6 +155,74 @@ Comment tester à l'écran :
    dans une fenêtre de navigation privée.
 5. Ce directeur ne voit que son hôtel, et pas l'onglet « Équipe ».
 
+## Phase G3 : réception des capteurs, provisionnement et assistant de pose — terminée
+
+Plan :
+1. Migration `0037` : réception par la plateforme (jetons MQTT et LoRaWAN dans les réglages, source par organisation créée à la volée), décodeurs Adeunis MQTTS et « valeur décodée par le serveur réseau » (sondes), état radio et pile des appareils, trames d'appareils inconnus, sessions de pose et photos ; `0038` pour les droits.
+2. Réception : point d'entrée `/ingest/mqtt` (kit A, format JSON officiel Adeunis), événements ChirpStack `up` et `status`, recherche de l'appareil par sa référence, contrôle de fréquence (« surveillance limitée »), températures ; déploiement de la fonction.
+3. Provisionnement : import CSV vers le stock, attribution d'un lot à un site, planche d'étiquettes QR en PDF A4.
+4. Assistant de pose sur téléphone (`/pose/[code]`) : zone, photo, index, poids d'impulsion, robinet test avec feu vert ou heure attendue ; vérification du poids d'impulsion.
+5. `infra/chirpstack/` (guide pas à pas, alternative The Things Stack), guide du broker MQTT, tests (trames officielles, enveloppes, fréquence) et essai réel de chaque point d'entrée.
+
+Sources des formats (aucun format inventé) : guide Adeunis « User Guide
+PULSE MQTTS NB-IoT/LTE-M » v1.1 (ARF8420AA, APP 1.4.x, annexes 2 à 5) ;
+documentation ChirpStack v4 (intégration HTTP, événements `up` et
+`status`) ; décodeur officiel Milesight EM300-DI (déjà utilisé).
+
+Fait :
+- Migrations `0037` à `0040` appliquées sur la base de développement ;
+  fonction `ingest` déployée (version 3, identique au dépôt).
+- Réception : `/ingest/mqtt` (kit A : message JSON officiel Adeunis, avec
+  historique, pile faible et qualité radio ; formes « broker » et Orange
+  Live Objects), ChirpStack `up` et `status` (pile), The Things Stack
+  (valeurs décodées et radio), générique ; jetons de la plateforme ;
+  appareil retrouvé par sa référence (IMEI ou DevEUI) ; trame d'un
+  appareil en stock gardée (« données reçues » avant la pose) ; appareil
+  inconnu gardé 30 jours pour diagnostic ; températures inscrites au
+  registre ; point en « surveillance limitée » sous un relevé par heure.
+- Provisionnement : `/sites/appareils` — import CSV vers le stock (IMEI
+  contrôlé, modèle reconnu, tout ou rien), attribution d'un lot à un site,
+  planche d'étiquettes QR A4 (24 étiquettes 70 × 37 mm).
+- Assistant de pose `/pose` : le QR code ouvre l'assistant pré-rempli ;
+  site, entrée A/B, zone, photo (réduite avant envoi), index, poids
+  d'impulsion, récapitulatif ; robinet test avec feu vert, heure attendue
+  de la première donnée pour un capteur à intervalle fixe, notification
+  sur le téléphone si la page reste ouverte ; vérification du poids
+  d'impulsion quelques jours après, avec correction (relevés recalculés,
+  marqués « corrigée », trace dans le journal d'audit).
+- Superadmin : onglet « Réception des capteurs » (adresses à donner au
+  broker et au serveur LoRaWAN, trames d'appareils inconnus).
+- Guides : `infra/chirpstack/` (serveur LoRaWAN pas à pas, accès HTTPS,
+  alternative The Things Stack Cloud) et `docs/reception-mqtt.md`.
+- Tests : 81 tests des modules de réception et de pose (exemples
+  officiels Adeunis recopiés tels quels ; la forme « broker » est signalée
+  comme supposée) ; test de synchronisation des copies de la fonction ;
+  test de bout en bout contre la fonction déployée (kit A, kit C, sonde,
+  appareil inconnu, index reconstitué) : feu vert obtenu à chaque point
+  d'entrée. Écrans vérifiés avec des comptes jetables (pose par code,
+  appareils, planche PDF). Typecheck, lint, 739 tests unitaires et 29
+  tests d'intégration verts.
+
+Dépendances ajoutées (justification) : `pdf-lib` 1.17.1 (même
+bibliothèque que la fonction de rapports, planche d'étiquettes et futurs
+exports PDF), `qrcode-generator` 1.4.4 (encodage QR, sans dépendance).
+
+Reste pour plus tard : SMS ou e-mail « première donnée reçue » quand la
+page est fermée (phase G5, interface `notify()`) ; vue flotte complète
+(phase G6).
+
+Comment tester à l'écran :
+1. Dans « Appareils », collez la ligne d'exemple proposée (en changeant
+   l'IMEI si besoin) et cliquez « Importer dans le stock ».
+2. Cochez le capteur, choisissez votre hôtel, cliquez « Attribuer au
+   site », puis « Imprimer les étiquettes » : un PDF s'ouvre.
+3. Scannez le QR code du PDF avec votre téléphone (ou tapez le code dans
+   « Poser un capteur ») : l'assistant s'ouvre, une question par écran.
+4. Répondez jusqu'à « Valider la pose » : l'écran « En attente »
+   annonce l'heure de la première donnée.
+5. Sans vrai capteur, l'écran reste en attente : c'est normal (le test
+   automatique envoie de fausses trames et obtient bien le feu vert).
+
 ---
 
 # Historique — offre Immeuble (en pause)

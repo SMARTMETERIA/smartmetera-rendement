@@ -1,0 +1,4 @@
+# Remplacer par le nom de domaine du serveur LoRaWAN (voir README.md).
+lorawan.smartmeteria.com {
+	reverse_proxy chirpstack:8080
+}

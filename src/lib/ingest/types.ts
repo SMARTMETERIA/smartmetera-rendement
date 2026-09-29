@@ -23,12 +23,16 @@ export type CodeDecodeur =
   | "adeunis_pulse_v4"
   | "watteco_pulse_senso"
   | "milesight_em300_di"
-  | "dragino_sw3l";
+  | "dragino_sw3l"
+  | "adeunis_pulse_mqtt"
+  | "temperature_objet";
 
 export interface ContexteDecodage {
   /** Horodatage de réception de la trame par la plateforme réseau (fallback si la trame ne porte pas son propre horodatage). */
   recuLe: string;
   fPort?: number;
+  /** Valeurs déjà décodées par le serveur réseau (codec ChirpStack), si fournies. */
+  objet?: Record<string, unknown>;
 }
 
 export type FonctionDecodeur = (
@@ -43,6 +47,11 @@ export interface EnveloppeUplink {
   fCnt?: number;
   payload: Uint8Array;
   recuLe: string;
+  /** Qualité radio de la meilleure réception (dBm, dB), si fournie. */
+  rssi?: number;
+  snr?: number;
+  /** Valeurs déjà décodées par le serveur réseau (codec ChirpStack), si fournies. */
+  objet?: Record<string, unknown>;
 }
 
 export type ErreurEnveloppe = { erreur: string };

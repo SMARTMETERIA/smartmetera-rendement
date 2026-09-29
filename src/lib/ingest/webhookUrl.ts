@@ -13,4 +13,8 @@ export const LABEL_PLATEFORME: Record<Plateforme, string> = {
   chirpstack: "ChirpStack",
   liveobjects: "Orange Live Objects",
   generic: "Générique (JSON)",
+  mqtt: "Broker MQTT (Adeunis PULSE NB-IoT/LTE-M)",
 };
+
+/** Plateformes proposées pour une source LoRaWAN d'organisation (écrans Réseau). */
+export const PLATEFORMES_LORAWAN: Plateforme[] = ["ttn", "chirpstack", "liveobjects", "generic"];

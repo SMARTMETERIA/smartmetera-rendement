@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getContexteUtilisateur } from "@/lib/auth/contexte";
-import { estAdminSites } from "@/lib/auth/espaces";
+import {
+  estAdminSites,
+  peutGererAppareils,
+  peutPoser,
+} from "@/lib/auth/espaces";
 import { NOM_PLATEFORME } from "@/lib/marque";
 import { LogoutButton } from "@/components/LogoutButton";
 
@@ -18,6 +22,12 @@ export default async function EspaceLayout({
   const liens: { href: string; label: string }[] = [];
   if (ctx.adhesion?.kind === "sites" || ctx.adhesionsSite.length > 0) {
     liens.push({ href: "/sites", label: "Mes sites" });
+    if (peutPoser(ctx)) {
+      liens.push({ href: "/pose", label: "Poser un capteur" });
+    }
+    if (peutGererAppareils(ctx)) {
+      liens.push({ href: "/sites/appareils", label: "Appareils" });
+    }
     if (estAdminSites(ctx)) {
       liens.push({ href: "/sites/equipe", label: "Équipe" });
     }

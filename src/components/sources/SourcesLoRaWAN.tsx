@@ -23,7 +23,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { urlWebhookIngestion, LABEL_PLATEFORME } from "@/lib/ingest/webhookUrl";
+import {
+  urlWebhookIngestion,
+  LABEL_PLATEFORME,
+  PLATEFORMES_LORAWAN,
+} from "@/lib/ingest/webhookUrl";
 import type { Plateforme } from "@/lib/ingest/envelopes";
 
 interface Source {
@@ -79,7 +83,9 @@ export function SourcesLoRaWAN({
   const [plateforme, setPlateforme] = useState<Plateforme>("generic");
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const [regenerationEnCours, setRegenerationEnCours] = useState<string | null>(null);
+  const [regenerationEnCours, setRegenerationEnCours] = useState<string | null>(
+    null,
+  );
 
   async function creerSource(e: React.FormEvent) {
     e.preventDefault();
@@ -167,7 +173,11 @@ export function SourcesLoRaWAN({
             </div>
             {s.webhook_token && s.plateforme && (
               <ChampUrlWebhook
-                url={urlWebhookIngestion(supabaseUrl, s.plateforme, s.webhook_token)}
+                url={urlWebhookIngestion(
+                  supabaseUrl,
+                  s.plateforme,
+                  s.webhook_token,
+                )}
               />
             )}
             <p className="text-muted-foreground text-xs">
@@ -213,7 +223,7 @@ export function SourcesLoRaWAN({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(LABEL_PLATEFORME) as Plateforme[]).map((p) => (
+                    {PLATEFORMES_LORAWAN.map((p) => (
                       <SelectItem key={p} value={p}>
                         {LABEL_PLATEFORME[p]}
                       </SelectItem>

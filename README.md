@@ -96,6 +96,15 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
   `site_role`, `peut_agir_site`), politiques de toutes les tables Gardien,
   `pilotes_visibles()` (sans notes internes), `page_preuve_publique()` ;
   le registre des températures ne se vide qu'avec l'organisation entière.
+- `0037_gardien_reception_pose.sql` à `0040_droits_gardien_provisionnement.sql`
+  — réception par la plateforme (jetons MQTT et LoRaWAN dans
+  `platform_settings.reception`, source `reception_plateforme` par
+  organisation), décodeurs `adeunis_pulse_mqtt` et `temperature_objet`,
+  état des appareils (pile faible, intervalle d'émission, première
+  donnée), trames d'appareils inconnus (`unknown_frames`, purgées après 30
+  jours), sessions de pose et photos (espace de stockage privé `poses`),
+  fonctions `demarrer_pose`, `etat_pose`, `index_reconstitue`,
+  `importer_stock`, `attribuer_appareils`, `corriger_poids_impulsion`.
 
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le
@@ -178,6 +187,33 @@ invisibles, page preuve sans connexion).
   connexion tant qu'elle n'a pas expiré.
 - `src/test/sans-contournement.test.ts` échoue si l'ancien compte de
   développement ou une connexion automatique réapparaît dans le code.
+
+### Capteurs, provisionnement et pose (Gardien de l'eau)
+
+- **Réception** : fonction `ingest`, points d'entrée
+  `/functions/v1/ingest/<plateforme>/<jeton>` avec `mqtt` (kit A, Adeunis
+  PULSE NB-IoT/LTE-M, message JSON officiel), `chirpstack` (événements
+  `up` et `status`), `ttn`, `generic` et `liveobjects`. Jetons de la
+  plateforme : onglet « Réception des capteurs » de l'espace superadmin.
+  Guides : [`docs/reception-mqtt.md`](./docs/reception-mqtt.md) (broker
+  MQTT) et [`infra/chirpstack/README.md`](./infra/chirpstack/README.md)
+  (serveur LoRaWAN, alternative The Things Stack).
+- **Modules partagés** : `src/lib/ingest` (testés) est recopié dans
+  `supabase/functions/ingest/lib` par `node scripts/synchroniser-ingest.mjs`
+  ; `src/test/ingest-synchro.test.ts` échoue si les copies divergent.
+  Après modification : synchroniser puis redéployer la fonction.
+- **Contrôle de fréquence** : un point qui reçoit moins d'un relevé par
+  heure passe en « surveillance limitée » (`meters.surveillance`).
+- **Provisionnement** : `/sites/appareils` (admin, agent) — import CSV
+  vers le stock (tout ou rien, doublons signalés), attribution d'un lot à
+  un site, planche d'étiquettes QR en PDF A4 (`/api/etiquettes`, 24
+  étiquettes 70 × 37 mm, dépendances `pdf-lib` et `qrcode-generator`).
+- **Assistant de pose** : `/pose` puis `/pose/<code>` (ouvert par le QR
+  code), une question par écran ; `/pose/suivi/<id>` pour le robinet test
+  (feu vert) et la vérification du poids d'impulsion.
+- **Tests de bout en bout** : `src/test/integration/reception-gardien.test.ts`
+  envoie des trames d'exemple à la fonction déployée (kit A, kit C, sonde,
+  appareil inconnu) et vérifie le feu vert.
 
 ### Import CSV/Excel
 

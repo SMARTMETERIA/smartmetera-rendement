@@ -36,3 +36,25 @@ Chaque point est contourné dans le code par un bouchon marqué
    avec passerelle, point supplémentaire et sonde de température : « à
    paramétrer » dans le plan, laissés vides dans `platform_settings`
    (clé `tarifs`, valeur `MAD`).
+9. **Broker MQTT du kit A** — choisir un broker managé dans l'Union
+   européenne (conditions dans `docs/reception-mqtt.md`), créer la règle de
+   transfert HTTP vers l'adresse « MQTT » de l'onglet « Réception des
+   capteurs », puis envoyer une vraie trame reçue pour confirmer les noms
+   de champs du transfert (l'application accepte déjà `clientid` +
+   `payload`, le message seul et le format Orange Live Objects).
+10. **Serveur LoRaWAN** — héberger ChirpStack (guide
+    `infra/chirpstack/README.md`) ou ouvrir un compte The Things Stack
+    Cloud ; y saisir l'adresse « LoRaWAN ». Maroc : vérifier la bande de
+    fréquences et les agréments ANRT avant la pose.
+11. **Sonde de température** — choisir le modèle ; son décodeur (fourni
+    par le fabricant) doit être chargé dans le serveur LoRaWAN et produire
+    un champ `temperature` en °C (sinon, indiquer le nom du champ).
+12. **Réglage des EM300-DI** — confirmer l'intervalle d'émission des
+    capteurs livrés (60 minutes au plus) pour annoncer l'heure de la
+    première donnée dans l'assistant de pose (`src/lib/gardien/modeles.ts`).
+13. **Trames réelles** — envoyer quelques trames réelles de chaque capteur
+    (elles sont aussi visibles dans « trames d'appareils inconnus » si le
+    capteur n'est pas encore dans le stock) pour les ajouter aux tests.
+14. **Notification de première donnée** — l'assistant prévient sur le
+    téléphone tant que la page reste ouverte ; l'envoi par SMS ou e-mail
+    quand la page est fermée arrive avec l'interface `notify()` (phase G5).
