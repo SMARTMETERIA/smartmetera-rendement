@@ -223,6 +223,71 @@ Comment tester à l'écran :
 5. Sans vrai capteur, l'écran reste en attente : c'est normal (le test
    automatique envoie de fausses trames et obtient bien le feu vert).
 
+## Phase G4 : moteur fuites, températures et économies — terminée
+
+Plan :
+1. Modules purs `src/lib/moteur-gardien` (heure locale, débits horaires, plages calmes, ligne de base, règles, argent, températures, activité) et tests à valeurs connues du plan.
+2. Migration `0041` : bilans quotidiens `meter_days`, économies prudentes en SQL, actions sur une fuite, anomalies des pilotes, registre des températures, détecteurs Réseau hors Gardien, tâche horaire ; `0042` pour les droits.
+3. Fonction `gardien-moteur` (toutes les heures) : lecture, analyse d'un site (`analyse.ts`), écritures ; déploiement.
+4. Test de bout en bout : fuite simulée détectée, chiffrée, prise en charge, réparée (18 m³, 81 €).
+5. Affichage minimal : fuites en cours avec compteur de pertes en direct, boutons, économies ; README.
+
+Fait :
+- Moteur : fuite de nuit (2 h – 5 h heure du site, hors plages calmes,
+  ligne de base + max(20 %, 5 L/h), 2 nuits de suite), ligne de base
+  auto-calibrée (médiane sur 8 semaines, par jour de la semaine,
+  apprentissage 7 à 14 nuits avec seuils doublés et 3 nuits), débit
+  continu, rupture (dès la première heure connue), mode fermeture, fin de
+  fuite automatique après 2 nuits normales, capteur muet (36 h ou 6 h,
+  adressé au partenaire ou à SmartMetera), température sous le seuil,
+  rappel des analyses (seulement si le délai est renseigné), indicateur
+  par activité (estimation signalée).
+- Argent : compteur de pertes en direct (depuis la détection, par jour,
+  par mois, par an) et économies prudentes, toujours avec le texte de la
+  méthode ; même calcul en SQL et dans l'application (vérifié par test) ;
+  sans prix de l'eau, seuls les volumes sont donnés.
+- Base : migrations `0041` et `0042` appliquées ; fonction `gardien-moteur`
+  déployée (version 1), tâche horaire planifiée. La fonction de
+  notifications de l'offre Réseau et ses deux détecteurs SQL ne touchent
+  plus les organisations Gardien (elles ont leur propre moteur et leurs
+  propres envois en G5).
+- Écran « Mes sites » : fuites en cours avec le compteur de pertes qui
+  tourne, « Je m'en occupe », « C'est réparé », « Fausse alerte » (motif
+  facultatif) selon le rôle, total des économies avec la méthode, mention
+  « surveillance fondée sur les données transmises par les capteurs ». En
+  développement seulement, un bouton « Simuler une fuite » pour essayer.
+- Tests : 42 tests du moteur (valeurs connues du plan : 0,6 m³ et 2,93 €
+  par jour, environ 1 071 € par an ; 12 m³ et 58,68 € par jour ; 18 m³ et
+  81 € ; même cas au Maroc en dirhams et à l'heure de Casablanca ; mode
+  fermeture ; température sous le seuil ; changements d'heure de mars et
+  d'octobre ; arrosage de nuit déclaré sans fausse alerte) ; 9 tests de
+  bout en bout contre la fonction déployée (détection, pas de doublon,
+  prise en charge, réparation automatique avec 18 m³ et 81 €, capteur
+  muet puis revenu, température basse, registre, fausse alerte retirant
+  les économies et l'anomalie du pilote, refus sans connexion). Écran
+  vérifié avec des comptes jetables (administrateur, lecteur). Typecheck,
+  lint, 833 tests unitaires et 38 tests d'intégration verts.
+
+Aucune dépendance ajoutée.
+
+Reste pour plus tard : envoi des alertes (SMS, e-mail, appel) et
+rapports (phase G5) ; courbes, fiches de site et registre imprimable
+(phase G6) ; seuils de température et délai des analyses à confirmer
+(`docs/BLOCKERS.md`, point 15).
+
+Comment tester à l'écran (avec `npm run dev`) :
+1. Connectez-vous et ouvrez « Mes sites » : en haut, « Aucune fuite en
+   cours » et « Votre eau est sous surveillance jour et nuit ».
+2. Dans l'encadré « Essai », choisissez votre hôtel et cliquez
+   « Simuler une fuite ».
+3. Une fuite de nuit apparaît : le montant « Perdu depuis la
+   détection » augmente chaque seconde ; en dessous, le coût par mois si
+   rien n'est fait et la méthode de calcul.
+4. Cliquez « Je m'en occupe » : l'étiquette devient « Prise en charge ».
+5. Cliquez « C'est réparé » : la fuite disparaît et la ligne
+   « Économies grâce aux fuites réparées » affiche 18 m³ et le montant
+   (88,02 € avec le prix par défaut de 4,89 €/m³).
+
 ---
 
 # Historique — offre Immeuble (en pause)

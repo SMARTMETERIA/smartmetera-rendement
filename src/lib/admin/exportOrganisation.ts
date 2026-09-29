@@ -64,6 +64,7 @@ export const TABLES_EXPORTEES: TableExportee[] = [
   { table: "quiet_windows", tri: ["id"], colonne: "organization_id" },
   { table: "activity_data", tri: ["id"], colonne: "organization_id" },
   { table: "leak_events", tri: ["id"], colonne: "organization_id" },
+  { table: "meter_days", tri: ["meter_id", "day"], colonne: "organization_id" },
   { table: "pilots", tri: ["id"], colonne: "organization_id" },
   { table: "proof_pages", tri: ["id"], colonne: "organization_id" },
   { table: "site_reports", tri: ["id"], colonne: "organization_id" },

@@ -6,6 +6,8 @@
 //   /notifications/digest — lundi 7h Europe/Paris (gating DST-safe côté
 //     SQL), un digest hebdomadaire par organisation (rendement glissant 12
 //     mois + alertes de la semaine), à admin_client + agent + lecteur.
+// Offre Réseau seulement (organizations.kind = 'reseau') : le Gardien de
+// l'eau a ses propres envois (phase G5), l'offre Immeuble aussi.
 // verify_jwt reste activé : le déclencheur pg_cron s'authentifie avec la
 // clé publique "anon" (un JWT valide, mais sans aucun privilège — la
 // fonction utilise ensuite service_role en interne pour son propre travail,
@@ -77,7 +79,10 @@ function nomSecteur(a: any): string | null {
 async function traiterAlertes(admin: SupabaseClient) {
   const { data: alertes } = await admin
     .from("alerts")
-    .select("id, organization_id, type, severite, titre, description, declenchee_le, sectors(nom)")
+    .select(
+      "id, organization_id, type, severite, titre, description, declenchee_le, sectors(nom), organizations!inner(kind)",
+    )
+    .eq("organizations.kind", "reseau")
     .is("notifie_le", null)
     .eq("statut", "ouverte")
     .order("declenchee_le");
@@ -139,7 +144,10 @@ function dateDuJourEuropeParis(): string {
 }
 
 async function traiterDigest(admin: SupabaseClient) {
-  const { data: orgs } = await admin.from("organizations").select("id, nom");
+  const { data: orgs } = await admin
+    .from("organizations")
+    .select("id, nom")
+    .eq("kind", "reseau");
   const semaineDebut = dateDuJourEuropeParis();
   const depuis = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
 

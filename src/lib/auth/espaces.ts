@@ -64,6 +64,22 @@ export function peutGererAppareils(ctx: ContexteUtilisateur): boolean {
   );
 }
 
+/**
+ * Actions sur une fuite (« Je m'en occupe », réparée, fausse alerte) :
+ * admin, agent ou technicien de l'organisation ; directeur ou technicien
+ * du site (même règle que peut_agir_fuite en base).
+ */
+export function peutAgirFuite(ctx: ContexteUtilisateur, siteId: string): boolean {
+  return (
+    ctx.isPlatformAdmin ||
+    (ctx.adhesion?.kind === "sites" &&
+      ["admin_client", "agent", "technicien"].includes(ctx.adhesion.role)) ||
+    ctx.adhesionsSite.some(
+      (a) => a.siteId === siteId && ["directeur_site", "technicien"].includes(a.role),
+    )
+  );
+}
+
 /** Admin de l'organisation « sites » (gère l'équipe et les sites). */
 export function estAdminSites(ctx: ContexteUtilisateur): boolean {
   return (

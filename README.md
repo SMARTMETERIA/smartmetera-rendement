@@ -105,6 +105,15 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
   jours), sessions de pose et photos (espace de stockage privé `poses`),
   fonctions `demarrer_pose`, `etat_pose`, `index_reconstitue`,
   `importer_stock`, `attribuer_appareils`, `corriger_poids_impulsion`.
+- `0041_gardien_moteur.sql`, `0042_droits_gardien_moteur.sql` — moteur du
+  Gardien : bilans quotidiens par point (`meter_days`, date locale du
+  site), économies prudentes en SQL (`economies_prudentes`, même texte de
+  méthode que l'application), actions sur une fuite
+  (`fuite_prendre_en_charge`, `fuite_declarer_reparee`,
+  `fuite_declarer_fausse_alerte`), anomalies des pilotes comptées par
+  déclencheur, `registre_temperatures`, une seule alerte Gardien en cours
+  par clé, détecteurs SQL de l'offre Réseau limités aux organisations
+  hors Gardien, tâche `gardien-moteur` toutes les heures (10e minute).
 
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le
@@ -198,10 +207,12 @@ invisibles, page preuve sans connexion).
   Guides : [`docs/reception-mqtt.md`](./docs/reception-mqtt.md) (broker
   MQTT) et [`infra/chirpstack/README.md`](./infra/chirpstack/README.md)
   (serveur LoRaWAN, alternative The Things Stack).
-- **Modules partagés** : `src/lib/ingest` (testés) est recopié dans
-  `supabase/functions/ingest/lib` par `node scripts/synchroniser-ingest.mjs`
-  ; `src/test/ingest-synchro.test.ts` échoue si les copies divergent.
-  Après modification : synchroniser puis redéployer la fonction.
+- **Modules partagés** : `src/lib/ingest` et `src/lib/moteur-gardien`
+  (testés) sont recopiés dans `supabase/functions/ingest/lib` et
+  `supabase/functions/gardien-moteur/lib` par
+  `node scripts/synchroniser-ingest.mjs` ; `src/test/ingest-synchro.test.ts`
+  échoue si les copies divergent. Après modification : synchroniser puis
+  redéployer la fonction.
 - **Contrôle de fréquence** : un point qui reçoit moins d'un relevé par
   heure passe en « surveillance limitée » (`meters.surveillance`).
 - **Provisionnement** : `/sites/appareils` (admin, agent) — import CSV
@@ -214,6 +225,52 @@ invisibles, page preuve sans connexion).
 - **Tests de bout en bout** : `src/test/integration/reception-gardien.test.ts`
   envoie des trames d'exemple à la fonction déployée (kit A, kit C, sonde,
   appareil inconnu) et vérifie le feu vert.
+
+### Moteur fuites, températures et économies (Gardien de l'eau)
+
+- **Fonction `gardien-moteur`**, appelée toutes les heures par pg_cron
+  (clé « anon », `verify_jwt` actif). Pour chaque site actif d'une
+  organisation `sites` en essai ou active : recalcule la veille et le jour
+  (`meter_days`), ouvre ou clôt les fuites (`leak_events`), ouvre ou
+  résout les alertes (`alerts` : `compteur_muet`, `temperature_basse`,
+  `rappel_analyses`). Aucun envoi : les messages partent en phase G5.
+  Un appel `service_role` peut imposer `maintenant`, `site_id` et `jours`
+  (rattrapage jusqu'à 120 jours).
+- **Logique** : `src/lib/moteur-gardien` (fonctions pures, testées) ;
+  `analyse.ts` assemble tout pour un site. Heure locale du site
+  (Europe/Paris ou Africa/Casablanca) par `Intl`, changements d'heure
+  compris. Relevés répartis heure par heure ; un relevé couvrant plus de
+  2 heures ne donne qu'un débit « lissé », jamais utilisé pour un minimum
+  de nuit ; un point en surveillance limitée n'a que ses volumes.
+- **Règles** (seuils de `platform_settings.seuils`, surchargés par
+  `organizations.settings.gardien.seuils`) : fuite de nuit (minimum de
+  2 h à 5 h hors plages calmes, au-dessus de la ligne de base + max(20 %,
+  5 L/h), 2 nuits de suite) ; ligne de base médiane sur 8 semaines, par
+  jour de la semaine dès 3 nuits comparables, apprentissage avant 7 nuits,
+  seuils doublés et 3 nuits exigées jusqu'à 14 nuits, nuits d'une fuite
+  confirmée exclues ; débit continu (jamais sous 5 L/h pendant 24 h) ;
+  rupture (plus de 3 fois le maximum sur 30 jours et plus de 500 L/h, sans
+  apprentissage) ; mode fermeture (plus de 2 L/h pendant 2 h pendant
+  `closed_periods`) ; fin de fuite après 2 nuits revenues sous le seuil ;
+  capteur muet (36 h en cellulaire, 6 h en LoRaWAN), adressé au
+  partenaire ou à SmartMetera, jamais au client en premier.
+- **Argent** : compteur de pertes en direct (`coutFuite` : coût depuis la
+  détection, par jour, par mois projeté, par an) et économies d'une fuite
+  réparée (excès × 24 h × délai de découverte évité × prix du m³ du
+  site), toujours avec le texte de la méthode prudente. Sans prix de
+  l'eau, seuls les volumes sont donnés.
+- **Températures** : alerte sous le seuil du point (défaut par type dans
+  `platform_settings.temperatures`, `TODO(RAYAN)` à vérifier) ; registre
+  mensuel (`registre_temperatures`) ; rappel des analyses avant la
+  réouverture seulement si le délai est paramétré.
+- **Tests** : `src/lib/moteur-gardien/*.test.ts` (valeurs connues du
+  plan, Maroc, changement d'heure, fermeture, plages calmes) et
+  `src/test/integration/moteur-gardien.test.ts` (fuite simulée détectée,
+  prise en charge, réparée avec 18 m³ et 81 €, capteur muet, température
+  basse, registre, fausse alerte).
+- **Limite connue** : les sites sont traités l'un après l'autre dans une
+  seule exécution ; au-delà de quelques centaines de sites, découper par
+  lots (paramètre `site_id` ou pagination).
 
 ### Import CSV/Excel
 

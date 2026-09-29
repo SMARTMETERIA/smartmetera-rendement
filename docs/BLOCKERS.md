@@ -58,3 +58,13 @@ Chaque point est contourné dans le code par un bouchon marqué
 14. **Notification de première donnée** — l'assistant prévient sur le
     téléphone tant que la page reste ouverte ; l'envoi par SMS ou e-mail
     quand la page est fermée arrive avec l'interface `notify()` (phase G5).
+15. **Températures d'eau chaude** — vérifier dans les textes les seuils
+    par type de point (55 °C en sortie de production et 50 °C sur la
+    boucle de retour, valeurs du plan ; point éloigné : vide) et le délai
+    des analyses avant la réouverture d'un site fermé (vide : aucun rappel
+    n'est envoyé tant qu'il n'est pas renseigné). Réglages dans
+    `platform_settings`, clé `temperatures`.
+16. **Seuils de détection à valider sur le terrain** — valeurs du plan
+    (fuite de nuit, débit continu, rupture, fermeture, capteur muet) dans
+    `platform_settings`, clé `seuils` ; à ajuster après les premiers
+    pilotes, sans nouvelle version du code.
