@@ -37,15 +37,27 @@ function formateur(fuseau: string): Intl.DateTimeFormat {
 
 const JOURS: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
 
+// Mémoire des conversions (le moteur convertit les mêmes heures des
+// milliers de fois) ; vidée au-delà de 200 000 entrées.
+const memoire = new Map<string, PartiesLocales>();
+const memoireInstants = new Map<string, number>();
+const LIMITE_MEMOIRE = 200_000;
+
 export function partiesLocales(instantMs: number, fuseau: string): PartiesLocales {
+  const cle = `${fuseau}|${instantMs}`;
+  const connue = memoire.get(cle);
+  if (connue) return connue;
   const p: Record<string, string> = {};
   for (const x of formateur(fuseau).formatToParts(new Date(instantMs))) p[x.type] = x.value;
-  return {
+  const parties = {
     date: `${p.year}-${p.month}-${p.day}`,
     heure: Number(p.hour),
     minute: Number(p.minute),
     jourIso: JOURS[p.weekday],
   };
+  if (memoire.size > LIMITE_MEMOIRE) memoire.clear();
+  memoire.set(cle, parties);
+  return parties;
 }
 
 export function dateLocale(instantMs: number, fuseau: string): string {
@@ -70,6 +82,16 @@ export function jourIsoDeDate(date: string): number {
  * de la première heure existante qui suit.
  */
 export function instantLocal(date: string, heure: number, fuseau: string): number {
+  const cle = `${fuseau}|${date}|${heure}`;
+  const connu = memoireInstants.get(cle);
+  if (connu !== undefined) return connu;
+  const instant = calculerInstantLocal(date, heure, fuseau);
+  if (memoireInstants.size > LIMITE_MEMOIRE) memoireInstants.clear();
+  memoireInstants.set(cle, instant);
+  return instant;
+}
+
+function calculerInstantLocal(date: string, heure: number, fuseau: string): number {
   const base = Date.parse(`${date}T${String(heure).padStart(2, "0")}:00:00Z`);
   for (let decalage = -14; decalage <= 14; decalage++) {
     const candidat = base - decalage * HEURE_MS;

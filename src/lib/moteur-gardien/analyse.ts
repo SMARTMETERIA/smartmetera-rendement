@@ -231,9 +231,14 @@ export function analyserSite(d: DonneesSite): ResultatSite {
     const periodesFuite = fuites
       .filter((f) => f.status !== "fausse_alerte")
       .map((f) => ({ debut: f.startedAtMs ?? f.detectedAtMs, fin: f.closedAtMs ?? Infinity }));
+    const memoireFuite = new Map<string, boolean>();
     const enFuite = (date: string) => {
+      const connue = memoireFuite.get(date);
+      if (connue !== undefined) return connue;
       const t = instantLocal(date, r.fuiteNuit.debutH, d.fuseau);
-      return periodesFuite.some((p) => t >= p.debut && t <= p.fin);
+      const resultat = periodesFuite.some((p) => t >= p.debut && t <= p.fin);
+      memoireFuite.set(date, resultat);
+      return resultat;
     };
     const derniereClotureMs = (types: TypeFuite[] | null) =>
       Math.max(

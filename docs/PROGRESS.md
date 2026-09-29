@@ -493,6 +493,53 @@ Comment tester à l'écran (avec `npm run dev`) :
 4. Ouvrez un site : son grand chiffre d'économies et son état en couleur.
 5. Faites une pose de capteur : le feu vert s'affiche en grand disque.
 
+## Phase G9 : démonstration et tests de bout en bout — terminée
+
+Plan :
+1. `npm run demo:reset` (`scripts/demo-reset.mjs`) : refuse de tourner sur la base de production ; efface et recrée les organisations de démonstration marquées `settings.demo`.
+2. « Hôtels Atlas Démo » (Maroc, MAD, kit C, 3 hôtels, 4 points chacun, 6 mois horaires, fuite de chasse d'eau réparée, capteur muet, sonde sous le seuil) ; « Camping Partenaire Démo » (marque blanche, arrosage de nuit déclaré, rupture, camping fermé avec fuite en mode fermeture) ; hôtel lyonnais en pilote à J+20 (kit A, fuite ouverte, page preuve) ; nuitées et emplacements.
+3. Le moteur et les envois tournent sur ces données (courbes, fuites, alertes, rapports de première nuit, première semaine, mensuels, pages preuve) ; comptes de démonstration par rôle.
+4. Test de bout en bout unique : provisionnement QR, pose, robinet test, réception, fuite simulée, alerte, prise en charge, réparation, économies, rapports, fin de pilote, page preuve.
+5. Mesure de la durée de `demo:reset` (moins de 5 minutes) ; README.
+
+Fait :
+- `npm run demo:reset` recrée en 67 secondes les trois organisations de
+  démonstration et 7 comptes (administrateur, directeur, technicien selon
+  l'organisation) ; refuse la base de production ; mot de passe commun
+  `DEMO_MOT_DE_PASSE` ou tiré au hasard, affiché à la fin avec les liens
+  des pages preuve.
+- Hôtels Atlas : fuite de chasse d'eau réparée (171 MAD économisés,
+  méthode prudente), capteur muet, sonde de retour de boucle à 47,2 °C ;
+  rapports mensuels, litres par nuitée, registre des températures.
+- Camping Partenaire : marque « Aqua Camping Services », arrosage de nuit
+  déclaré sans fausse alerte, rupture réparée, camping fermé avec fuite
+  « consommation pendant la fermeture », client final « Groupe Les Pins ».
+- Hôtel Bellecour : pilote à J+20, fuite ouverte avec compteur de pertes,
+  rapports de première nuit et de première semaine, page preuve.
+- Moteur accéléré (heures locales mises en cache) : six mois recalculés
+  en trois appels sans dépasser les limites des fonctions ; fonctions
+  `gardien-moteur` et `gardien-envois` redéployées.
+- Test de bout en bout `parcours-complet` (7 étapes, du QR code à la page
+  preuve) vert contre les fonctions déployées. Chaque écran des comptes
+  de démonstration vérifié sans erreur. Typecheck, lint, 1 017 tests
+  unitaires et 62 tests d'intégration verts.
+
+Reste pour plus tard : rien pour cette phase.
+
+Comment tester à l'écran (avec `npm run dev`) :
+1. Dans le terminal, tapez `npm run demo:reset` et attendez environ une
+   minute : notez le mot de passe affiché à la fin.
+2. Connectez-vous avec demo-atlas-admin@example.com et ce mot de passe :
+   trois hôtels, les économies en MAD, un capteur muet dans « Alertes ».
+3. Déconnectez-vous, puis connectez-vous avec
+   demo-camping-admin@example.com : le logo et le nom « Aqua Camping
+   Services » remplacent SmartMeteria.
+4. Connectez-vous avec demo-lyon-directeur@example.com : une fuite en
+   cours, le montant perdu qui augmente, et le bouton pour accepter que
+   la surveillance continue après le pilote.
+5. Ouvrez un des liens « Pages preuve » affichés à la fin du script dans
+   une fenêtre privée : la page se lit sans connexion.
+
 ---
 
 # Historique — offre Immeuble (en pause)

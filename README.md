@@ -38,6 +38,8 @@ absolues, formules métier).
 | `npm run format`       | Formatage Prettier (écrit les fichiers)              |
 | `npm run format:check` | Vérifie le formatage sans écrire                     |
 | `npm run test:rls`     | Tests d'isolation RLS (vrai Supabase, voir plus bas) |
+| `npm run typecheck:fonctions` | Vérifie les types des fonctions Supabase (Deno) |
+| `npm run demo:reset`   | Recrée le jeu de démonstration du Gardien (développement uniquement) |
 
 ## Base de données
 
@@ -392,6 +394,41 @@ le contraste AA de chaque texte sur son fond. Squelettes de chargement
 (`loading.tsx`) sur les pages du Gardien ; animations coupées si
 `prefers-reduced-motion`. Les PDF gardent les polices standard (pas de
 dépendance de polices embarquées).
+
+### Démonstration et parcours complet (Gardien de l'eau)
+
+`npm run demo:reset` (`scripts/demo-reset.mjs`, environ 1 minute) efface
+puis recrée les organisations marquées `settings.demo = true` et les
+comptes `demo-…@example.com`. Il refuse de tourner si `NODE_ENV=production`
+ou si l'URL Supabase est égale à `SUPABASE_URL_PRODUCTION`.
+
+- **Hôtels Atlas Démo** (Maroc, MAD) : 3 hôtels de 4 points, 6 mois de
+  relevés horaires, une fuite de chasse d'eau détectée puis réparée
+  (économies prudentes affichées), un capteur muet, une sonde de retour de
+  boucle sous le seuil. Comptes : `demo-atlas-admin`, `demo-atlas-directeur`
+  (un seul hôtel), `demo-atlas-technicien`.
+- **Camping Partenaire Démo** (France, EUR, marque « Aqua Camping
+  Services ») : arrosage de nuit déclaré (pas de fausse alerte), une rupture
+  réparée, un camping fermé pour l'hiver avec une fuite détectée en mode
+  fermeture. Comptes : `demo-camping-admin`, `demo-camping-technicien`.
+  Connexion à la marque : `/p/camping-partenaire-demo/connexion`.
+- **Hôtel Bellecour Démo** (Lyon, pilote à J+20) : fuite en cours avec son
+  compteur de pertes, rapports de première nuit et de première semaine,
+  page preuve. Comptes : `demo-lyon-admin`, `demo-lyon-directeur`.
+
+Le mot de passe commun est `DEMO_MOT_DE_PASSE` (sinon tiré au hasard) ; il
+est affiché à la fin avec les liens des pages preuve. Les envois restent en
+mode journal : rien ne part.
+
+`src/test/integration/parcours-complet.test.ts` rejoue la chaîne entière
+contre les fonctions déployées : import du stock avec QR code, attribution,
+pose et robinet test (trames ChirpStack), trois semaines de relevés, fuite
+détectée par le moteur, e-mail et SMS au technicien (journal), prise en
+charge, réparation et économies prudentes (18 m³, 81 €), rapports de
+première nuit et de première semaine, fin de pilote et page preuve lisible
+sans connexion. Le moteur est mémorisé (conversions d'heure locale en
+cache) pour recalculer six mois en trois appels de 61 jours sans dépasser
+les limites des fonctions Supabase.
 
 ### Import CSV/Excel
 
