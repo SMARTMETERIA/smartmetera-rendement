@@ -12,6 +12,7 @@
 // 5. Pilotes : résumé et page preuve à J+25, conversion (seulement avec
 //    consentement écrit) ou tâche d'appel à J+30, tâche de remboursement.
 // 6. Tâche « rapports non ouverts depuis 2 mois ».
+// 7. Récapitulatif quotidien au superadmin (7 h, heure de Paris, phase G10).
 //
 // Chaque message passe par notify() et laisse une ligne dans le journal
 // des envois (ajout seul, unique par destinataire) : rien n'est envoyé
@@ -23,6 +24,8 @@
 // {"maintenant": "ISO", "organization_id": "...", "sections": ["fuites",
 // "alertes", "poses", "rapports", "pilotes", "suivi"]} ou
 // {"page_preuve": "<site_id>"} (création d'une page preuve à la demande).
+// ou {"message_test": {"email", "telephone", "canaux"}} (message de test du
+// superadmin, phase G10).
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
@@ -52,6 +55,7 @@ import {
 } from "./lib/gardien-envois/messages.ts";
 import { montant } from "./lib/gardien-envois/format.ts";
 import { lignesSurveillance, messageRecapitulatif, type EtatTaches } from "./lib/gardien-envois/surveillance.ts";
+import { messagesTest, validerMessageTest, type ResultatTest } from "./lib/gardien-envois/messageTest.ts";
 import {
   contenuFinPilote,
   contenuMensuel,
@@ -1270,6 +1274,20 @@ Deno.serve(async (req) => {
       erreurs: erreurs.slice(0, 20),
     });
   };
+  // Message de test du superadmin (service_role, depuis l'espace superadmin) :
+  // même chaîne que les alertes, sans ligne dans le journal des envois.
+  if (service && corps.message_test && typeof corps.message_test === "object") {
+    const validation = validerMessageTest(corps.message_test as Ligne);
+    if (!validation.ok) return json({ erreur: validation.erreur }, 400);
+    const config = configEnvois(Deno.env.toObject());
+    const resultats: ResultatTest[] = [];
+    for (const m of messagesTest(MARQUE_PLATEFORME, validation.demande, urlApp)) {
+      const r = await notify(m, config);
+      resultats.push({ canal: m.canal, mode: r.mode, statut: r.statut, fournisseur: r.fournisseur, erreur: r.erreur });
+    }
+    return json({ mode: config.mode, resultats });
+  }
+
   const reglagesBruts = await admin
     .from("platform_settings")
     .select("key, value")

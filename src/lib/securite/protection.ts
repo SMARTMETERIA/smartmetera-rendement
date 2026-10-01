@@ -6,6 +6,7 @@
 // Supabase Auth : les comptes sont créés par l'API Admin (generateLink),
 // que le CAPTCHA de Supabase Auth ne couvre pas.
 import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function adresseIpAppelant(): Promise<string> {
@@ -38,6 +39,26 @@ export async function consommerQuota(
     return true;
   }
   return data === true;
+}
+
+export const MESSAGE_TROP_DE_DEMANDES =
+  "Trop de demandes en peu de temps. Réessayez dans quelques minutes.";
+
+/**
+ * Limitation de débit d'une route (pages publiques, PDF) : réponse 429 si
+ * le quota est dépassé, sinon null. Quotas par défaut : 30 documents par
+ * tranche de 10 minutes.
+ */
+export async function limiterDebit(
+  cle: string,
+  max = 30,
+  fenetreSecondes = 10 * 60,
+): Promise<NextResponse | null> {
+  if (await consommerQuota(cle, max, fenetreSecondes)) return null;
+  return NextResponse.json(
+    { erreur: MESSAGE_TROP_DE_DEMANDES },
+    { status: 429, headers: { "Retry-After": String(fenetreSecondes) } },
+  );
 }
 
 export type VerificationCaptcha =

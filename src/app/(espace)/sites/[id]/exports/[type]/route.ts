@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { construirePdfVue } from "@/lib/gardien/rapportPdf";
+import { limiterDebit } from "@/lib/securite/protection";
 import { marqueOrganisation } from "@/lib/gardien/marqueOrganisation";
 import {
   csvClefVerte,
@@ -45,6 +46,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { data: utilisateur } = await supabase.auth.getUser();
   if (!utilisateur.user) return NextResponse.json({ erreur: "Connectez-vous." }, { status: 401 });
   if (!UUID.test(id) || !TYPES.includes(type)) return NextResponse.json({ erreur: "Export inconnu." }, { status: 404 });
+  const limite = await limiterDebit(`pdf:user:${utilisateur.user.id}`);
+  if (limite) return limite;
   const { data: site } = await supabase
     .from("sites")
     .select("id, organization_id, name, timezone, capacity, occupancy_rate_default, activity_unit")

@@ -6,11 +6,14 @@ import { prediagnostic, validerPrediagnostic, vuePrediagnostic } from "@/lib/gar
 import { construirePdfVue } from "@/lib/gardien/rapportPdf";
 import { marqueOrganisation } from "@/lib/gardien/marqueOrganisation";
 import { MARQUE_PLATEFORME } from "@/lib/marque";
+import { limiterDebit } from "@/lib/securite/protection";
 
 /** PDF du pré-diagnostic, à la marque du partenaire (SmartMeteria pour le superadmin). */
 export async function GET(request: Request) {
   const ctx = await getContexteUtilisateur();
   if (!peutPrediagnostic(ctx)) return NextResponse.json({ erreur: "Accès réservé." }, { status: 403 });
+  const limite = await limiterDebit(`pdf:user:${ctx.userId}`);
+  if (limite) return limite;
   const parametres = Object.fromEntries(new URL(request.url).searchParams.entries());
   const validation = validerPrediagnostic(parametres);
   if (!validation.ok) return NextResponse.json({ erreur: validation.erreur }, { status: 400 });

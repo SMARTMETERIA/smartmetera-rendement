@@ -4,6 +4,7 @@ import { vuePreuve } from "@/lib/gardien-rapports/affichage";
 import type { ContenuPagePreuve } from "@/lib/gardien-rapports/contenus";
 import { construirePdfVue } from "@/lib/gardien/rapportPdf";
 import { marqueDepuisPreuve } from "@/lib/gardien/marqueOrganisation";
+import { adresseIpAppelant, limiterDebit } from "@/lib/securite/protection";
 
 /** PDF de la page preuve, sans connexion, par son lien signé non expiré. */
 export async function GET(_request: Request, { params }: { params: Promise<{ token: string }> }) {
@@ -11,6 +12,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
   if (!/^[0-9a-f]{48}$/.test(token)) {
     return NextResponse.json({ erreur: "Lien expiré ou invalide." }, { status: 404 });
   }
+  const limite = await limiterDebit(`preuve-pdf:ip:${await adresseIpAppelant()}`, 10);
+  if (limite) return limite;
   const anonyme = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false },
   });

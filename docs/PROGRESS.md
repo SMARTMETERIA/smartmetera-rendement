@@ -540,7 +540,7 @@ Comment tester à l'écran (avec `npm run dev`) :
 5. Ouvrez un des liens « Pages preuve » affichés à la fin du script dans
    une fenêtre privée : la page se lit sans connexion.
 
-## Phase G10 : mise en ligne — en cours
+## Phase G10 : mise en ligne — préparée, en attente des comptes de Rayan
 
 Plan :
 1. Sécurité : en-têtes (CSP, HSTS, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`), région Vercel `cdg1`, limitation de débit des pages publiques restantes, garde « clé service_role côté serveur uniquement », audit des dépendances.
@@ -548,6 +548,42 @@ Plan :
 3. Surveillance : état des tâches planifiées (table `taches_executions`, onglet superadmin) et récapitulatif quotidien au superadmin ; durée de conservation des données personnelles paramétrable (`TODO(RAYAN)`).
 4. Pages légales en modèles « à faire valider » (mentions légales, CGU, CGV B2B avec obligation de moyens, confidentialité, accord de sous-traitance, conditions de pilote avec consentement de conversion) et registre des traitements dans `docs/`.
 5. `docs/MISE_EN_LIGNE.md` (étapes de Rayan, à cocher, pour débutant), `docs/RUNBOOK.md`, script de test de fumée, `BLOCKERS.md`, README. La mise en ligne elle-même attend les comptes de Rayan.
+
+Fait (session du 1er octobre 2026, reprise du travail non sauvegardé du
+29 septembre sans le refaire) :
+- Hébergement : Vercel région `cdg1` (`vercel.json`). Next.js passé de
+  16.3.4 à 16.3.8 (faille critique corrigée, même version mineure) ;
+  audit des dépendances : 0 faille.
+- Sécurité : en-têtes (CSP, HSTS, cadres interdits, `Referrer-Policy`,
+  `Permissions-Policy`) ; limitation de débit ajoutée sur la page preuve
+  publique et sur tous les PDF (test de garde) ; test « clé service_role
+  jamais atteignable depuis le navigateur ».
+- Sentry sans dépendance et sans données personnelles (serveur et
+  navigateur, relais `/api/erreurs`), inactif tant que `SENTRY_DSN`
+  manque ; pages d'erreur et page introuvable en français.
+- Surveillance : migrations `0050` et `0051` (appliquées sur la base de
+  développement), onglet « Surveillance » du superadmin, récapitulatif
+  quotidien à 7 h, durée de conservation paramétrable et purge nocturne.
+- Envois : SMS, appel et WhatsApp par Twilio derrière `notify()`,
+  désactivés tant que les clés manquent, numéro de test en mode
+  « redirection » ; bouton « Message de test » du superadmin (même chaîne
+  que les alertes, rien ne part en mode « journal »). E-mails : Resend
+  prêt ; SMTP Supabase documenté (réglage du tableau de bord).
+- Pages légales `/legal` en six modèles « à faire valider », liées depuis
+  l'accueil, l'inscription, les espaces, la page preuve et l'accord de
+  pilote ; `docs/REGISTRE_TRAITEMENTS.md`.
+- `docs/MISE_EN_LIGNE.md` (17 étapes à cocher, pour débutant),
+  `docs/RUNBOOK.md`, script `npm run fumee` (lecture seule),
+  `docs/BLOCKERS.md` (points 17, 24 à 29), README, `.env.example`.
+- Tests : 46 nouveaux (téléphone, message de test, pages légales,
+  limitation de débit, test de fumée). Typecheck, lint, 1 114 tests
+  unitaires verts ; compilation de production réussie.
+
+Aucune dépendance ajoutée.
+
+Reste (dépend de Rayan) : créer les comptes et suivre
+`docs/MISE_EN_LIGNE.md` ; critère de fin du plan (`app.smartmeteria.com`
+en ligne, test de fumée réussi) impossible sans eux.
 
 ---
 

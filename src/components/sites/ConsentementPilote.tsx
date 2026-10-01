@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,7 +73,10 @@ export function ConsentementPilote({
         <input type="checkbox" className="mt-1" checked={coche} onChange={(e) => setCoche(e.target.checked)} />
         <span>
           J&apos;accepte que la surveillance continue avec l&apos;abonnement à la fin du pilote, le {fin}.
-          Sans cet accord, nous vous appellerons avant.
+          Sans cet accord, nous vous appellerons avant.{" "}
+          <Link href="/legal/conditions-pilote" target="_blank" className="underline underline-offset-4">
+            Conditions du pilote
+          </Link>
         </span>
       </label>
       <div className="space-y-1">

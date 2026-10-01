@@ -20,6 +20,7 @@ import { TachesPanel, type Tache } from "@/components/admin/TachesPanel";
 import { PilotesPanel, type PiloteSuivi } from "@/components/admin/PilotesPanel";
 import { UsagePanel, type LigneUsageAdmin } from "@/components/admin/UsagePanel";
 import { SurveillancePanel } from "@/components/admin/SurveillancePanel";
+import { MessageTestPanel } from "@/components/admin/MessageTestPanel";
 import { lignesSurveillance, problemes, type EtatTaches } from "@/lib/gardien-envois/surveillance";
 import { Badge } from "@/components/ui/badge";
 
@@ -54,6 +55,7 @@ export default async function AdminPage() {
     { data: appareils },
     { data: muets },
     { data: etatTaches },
+    { data: telephones },
   ] = await Promise.all([
     supabase
       .from("organizations")
@@ -121,6 +123,7 @@ export default async function AdminPage() {
       .limit(2000),
     supabase.from("alerts").select("donnees").eq("type", "compteur_muet").in("statut", ["ouverte", "acquittee"]).not("site_id", "is", null),
     supabase.rpc("etat_taches_planifiees"),
+    supabase.from("memberships").select("alert_phone").eq("user_id", ctx.userId).not("alert_phone", "is", null).limit(1),
   ]);
   const nom = (o: unknown) => ((Array.isArray(o) ? o[0] : o) as { nom?: string; name?: string } | null);
   const maintenant = new Date().getTime();
@@ -220,6 +223,18 @@ export default async function AdminPage() {
                 lignes={surveillance}
                 appelsHttp={(etatTaches as EtatTaches | null)?.appels_http ?? null}
               />
+            </CardContent>
+          </Card>
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Message de test</CardTitle>
+              <CardDescription>
+                Envoie un e-mail et un SMS (ou un appel, ou un WhatsApp) à vous-même, par la même chaîne
+                que les alertes. Rien ne part tant que les envois sont en mode « journal ».
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MessageTestPanel telephone={(telephones?.[0]?.alert_phone as string | undefined) ?? null} />
             </CardContent>
           </Card>
         </TabsContent>

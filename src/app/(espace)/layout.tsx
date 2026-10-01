@@ -11,6 +11,7 @@ import { marqueOrganisation, organisationDeMarque } from "@/lib/gardien/marqueOr
 import { EnteteMarque, EnveloppeMarque } from "@/components/marque/EnveloppeMarque";
 import { peutPrediagnostic } from "@/lib/gardien/prediagnosticServeur";
 import { LogoutButton } from "@/components/LogoutButton";
+import { PiedLegal } from "@/components/legal/PiedLegal";
 
 /**
  * Espaces Gardien de l'eau (sites), Immeuble (partenaire, gestionnaire,
@@ -96,11 +97,14 @@ export default async function EspaceLayout({
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
         {children}
       </main>
-      {marque.afficherPropulse && orgMarque && (
-        <footer className="text-muted-foreground mx-auto w-full max-w-5xl px-4 pb-6 text-xs sm:px-6">
-          {marque.piedDePage ? `${marque.piedDePage} · ` : ""}Propulsé par {NOM_PLATEFORME}
-        </footer>
-      )}
+      <footer className="text-muted-foreground mx-auto w-full max-w-5xl space-y-2 px-4 pb-6 text-center text-xs sm:px-6">
+        {marque.afficherPropulse && orgMarque && (
+          <p>
+            {marque.piedDePage ? `${marque.piedDePage} · ` : ""}Propulsé par {NOM_PLATEFORME}
+          </p>
+        )}
+        <PiedLegal />
+      </footer>
     </EnveloppeMarque>
   );
 }

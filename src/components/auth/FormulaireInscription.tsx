@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -224,6 +225,17 @@ export function FormulaireInscription() {
             autoComplete="new-password"
           />
           <Turnstile />
+          <p className="text-muted-foreground text-xs">
+            En créant un compte, vous acceptez les{" "}
+            <Link href="/legal/cgu" className="text-foreground underline underline-offset-4">
+              conditions d&apos;utilisation
+            </Link>{" "}
+            et la{" "}
+            <Link href="/legal/confidentialite" className="text-foreground underline underline-offset-4">
+              politique de confidentialité
+            </Link>
+            .
+          </p>
           <Button type="submit" className="w-full" disabled={enCours}>
             {enCours ? "Création du compte…" : "Créer mon compte"}
           </Button>

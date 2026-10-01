@@ -68,12 +68,13 @@ Chaque point est contourné dans le code par un bouchon marqué
     (fuite de nuit, débit continu, rupture, fermeture, capteur muet) dans
     `platform_settings`, clé `seuils` ; à ajuster après les premiers
     pilotes, sans nouvelle version du code.
-17. **Fournisseurs SMS, appel vocal et WhatsApp** — à choisir (plan,
-    section 6, point 5). En attendant, ces messages sont seulement écrits
-    dans le journal des envois (`notify()`, `src/lib/gardien-envois/notify.ts`,
-    marqué `TODO(RAYAN)`). Pour chacun : clés côté serveur uniquement
-    (secrets des fonctions Supabase), numéro ou expéditeur à déclarer,
-    modèle de message WhatsApp à faire valider par Meta pour le Maroc.
+17. **Fournisseurs SMS, appel vocal et WhatsApp** — branché en phase G10 :
+    Twilio (un seul compte pour les trois canaux), désactivé tant que ses
+    clés manquent (`src/lib/gardien-envois/telephone.ts`, marqué
+    `TODO(RAYAN)`). À confirmer, ou à remplacer par un autre fournisseur
+    (Brevo, OVH, Vonage…) : l'adaptateur est petit. Ouverture du compte,
+    numéro français et modèle WhatsApp : `docs/MISE_EN_LIGNE.md`, étape 13.
+    Texte du modèle WhatsApp proposé, à faire valider par Meta.
 18. **Activer les vrais envois d'e-mails du Gardien** — secrets de la
     fonction `gardien-envois` dans Supabase (Edge Functions > Secrets) :
     `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (domaine vérifié chez Resend),
@@ -101,3 +102,43 @@ Chaque point est contourné dans le code par un bouchon marqué
 23. **Facturation pendant un pilote** — l'export d'usage compte les
     abonnements des sites en pilote et les signale (colonne « Sites en
     pilote ») : décider s'ils sont facturés, offerts ou remboursés.
+
+## Ajoutés en phase G10 (mise en ligne)
+
+24. **Durée de conservation des messages** — réglage `conservation` de
+    `platform_settings` : `envois_mois` est vide (rien n'est effacé).
+    Indiquez la durée au-delà de laquelle le destinataire et le contenu des
+    messages sont effacés (la ligne reste : date, canal, statut). Les
+    relevés ne sont jamais supprimés.
+25. **Comptes et clés de production** — à créer par vous, dans l'ordre de
+    `docs/MISE_EN_LIGNE.md` : projet Supabase de production à Paris (offre
+    Pro pour les sauvegardes), Vercel, domaine d'envoi chez Resend, Sentry
+    (région européenne), Cloudflare Turnstile, identifiants Google,
+    Twilio, broker MQTT, serveur LoRaWAN, pointage de
+    `app.smartmeteria.com`. Aucun compte n'a été créé et aucune base de
+    production n'a été touchée.
+26. **Mise en ligne = fusion vers `main`** — Vercel publie la branche
+    `main`. La fusion de `feat/gardien` dans `main` est votre décision
+    (demande de fusion sur GitHub), jamais faite automatiquement.
+27. **Pages légales et registre des traitements** — six modèles « à faire
+    valider » (`/legal` : mentions légales, CGU, CGV professionnelles avec
+    obligation de moyens, conditions du pilote, confidentialité, accord de
+    sous-traitance) et `docs/REGISTRE_TRAITEMENTS.md`. À faire relire par
+    un juriste ; donnez les informations de l'entité (raison sociale,
+    forme, capital, siège, immatriculation, TVA, directeur de la
+    publication, contact, contact données personnelles) : elles vont dans
+    `INFORMATIONS_LEGALES` (`src/lib/legal/documents.ts`) et le bandeau
+    « Modèle à faire valider » sera retiré. Points ouverts dans les textes :
+    plafond de responsabilité, délai de paiement, reconduction et préavis,
+    droit applicable (France et Maroc), retenue à la source, matériel
+    (vente ou mise à disposition), sort du matériel après un pilote,
+    garanties de transfert hors Union européenne de chaque sous-traitant.
+28. **Adresse d'expédition des e-mails** — proposée :
+    `SmartMeteria <alertes@smartmeteria.com>`. À confirmer (une autre
+    adresse ou un sous-domaine d'envoi est possible).
+29. **Sentry : piles d'appels du navigateur lisibles** — les erreurs
+    partent sans dépendance supplémentaire (envoi direct, masquage maison),
+    donc sans « source maps » : les erreurs du navigateur montrent un code
+    compacté, plus difficile à lire (celles du serveur le sont moins).
+    Si cela gêne, ajouter `@sentry/nextjs` (dépendance lourde) : à décider
+    plus tard, après quelques semaines d'exploitation.

@@ -4,6 +4,7 @@ import { urlSite } from "@/lib/auth/liens";
 import { vueRapport, type ContenuRapport } from "@/lib/gardien-rapports/affichage";
 import { construirePdfVue } from "@/lib/gardien/rapportPdf";
 import { marqueOrganisation } from "@/lib/gardien/marqueOrganisation";
+import { limiterDebit } from "@/lib/securite/protection";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -16,6 +17,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ erreur: "Connectez-vous pour lire ce rapport." }, { status: 401 });
   }
   if (!UUID.test(id)) return NextResponse.json({ erreur: "Rapport introuvable." }, { status: 404 });
+  const limite = await limiterDebit(`pdf:user:${utilisateur.user.id}`);
+  if (limite) return limite;
   const { data: rapport } = await supabase
     .from("site_reports")
     .select("id, organization_id, kind, period, content")

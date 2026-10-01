@@ -40,6 +40,7 @@ absolues, formules métier).
 | `npm run test:rls`     | Tests d'isolation RLS (vrai Supabase, voir plus bas) |
 | `npm run typecheck:fonctions` | Vérifie les types des fonctions Supabase (Deno) |
 | `npm run demo:reset`   | Recrée le jeu de démonstration du Gardien (développement uniquement) |
+| `npm run fumee -- <url>` | Test de fumée en lecture seule d'un site en ligne (voir « Mise en ligne ») |
 
 ## Base de données
 
@@ -134,6 +135,12 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
   stockage public `marques` (logos ; écriture par l'administrateur de
   l'organisation, dossier = identifiant de l'organisation) et
   `marque_publique(slug)` pour la page de connexion d'un partenaire.
+- `0050_surveillance.sql`, `0051_droits_surveillance.sql` — passages des
+  tâches planifiées (`taches_executions`, écrits par les fonctions),
+  `etat_taches_planifiees()` pour l'onglet « Surveillance » du superadmin
+  et le récapitulatif quotidien, durée de conservation paramétrable
+  (`platform_settings.conservation`) et purge nocturne du destinataire et
+  du contenu des messages anciens (`purger_donnees_personnelles`).
 
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le
@@ -429,6 +436,61 @@ première nuit et de première semaine, fin de pilote et page preuve lisible
 sans connexion. Le moteur est mémorisé (conversions d'heure locale en
 cache) pour recalculer six mois en trois appels de 61 jours sans dépasser
 les limites des fonctions Supabase.
+
+### Mise en ligne (Gardien de l'eau, phase G10)
+
+- **Pas à pas pour la première mise en ligne** : `docs/MISE_EN_LIGNE.md`
+  (étapes manuelles à cocher). **Exploitation et incidents** :
+  `docs/RUNBOOK.md`. **Registre des traitements** :
+  `docs/REGISTRE_TRAITEMENTS.md`.
+- **Hébergement** : Vercel région `cdg1` (`vercel.json`), Supabase région
+  Paris.
+- **En-têtes de sécurité** (`src/lib/securite/entetes.ts`, posés par
+  `next.config.ts`) : CSP (cadres interdits, objets interdits, connexions
+  limitées à Supabase et Turnstile), HSTS en production, `X-Frame-Options`,
+  `Referrer-Policy`, `Permissions-Policy` (appareil photo seulement pour
+  la pose), sans `X-Powered-By`.
+- **Limitation de débit** (quotas en base, `consommer_quota`) :
+  inscription, lien de connexion, mot de passe oublié, invitations,
+  changement d'adresse, page preuve publique (60 vues par IP et par
+  10 minutes), tous les PDF (`limiterDebit` : 30 documents par personne et
+  par 10 minutes, 10 PDF de page preuve par IP), relais des erreurs. Un
+  test échoue si une route qui produit un PDF n'est pas limitée.
+- **Erreurs vers Sentry** sans dépendance (`src/lib/erreurs/sentry.ts`) :
+  erreurs du serveur (`src/instrumentation.ts`) et du navigateur (relais
+  `/api/erreurs`, la clé reste côté serveur). Adresses e-mail,
+  téléphones, jetons et paramètres d'adresse masqués avant l'envoi ; aucun
+  utilisateur, aucune IP ; seule étiquette d'appartenance :
+  `organization_id`. Désactivé tant que `SENTRY_DSN` est vide.
+- **Pages d'erreur** en français (`error.tsx`, `global-error.tsx`,
+  `not-found.tsx`) avec la référence de l'erreur.
+- **Clé service_role** : un test suit les imports de chaque composant
+  navigateur et échoue s'il peut atteindre la clé ou le client
+  service_role ; aucune variable `NEXT_PUBLIC_…` ne porte de secret.
+- **SMS, appel et WhatsApp** derrière `notify()` : fournisseur Twilio
+  (`src/lib/gardien-envois/telephone.ts`), activé seulement par les
+  secrets de la fonction `gardien-envois` (`GARDIEN_TELEPHONE_FOURNISSEUR=twilio`
+  et les clés `TWILIO_…`, voir `.env.example`). En mode « redirection »,
+  tout part vers `GARDIEN_TELEPHONE_REDIRECT`. En mode « journal » (défaut),
+  rien ne part.
+- **E-mails** : l'application envoie elle-même ses e-mails par Resend ; le
+  SMTP personnalisé de Supabase Auth (Resend) est un réglage du tableau de
+  bord (`docs/MISE_EN_LIGNE.md`, étape 5).
+- **Surveillance** : onglet superadmin « Surveillance » (état de chaque
+  tâche planifiée), récapitulatif quotidien à 7 h (heure de Paris),
+  **message de test** vers soi-même (e-mail, SMS, appel, WhatsApp) par la
+  même chaîne que les alertes.
+- **Pages légales** en modèles « à faire valider » (`/legal`, contenu
+  dans `src/lib/legal/documents.ts`) : mentions légales, CGU, CGV
+  professionnelles (obligation de moyens), conditions du pilote (accord
+  écrit de conversion), confidentialité, accord de sous-traitance
+  (article 28). Les passages « à compléter » sont surlignés.
+- **Test de fumée** : `npm run fumee -- https://app.smartmeteria.com --env
+  .env.production.local` (lecture seule ; `--sentry` envoie une erreur
+  de test). Vérifie les pages publiques, les en-têtes, la région `cdg1`,
+  l'isolation des données pour un visiteur sans compte et, avec
+  `FUMEE_EMAIL` et `FUMEE_MOT_DE_PASSE`, la connexion et l'état des
+  tâches planifiées.
 
 ### Import CSV/Excel
 

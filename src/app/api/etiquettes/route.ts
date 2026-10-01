@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { urlSite } from "@/lib/auth/liens";
 import { construirePlancheEtiquettes } from "@/lib/gardien/planchePdf";
+import { limiterDebit } from "@/lib/securite/protection";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const MAXIMUM = 240;
@@ -31,6 +32,9 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
+
+  const limite = await limiterDebit(`pdf:user:${utilisateur.user.id}`);
+  if (limite) return limite;
 
   const { data } = await supabase
     .from("devices")

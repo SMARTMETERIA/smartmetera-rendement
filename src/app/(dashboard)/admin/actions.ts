@@ -11,6 +11,9 @@ import { envoyerEmail } from "@/lib/email/envoyer";
 import { NOM_PLATEFORME } from "@/lib/marque";
 import { usageMensuel } from "@/lib/gardien/usage";
 import type { Tarifs } from "@/lib/gardien-rapports/contenus";
+import { consommerQuota } from "@/lib/securite/protection";
+import { validerMessageTest, type ResultatTest } from "@/lib/gardien-envois/messageTest";
+import type { ModeEnvois } from "@/lib/gardien-envois/notify";
 
 async function verifierSuperadmin(): Promise<{ userId: string } | { erreur: string }> {
   const supabase = await createClient();
@@ -334,4 +337,46 @@ export async function calculerUsageMensuel(params: { mois: string }): Promise<{ 
   }
   revalidatePath("/admin");
   return { ok: true, lignes };
+}
+
+/**
+ * Message de test vers le superadmin lui-même (sa propre adresse, le numéro
+ * qu'il saisit) par la fonction gardien-envois : vérifie de bout en bout
+ * Resend et le fournisseur de SMS. En mode « journal », rien ne part.
+ * 5 essais par heure.
+ */
+export async function envoyerMessageTest(params: {
+  telephone: string;
+  canaux: string[];
+}): Promise<{ ok: true; mode: ModeEnvois; resultats: ResultatTest[] } | { erreur: string }> {
+  const verification = await verifierSuperadmin();
+  if ("erreur" in verification) return verification;
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  const validation = validerMessageTest({ email: data.user?.email ?? "", ...params });
+  if (!validation.ok) return { erreur: validation.erreur };
+  if (!(await consommerQuota(`message-test:${verification.userId}`, 5, 3600))) {
+    return { erreur: "Cinq messages de test par heure au plus. Réessayez plus tard." };
+  }
+  try {
+    const reponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/gardien-envois`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message_test: validation.demande }),
+    });
+    const corps = (await reponse.json().catch(() => ({}))) as {
+      mode?: ModeEnvois;
+      resultats?: ResultatTest[];
+      erreur?: string;
+    };
+    if (!reponse.ok || !corps.mode || !corps.resultats) {
+      return { erreur: corps.erreur ?? `La fonction d'envoi a répondu ${reponse.status}.` };
+    }
+    return { ok: true, mode: corps.mode, resultats: corps.resultats };
+  } catch {
+    return { erreur: "Fonction d'envoi injoignable. Réessayez dans un instant." };
+  }
 }

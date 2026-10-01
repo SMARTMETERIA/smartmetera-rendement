@@ -3,6 +3,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NOM_PLATEFORME } from "@/lib/marque";
 import { cn } from "@/lib/utils";
+import { PiedLegal } from "@/components/legal/PiedLegal";
 
 export default function Home() {
   return (
@@ -34,6 +35,7 @@ export default function Home() {
       <p className="text-muted-foreground max-w-md text-xs">
         Surveillance fondée sur les données transmises par les capteurs.
       </p>
+      <PiedLegal />
     </main>
   );
 }

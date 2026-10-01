@@ -11,6 +11,12 @@ import {
 } from "@/components/marque/EnveloppeMarque";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PiedLegal } from "@/components/legal/PiedLegal";
+import {
+  adresseIpAppelant,
+  consommerQuota,
+  MESSAGE_TROP_DE_DEMANDES,
+} from "@/lib/securite/protection";
 
 export const metadata: Metadata = {
   title: "Ce que la surveillance a trouvé",
@@ -27,6 +33,14 @@ export default async function PagePreuve({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  if (!(await consommerQuota(`preuve:ip:${await adresseIpAppelant()}`, 60, 10 * 60))) {
+    return (
+      <main className="mx-auto max-w-xl space-y-3 px-4 py-16 text-center">
+        <h1 className="text-2xl font-semibold">Page momentanément indisponible</h1>
+        <p className="text-muted-foreground">{MESSAGE_TROP_DE_DEMANDES}</p>
+      </main>
+    );
+  }
   const anonyme = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -73,6 +87,7 @@ export default async function PagePreuve({
             Propulsé par {NOM_PLATEFORME}
           </p>
         )}
+        <PiedLegal className="mt-8" />
       </main>
     </EnveloppeMarque>
   );
