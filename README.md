@@ -141,6 +141,9 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
   et le récapitulatif quotidien, durée de conservation paramétrable
   (`platform_settings.conservation`) et purge nocturne du destinataire et
   du contenu des messages anciens (`purger_donnees_personnelles`).
+- `0052_delai_appels_fonctions.sql` — les appels planifiés vers les
+  fonctions (`cron_appeler_edge_function`) attendent 2 minutes au lieu de
+  5 secondes : un passage un peu long n'est plus compté en échec.
 
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le

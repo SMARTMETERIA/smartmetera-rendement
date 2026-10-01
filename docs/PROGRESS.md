@@ -634,11 +634,18 @@ Corrigé (avec tests) :
 - **Liens légaux** aussi sur la page de connexion d'un partenaire.
 - **Surveillance** : un passage resté « en cours » plus d'une heure
   (récapitulatif interrompu) apparaît « En échec » au lieu de « À l'heure ».
+- **Appels planifiés** : la base n'attendait que 5 secondes la réponse des
+  fonctions ; les passages durant 3 à 5 secondes, 12 appels sur 54 étaient
+  comptés « en échec » à tort (le récapitulatif quotidien l'aurait signalé
+  chaque matin). Migration `0052` : 2 minutes d'attente (appliquée sur la
+  base de développement).
 
-Déploiement sur la base de développement : fonction `gardien-envois`
-version 3 (surveillance, récapitulatif quotidien, message de test, SMS,
+Déploiement sur la base de développement : migration `0052` et fonction
+`gardien-envois` version 3 (surveillance, récapitulatif quotidien, message de test, SMS,
 appel et WhatsApp derrière `notify()`), vérifiée par un appel « message
-de test » (mode journal : rien n'est parti). La fonction `gardien-moteur`
+de test » (mode journal : rien n'est parti) puis par le passage
+automatique de 11 h UTC (envois et récapitulatif quotidien inscrits dans
+la surveillance). La fonction `gardien-moteur`
 n'a pas besoin d'être redéployée (seul un texte d'affichage a changé dans
 sa copie, sans effet sur la détection). Test de fumée lancé sur
 l'application compilée en local : 0 échec. Typecheck, lint, 1 141 tests
