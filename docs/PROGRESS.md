@@ -632,6 +632,17 @@ Corrigé (avec tests) :
   prix partenaire par point), qui n'existait qu'en SQL ; chaque
   modification écrite dans le journal d'audit.
 - **Liens légaux** aussi sur la page de connexion d'un partenaire.
+- **Surveillance** : un passage resté « en cours » plus d'une heure
+  (récapitulatif interrompu) apparaît « En échec » au lieu de « À l'heure ».
+
+Déploiement sur la base de développement : fonction `gardien-envois`
+version 3 (surveillance, récapitulatif quotidien, message de test, SMS,
+appel et WhatsApp derrière `notify()`), vérifiée par un appel « message
+de test » (mode journal : rien n'est parti). La fonction `gardien-moteur`
+n'a pas besoin d'être redéployée (seul un texte d'affichage a changé dans
+sa copie, sans effet sur la détection). Test de fumée lancé sur
+l'application compilée en local : 0 échec. Typecheck, lint, 1 141 tests
+unitaires et 62 tests d'intégration verts.
 
 Non vérifié à l'écran : l'espace superadmin (aucun superadmin sur la base
 de développement ; le droit temporaire pour un compte de démonstration a

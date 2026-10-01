@@ -109,6 +109,21 @@ describe("état des tâches", () => {
   });
 });
 
+describe("passage interrompu", () => {
+  it("un passage resté « en cours » plus d'une heure est en échec ; pas avant", () => {
+    const [bloque] = lignesSurveillance(
+      etat({ fonctions: [fonction("recapitulatif-quotidien", { dernier_debut: ilYa(90), derniere_fin: null, dernier_statut: "en_cours" })] }),
+      MAINTENANT,
+    );
+    expect(bloque).toMatchObject({ etat: "en_echec", detail: "Passage interrompu avant la fin." });
+    const [enCours] = lignesSurveillance(
+      etat({ fonctions: [fonction("recapitulatif-quotidien", { dernier_debut: ilYa(5), derniere_fin: null, dernier_statut: "en_cours" })] }),
+      MAINTENANT,
+    );
+    expect(enCours.etat).toBe("a_l_heure");
+  });
+});
+
 describe("récapitulatif quotidien", () => {
   const base = {
     jour: "2026-09-30",

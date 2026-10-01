@@ -101,6 +101,13 @@ export interface LigneSurveillance {
 }
 
 const MARGE_MIN = 10;
+/** Au-delà, un passage resté « en cours » a été interrompu (plantage, délai dépassé). */
+const INTERROMPU_MIN = 60;
+
+function passageEnEchec(statut: string | null, debut: string | null, maintenantMs: number): boolean {
+  if (statut === "echec" || statut === "partiel") return true;
+  return statut === "en_cours" && debut !== null && maintenantMs - Date.parse(debut) > INTERROMPU_MIN * 60_000;
+}
 
 function detailErreurs(erreurs: unknown): string | null {
   if (!Array.isArray(erreurs) || erreurs.length === 0) return null;
@@ -112,6 +119,12 @@ function detailErreurs(erreurs: unknown): string | null {
         ? String((premiere as { message: unknown }).message)
         : JSON.stringify(premiere);
   return `${texte.slice(0, 200)}${erreurs.length > 1 ? ` (et ${erreurs.length - 1} autre${erreurs.length > 2 ? "s" : ""})` : ""}`;
+}
+
+function interrompu(f: TacheFonction, maintenantMs: number): string | null {
+  return f.dernier_statut === "en_cours" && passageEnEchec(f.dernier_statut, f.dernier_debut, maintenantMs)
+    ? "Passage interrompu avant la fin."
+    : null;
 }
 
 export function lignesSurveillance(etat: EtatTaches, maintenantMs: number): LigneSurveillance[] {
@@ -157,14 +170,14 @@ export function lignesSurveillance(etat: EtatTaches, maintenantMs: number): Lign
         ? { tache: c.nom, dernier_debut: null, derniere_fin: null, dernier_statut: null, dernieres_erreurs: [], passages_24h: 0, echecs_24h: 0 }
         : undefined);
     if (f) {
-      juger(c.nom, c.planification, c.active, f.dernier_debut, f.dernier_statut === "echec" || f.dernier_statut === "partiel", Number(f.echecs_24h), detailErreurs(f.dernieres_erreurs));
+      juger(c.nom, c.planification, c.active, f.dernier_debut, passageEnEchec(f.dernier_statut, f.dernier_debut, maintenantMs), Number(f.echecs_24h), detailErreurs(f.dernieres_erreurs) ?? interrompu(f, maintenantMs));
     } else {
       juger(c.nom, c.planification, c.active, c.dernier_debut, c.dernier_statut === "failed", Number(c.echecs_24h), c.dernier_statut === "failed" ? (c.dernier_message ?? null) : null);
     }
   }
   for (const f of etat.fonctions) {
     if (vues.has(f.tache)) continue;
-    juger(f.tache, PLANIFICATION_FONCTIONS[f.tache] ?? null, true, f.dernier_debut, f.dernier_statut === "echec" || f.dernier_statut === "partiel", Number(f.echecs_24h), detailErreurs(f.dernieres_erreurs));
+    juger(f.tache, PLANIFICATION_FONCTIONS[f.tache] ?? null, true, f.dernier_debut, passageEnEchec(f.dernier_statut, f.dernier_debut, maintenantMs), Number(f.echecs_24h), detailErreurs(f.dernieres_erreurs) ?? interrompu(f, maintenantMs));
   }
   const ordre: EtatTache[] = ["en_echec", "en_retard", "jamais", "inactive", "a_l_heure"];
   return lignes.sort((a, b) => ordre.indexOf(a.etat) - ordre.indexOf(b.etat) || a.libelle.localeCompare(b.libelle, "fr"));
