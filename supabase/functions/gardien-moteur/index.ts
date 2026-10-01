@@ -415,7 +415,7 @@ async function traiterSite(ctx: Contexte, site: Site): Promise<Bilan> {
         cle: a.cle,
         // Capteur muet : au partenaire (ou à SmartMeteria), jamais au client
         // en premier (plan, phase G4). Envoi en phase G5.
-        destinataire: a.type === "compteur_muet" ? (partenaire ? "partenaire" : "smartmetera") : "site",
+        destinataire: a.type === "compteur_muet" ? (partenaire ? "partenaire" : "smartmeteria") : "site",
       },
     });
     if (error && error.code !== "23505") throw new Error(error.message);
@@ -454,13 +454,30 @@ Deno.serve(async (req) => {
       : 2;
   const siteDemande = service && typeof corps.site_id === "string" ? corps.site_id : null;
 
+  // Passage planifié (pg_cron, corps vide) : journalisé dans taches_executions.
+  const planifie = Object.keys(corps).length === 0;
+  const debutMs = Date.now();
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+  const journaliser = async (statut: "ok" | "partiel" | "echec", bilan: Ligne, erreurs: unknown[]) => {
+    if (!planifie) return;
+    await admin.from("taches_executions").insert({
+      tache: "gardien-moteur",
+      debut: iso(debutMs),
+      fin: new Date().toISOString(),
+      statut,
+      bilan,
+      erreurs: erreurs.slice(0, 20),
+    });
+  };
 
   const reglagesBruts = await admin
     .from("platform_settings")
     .select("key, value")
     .in("key", ["seuils", "temperatures"]);
-  if (reglagesBruts.error) return json({ erreur: reglagesBruts.error.message }, 500);
+  if (reglagesBruts.error) {
+    await journaliser("echec", {}, [reglagesBruts.error.message]);
+    return json({ erreur: reglagesBruts.error.message }, 500);
+  }
   const reglage = (cle: string) =>
     ((reglagesBruts.data ?? []).find((r) => r.key === cle)?.value ?? null) as Ligne | null;
 
@@ -472,7 +489,10 @@ Deno.serve(async (req) => {
     .in("organizations.status", ["essai", "actif"]);
   if (siteDemande) requete = requete.eq("id", siteDemande);
   const { data: sites, error } = await requete;
-  if (error) return json({ erreur: error.message }, 500);
+  if (error) {
+    await journaliser("echec", {}, [error.message]);
+    return json({ erreur: error.message }, 500);
+  }
 
   const ctx: Contexte = {
     admin,
@@ -494,10 +514,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({
-    maintenant: iso(maintenantMs),
-    sites: (sites ?? []).length,
-    ...total,
-    erreurs,
-  }, erreurs.length ? 207 : 200);
+  const bilan = { maintenant: iso(maintenantMs), sites: (sites ?? []).length, ...total };
+  await journaliser(erreurs.length ? "partiel" : "ok", bilan, erreurs);
+  return json({ ...bilan, erreurs }, erreurs.length ? 207 : 200);
 });

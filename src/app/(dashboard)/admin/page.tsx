@@ -19,6 +19,8 @@ import { ReceptionCapteurs } from "@/components/admin/ReceptionCapteurs";
 import { TachesPanel, type Tache } from "@/components/admin/TachesPanel";
 import { PilotesPanel, type PiloteSuivi } from "@/components/admin/PilotesPanel";
 import { UsagePanel, type LigneUsageAdmin } from "@/components/admin/UsagePanel";
+import { SurveillancePanel } from "@/components/admin/SurveillancePanel";
+import { lignesSurveillance, problemes, type EtatTaches } from "@/lib/gardien-envois/surveillance";
 import { Badge } from "@/components/ui/badge";
 
 const dateCourte = (iso: string) =>
@@ -51,6 +53,7 @@ export default async function AdminPage() {
     { data: usage },
     { data: appareils },
     { data: muets },
+    { data: etatTaches },
   ] = await Promise.all([
     supabase
       .from("organizations")
@@ -117,9 +120,12 @@ export default async function AdminPage() {
       .neq("provisioning_status", "retire")
       .limit(2000),
     supabase.from("alerts").select("donnees").eq("type", "compteur_muet").in("statut", ["ouverte", "acquittee"]).not("site_id", "is", null),
+    supabase.rpc("etat_taches_planifiees"),
   ]);
   const nom = (o: unknown) => ((Array.isArray(o) ? o[0] : o) as { nom?: string; name?: string } | null);
   const maintenant = new Date().getTime();
+  const surveillance = etatTaches ? lignesSurveillance(etatTaches as EtatTaches, maintenant) : [];
+  const aRegarder = problemes(surveillance).length;
   const listePilotes: PiloteSuivi[] = (pilotes ?? []).map((p) => ({
     id: p.id,
     site: nom(p.sites)?.name ?? "—",
@@ -195,7 +201,28 @@ export default async function AdminPage() {
           <TabsTrigger value="pilotes">Pilotes</TabsTrigger>
           <TabsTrigger value="usage">Usage mensuel</TabsTrigger>
           <TabsTrigger value="flotte">Flotte</TabsTrigger>
+          <TabsTrigger value="surveillance">
+            Surveillance{aRegarder ? ` (${aRegarder})` : ""}
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="surveillance" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Surveillance des tâches planifiées</CardTitle>
+              <CardDescription>
+                Détection, alertes et rapports, récapitulatif quotidien, nettoyages. Une tâche est « en
+                retard » quand elle n&apos;est pas passée depuis deux fois son intervalle habituel.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SurveillancePanel
+                lignes={surveillance}
+                appelsHttp={(etatTaches as EtatTaches | null)?.appels_http ?? null}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="pilotes" className="pt-4">
           <Card>

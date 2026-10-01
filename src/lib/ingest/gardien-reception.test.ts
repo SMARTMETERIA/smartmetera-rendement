@@ -177,7 +177,7 @@ describe("enveloppe MQTT (kit A)", () => {
   it("lit un transfert de broker avec le message en texte ou en base64", () => {
     const texte = parseEnveloppeMqtt({
       clientid: "urn:imei:351358816993213",
-      topic: "smartmetera/pulse",
+      topic: "smartmeteria/pulse",
       payload: JSON.stringify(MESSAGE_ANNEXE_3),
     });
     expect(estErreurEnveloppe(texte)).toBe(false);

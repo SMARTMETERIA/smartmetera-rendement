@@ -246,7 +246,7 @@ describe("moteur du Gardien de bout en bout", () => {
       type: "compteur_muet",
       statut: "ouverte",
       titre: "Capteur muet : Général",
-      donnees: { device_id: deviceId, cle: `muet:${deviceId}`, destinataire: "smartmetera" },
+      donnees: { device_id: deviceId, cle: `muet:${deviceId}`, destinataire: "smartmeteria" },
     });
     expect(alertes![1]).toMatchObject({
       type: "temperature_basse",

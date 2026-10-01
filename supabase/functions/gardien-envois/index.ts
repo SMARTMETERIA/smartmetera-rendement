@@ -51,6 +51,7 @@ import {
   type Rendu,
 } from "./lib/gardien-envois/messages.ts";
 import { montant } from "./lib/gardien-envois/format.ts";
+import { lignesSurveillance, messageRecapitulatif, type EtatTaches } from "./lib/gardien-envois/surveillance.ts";
 import {
   contenuFinPilote,
   contenuMensuel,
@@ -92,7 +93,8 @@ const urlApp = (Deno.env.get("GARDIEN_URL_APP") ?? Deno.env.get("NEXT_PUBLIC_SIT
 /** Au-delà, un événement ancien n'est plus notifié (reprise après arrêt). */
 const FRAICHEUR_MS = 48 * HEURE_MS;
 const HEURE_RAPPORTS = 8;
-const SECTIONS = ["fuites", "alertes", "poses", "rapports", "pilotes", "suivi"] as const;
+const HEURE_RECAPITULATIF = 7;
+const SECTIONS = ["fuites", "alertes", "poses", "rapports", "pilotes", "suivi", "recapitulatif"] as const;
 type Section = (typeof SECTIONS)[number];
 
 type Ligne = Record<string, unknown>;
@@ -156,6 +158,8 @@ interface Site {
 interface Contexte {
   admin: SupabaseClient;
   maintenantMs: number;
+  /** Passage de toute la plateforme (ni organisation ni instant imposés). */
+  plateforme: boolean;
   config: ConfigEnvois;
   reglages: Record<string, Ligne>;
   reglagesTemperature: ReglagesTemperature;
@@ -1130,6 +1134,114 @@ async function sectionSuivi(ctx: Contexte) {
 }
 
 // ---------------------------------------------------------------------------
+// Récapitulatif quotidien au superadmin (plan, phase G10) : une fois par
+// jour à partir de 7 h, heure de Paris ; la ligne de taches_executions
+// (tâche + jour, unique) empêche un second envoi. Pas de ligne dans le
+// journal des envois (il appartient aux organisations).
+async function sectionRecapitulatif(ctx: Contexte) {
+  if (!ctx.plateforme) return;
+  const l = partiesLocales(ctx.maintenantMs, "Europe/Paris");
+  if (l.heure < HEURE_RECAPITULATIF) return;
+  const { data: passage, error } = await ctx.admin
+    .from("taches_executions")
+    .insert({ tache: "recapitulatif-quotidien", cle: l.date, debut: iso(ctx.maintenantMs), statut: "en_cours" })
+    .select("id")
+    .single();
+  if (error) {
+    if (error.code !== "23505") throw new Error(error.message);
+    return;
+  }
+  const depuis = iso(ctx.maintenantMs - 24 * HEURE_MS);
+  const dans7Jours = iso(ctx.maintenantMs + 7 * JOUR_MS);
+  const compterEnvois = async (statut: string) =>
+    (await ctx.admin.from("envois").select("id", { count: "exact", head: true }).eq("statut", statut).gt("created_at", depuis)).count ?? 0;
+  const { data: etat, error: erreurEtat } = await ctx.admin.rpc("etat_taches_planifiees");
+  if (erreurEtat) throw new Error(erreurEtat.message);
+  const { count: fuites } = await ctx.admin
+    .from("leak_events")
+    .select("id", { count: "exact", head: true })
+    .gt("detected_at", depuis);
+  const { count: aFaire } = await ctx.admin
+    .from("admin_tasks")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "a_faire");
+  const pilotes = await lire(
+    ctx.admin
+      .from("pilots")
+      .select("ends_at, sites(name, timezone), organizations(nom)")
+      .in("status", ["en_cours", "prolonge"])
+      .gte("ends_at", iso(ctx.maintenantMs))
+      .lte("ends_at", dans7Jours)
+      .order("ends_at")
+      .limit(20),
+  );
+  const essais = await lire(
+    ctx.admin
+      .from("organizations")
+      .select("nom, trial_ends_at")
+      .eq("kind", "sites")
+      .eq("status", "essai")
+      .gte("trial_ends_at", iso(ctx.maintenantMs))
+      .lte("trial_ends_at", dans7Jours)
+      .order("trial_ends_at")
+      .limit(20),
+  );
+  const un = (v: unknown) => ((Array.isArray(v) ? v[0] : v) ?? null) as Ligne | null;
+  const donnees = {
+    jour: l.date,
+    taches: lignesSurveillance(etat as EtatTaches, ctx.maintenantMs),
+    appelsHttp: (etat as EtatTaches).appels_http,
+    envois: {
+      envoyes: await compterEnvois("envoye"),
+      echecs: await compterEnvois("echec"),
+      journalises: await compterEnvois("journalise"),
+    },
+    fuitesDetectees: fuites ?? 0,
+    tachesAFaire: aFaire ?? 0,
+    pilotes: pilotes.map((p) => {
+      const site = un(p.sites);
+      return {
+        site: (site?.name as string) ?? "",
+        organisation: (un(p.organizations)?.nom as string) ?? "",
+        fin: dateLocale(ms(p.ends_at) as number, (site?.timezone as string) ?? "Europe/Paris"),
+      };
+    }),
+    essais: essais.map((o) => ({ organisation: o.nom as string, fin: dateLocale(ms(o.trial_ends_at) as number, "Europe/Paris") })),
+  };
+  const message = messageRecapitulatif(MARQUE_PLATEFORME, urlApp, donnees);
+  const statuts: string[] = [];
+  for (const m of await superadmins(ctx)) {
+    if (!m.email) continue;
+    const r = await notify(
+      {
+        canal: "email",
+        destinataire: m.email,
+        sujet: message.sujet,
+        texte: message.texte,
+        html: message.html,
+        expediteur: MARQUE_PLATEFORME.expediteur,
+        repondreA: null,
+      },
+      ctx.config,
+    );
+    statuts.push(r.statut);
+  }
+  await ctx.admin
+    .from("taches_executions")
+    .update({
+      fin: new Date().toISOString(),
+      statut: statuts.includes("echec") ? "partiel" : "ok",
+      bilan: {
+        destinataires: statuts.length,
+        mode: ctx.config.mode,
+        statuts,
+        taches_a_regarder: donnees.taches.filter((t) => t.etat === "en_echec" || t.etat === "en_retard").length,
+      },
+    })
+    .eq("id", passage.id);
+  compter(ctx, "recapitulatifs");
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ erreur: "Méthode non autorisée." }, 405);
   const corps = (await req.json().catch(() => ({}))) as Ligne;
@@ -1143,12 +1255,29 @@ Deno.serve(async (req) => {
       : SECTIONS,
   );
 
+  // Passage planifié (pg_cron, corps vide) : journalisé dans taches_executions.
+  const planifie = Object.keys(corps).length === 0;
+  const debutMs = Date.now();
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+  const journaliser = async (statut: "ok" | "partiel" | "echec", bilan: Ligne, erreurs: string[]) => {
+    if (!planifie) return;
+    await admin.from("taches_executions").insert({
+      tache: "gardien-envois",
+      debut: iso(debutMs),
+      fin: new Date().toISOString(),
+      statut,
+      bilan,
+      erreurs: erreurs.slice(0, 20),
+    });
+  };
   const reglagesBruts = await admin
     .from("platform_settings")
     .select("key, value")
     .in("key", ["alertes", "economies", "pilotes", "pages_preuve", "tarifs", "temperatures"]);
-  if (reglagesBruts.error) return json({ erreur: reglagesBruts.error.message }, 500);
+  if (reglagesBruts.error) {
+    await journaliser("echec", {}, [reglagesBruts.error.message]);
+    return json({ erreur: reglagesBruts.error.message }, 500);
+  }
   const reglages = Object.fromEntries((reglagesBruts.data ?? []).map((r) => [r.key, r.value as Ligne]));
 
   let requeteOrgs = admin
@@ -1158,7 +1287,10 @@ Deno.serve(async (req) => {
     .in("status", ["essai", "actif"]);
   if (orgDemandee) requeteOrgs = requeteOrgs.eq("id", orgDemandee);
   const { data: orgs, error: erreurOrgs } = await requeteOrgs;
-  if (erreurOrgs) return json({ erreur: erreurOrgs.message }, 500);
+  if (erreurOrgs) {
+    await journaliser("echec", {}, [erreurOrgs.message]);
+    return json({ erreur: erreurOrgs.message }, 500);
+  }
   const organisations = new Map((orgs ?? []).map((o) => [o.id as string, o as Organisation]));
   const { data: sites, error: erreurSites } = organisations.size
     ? await admin
@@ -1167,11 +1299,15 @@ Deno.serve(async (req) => {
         .in("organization_id", [...organisations.keys()])
         .eq("active", true)
     : { data: [], error: null };
-  if (erreurSites) return json({ erreur: erreurSites.message }, 500);
+  if (erreurSites) {
+    await journaliser("echec", {}, [erreurSites.message]);
+    return json({ erreur: erreurSites.message }, 500);
+  }
 
   const ctx: Contexte = {
     admin,
     maintenantMs,
+    plateforme: !orgDemandee && !Number.isFinite(maintenantDemande),
     config: configEnvois(Deno.env.toObject()),
     reglages,
     reglagesTemperature: lireReglagesTemperature(reglages.temperatures),
@@ -1217,6 +1353,7 @@ Deno.serve(async (req) => {
     ["rapports", sectionRapports],
     ["pilotes", sectionPilotes],
     ["suivi", sectionSuivi],
+    ["recapitulatif", sectionRecapitulatif],
   ];
   for (const [nom, executer] of etapes) {
     if (!sections.has(nom)) continue;
@@ -1227,14 +1364,12 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json(
-    {
-      maintenant: iso(maintenantMs),
-      mode: ctx.config.mode,
-      organisations: organisations.size,
-      ...ctx.bilan,
-      erreurs: ctx.erreurs,
-    },
-    ctx.erreurs.length ? 207 : 200,
-  );
+  const bilan = {
+    maintenant: iso(maintenantMs),
+    mode: ctx.config.mode,
+    organisations: organisations.size,
+    ...ctx.bilan,
+  };
+  await journaliser(ctx.erreurs.length ? "partiel" : "ok", bilan, ctx.erreurs);
+  return json({ ...bilan, erreurs: ctx.erreurs }, ctx.erreurs.length ? 207 : 200);
 });

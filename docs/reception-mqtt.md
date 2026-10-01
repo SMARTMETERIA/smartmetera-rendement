@@ -51,7 +51,7 @@ posé contre le capteur :
 1. **MQTT CONFIGURATION** : adresse du broker (sans `mqtts://`), port,
    identifiant, mot de passe, identifiant client `urn:imei:<IMEI>` (déjà
    rempli), certificat `.pem`, sujet de publication (par exemple
-   `smartmetera/pulse`).
+   `smartmeteria/pulse`).
 2. **NETWORK** : en France, limiter les bandes à la bande 20 raccourcit la
    connexion (recommandation Adeunis).
 3. **APPLICATION** : voies actives (A, ou A et B), **échantillonnage

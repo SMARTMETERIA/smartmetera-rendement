@@ -540,6 +540,15 @@ Comment tester à l'écran (avec `npm run dev`) :
 5. Ouvrez un des liens « Pages preuve » affichés à la fin du script dans
    une fenêtre privée : la page se lit sans connexion.
 
+## Phase G10 : mise en ligne — en cours
+
+Plan :
+1. Sécurité : en-têtes (CSP, HSTS, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`), région Vercel `cdg1`, limitation de débit des pages publiques restantes, garde « clé service_role côté serveur uniquement », audit des dépendances.
+2. Erreurs vers Sentry sans données personnelles et sans nouvelle dépendance (envoi direct, adresses, téléphones et jetons masqués, étiquette `organization_id` seule).
+3. Surveillance : état des tâches planifiées (table `taches_executions`, onglet superadmin) et récapitulatif quotidien au superadmin ; durée de conservation des données personnelles paramétrable (`TODO(RAYAN)`).
+4. Pages légales en modèles « à faire valider » (mentions légales, CGU, CGV B2B avec obligation de moyens, confidentialité, accord de sous-traitance, conditions de pilote avec consentement de conversion) et registre des traitements dans `docs/`.
+5. `docs/MISE_EN_LIGNE.md` (étapes de Rayan, à cocher, pour débutant), `docs/RUNBOOK.md`, script de test de fumée, `BLOCKERS.md`, README. La mise en ligne elle-même attend les comptes de Rayan.
+
 ---
 
 # Historique — offre Immeuble (en pause)
