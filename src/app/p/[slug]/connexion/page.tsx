@@ -6,6 +6,7 @@ import { journalDevActif } from "@/components/auth/AvisJournalDev";
 import { EnteteMarque, EnveloppeMarque } from "@/components/marque/EnveloppeMarque";
 import { marqueDepuisPreuve } from "@/lib/gardien/marqueOrganisation";
 import { NOM_PLATEFORME } from "@/lib/marque";
+import { PiedLegal } from "@/components/legal/PiedLegal";
 
 async function marqueDuSlug(slug: string) {
   if (!/^[a-z0-9-]{2,60}$/.test(slug)) return null;
@@ -33,6 +34,7 @@ export default async function ConnexionPartenaire({ params }: { params: Promise<
         {marque.afficherPropulse && (
           <p className="text-muted-foreground text-xs">Propulsé par {NOM_PLATEFORME}</p>
         )}
+        <PiedLegal />
       </main>
     </EnveloppeMarque>
   );

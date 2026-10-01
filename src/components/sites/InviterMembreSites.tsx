@@ -77,13 +77,13 @@ export function InviterMembreSites({
         />
       </div>
       <div className="space-y-2">
-        <Label>Rôle</Label>
+        <Label htmlFor="invitation-role">Rôle</Label>
         <Select
           items={ROLES}
           value={role}
           onValueChange={(v) => v && setRole(v)}
         >
-          <SelectTrigger className="w-full sm:w-64">
+          <SelectTrigger id="invitation-role" className="w-full sm:w-64">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -97,7 +97,7 @@ export function InviterMembreSites({
       </div>
       {choixSite && (
         <div className="space-y-2">
-          <Label>Site</Label>
+          <Label htmlFor="invitation-site">Site</Label>
           <Select
             items={[
               { value: TOUS_LES_SITES, label: "Tous les sites" },
@@ -106,7 +106,7 @@ export function InviterMembreSites({
             value={siteId}
             onValueChange={(v) => v && setSiteId(v)}
           >
-            <SelectTrigger className="w-full sm:w-56">
+            <SelectTrigger id="invitation-site" className="w-full sm:w-56">
               <SelectValue
                 placeholder={sites.length ? "Choisir" : "Aucun site"}
               />

@@ -23,8 +23,8 @@ export function RetirerMembreSites({
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <Button variant="ghost" size="sm" onClick={retirer} disabled={enCours}>
+    <div className="flex flex-col items-start gap-1 sm:items-end">
+      <Button variant="outline" size="sm" onClick={retirer} disabled={enCours} aria-label={`Retirer l'accès de ${email}`}>
         Retirer
       </Button>
       {erreur && <span className="text-destructive text-xs">{erreur}</span>}

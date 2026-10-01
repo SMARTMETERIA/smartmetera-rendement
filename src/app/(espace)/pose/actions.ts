@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { messageBase } from "@/lib/erreurs/base";
 import { createClient } from "@/lib/supabase/server";
 import { getEspaceSites, peutPoser } from "@/lib/auth/espaces";
 import {
@@ -65,10 +66,7 @@ export async function validerPose(saisie: SaisiePose): Promise<ResultatPose> {
   });
   if (error) {
     return {
-      erreur:
-        error.code === "42501"
-          ? error.message
-          : `Pose impossible : ${error.message}`,
+      erreur: messageBase(error, "Pose impossible pour le moment. Vérifiez les réponses puis réessayez."),
     };
   }
   revalidatePath("/pose");
@@ -148,7 +146,7 @@ export async function corrigerPoids(
     p_meter_id: meterId,
     p_poids_l: poidsL,
   });
-  if (error) return { erreur: `Correction impossible : ${error.message}` };
+  if (error) return { erreur: messageBase(error, "Correction impossible pour le moment. Réessayez.") };
   revalidatePath("/pose");
   return {
     ok: true,

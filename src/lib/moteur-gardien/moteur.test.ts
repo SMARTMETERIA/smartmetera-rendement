@@ -60,6 +60,9 @@ describe("valeurs connues du plan (phase G4)", () => {
     expect(e.montant).toBe(207);
     expect(texte(e.methode)).toContain("11,50 MAD/m³ = 207,00 MAD");
     expect(texte(methodePertes(25, 11.5, "MAD"))).toContain("MAD/m³");
+    // Le compteur part de la détection : la méthode le dit (et non « depuis le début »).
+    expect(methodePertes(25, 4.89, "EUR")).toContain("compté depuis la détection");
+    expect(methodePertes(25, null, "EUR")).toContain("compté depuis la détection");
   });
 
   it("sans prix de l'eau, les volumes restent calculés mais aucun montant n'est inventé", () => {

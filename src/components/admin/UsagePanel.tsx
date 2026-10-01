@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { quantite } from "@/lib/gardien-envois/format";
 import { calculerUsageMensuel } from "@/app/(dashboard)/admin/actions";
 
 export interface LigneUsageAdmin {
@@ -36,7 +37,7 @@ export function UsagePanel({ mois, lignes }: { mois: string; lignes: LigneUsageA
     setEnCours(true);
     const r = await calculerUsageMensuel({ mois: choix });
     setEnCours(false);
-    setRetour("erreur" in r ? { ok: false, texte: r.erreur } : { ok: true, texte: `${r.lignes} ligne(s) calculée(s).` });
+    setRetour("erreur" in r ? { ok: false, texte: r.erreur } : { ok: true, texte: `${quantite(r.lignes, "ligne calculée", "lignes calculées")}.` });
   }
 
   return (

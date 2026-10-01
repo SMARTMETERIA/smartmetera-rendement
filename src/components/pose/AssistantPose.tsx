@@ -200,8 +200,8 @@ export function AssistantPose({
         )}
         {rang === 0 && appareil.dejaPose && (
           <p className="bg-attention/20 rounded-lg p-3 text-sm">
-            Ce capteur est déjà posé ({appareil.dejaPose}). Continuer le repose
-            à l&apos;emplacement choisi.
+            Ce capteur est déjà posé ({appareil.dejaPose}). Si vous continuez, il sera
+            déplacé vers l&apos;emplacement que vous allez choisir.
           </p>
         )}
       </div>

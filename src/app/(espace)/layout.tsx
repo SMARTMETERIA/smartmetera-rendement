@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getContexteUtilisateur } from "@/lib/auth/contexte";
 import {
   estAdminSites,
@@ -12,6 +11,7 @@ import { EnteteMarque, EnveloppeMarque } from "@/components/marque/EnveloppeMarq
 import { peutPrediagnostic } from "@/lib/gardien/prediagnosticServeur";
 import { LogoutButton } from "@/components/LogoutButton";
 import { PiedLegal } from "@/components/legal/PiedLegal";
+import { NavEspace } from "@/components/NavEspace";
 
 /**
  * Espaces Gardien de l'eau (sites), Immeuble (partenaire, gestionnaire,
@@ -82,17 +82,7 @@ export default async function EspaceLayout({
           <EnteteMarque marque={marque} />
           <LogoutButton />
         </div>
-        <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-2 whitespace-nowrap sm:flex-wrap sm:px-6">
-          {liens.map((lien) => (
-            <Link
-              key={lien.href}
-              href={lien.href}
-              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-            >
-              {lien.label}
-            </Link>
-          ))}
-        </nav>
+        <NavEspace liens={liens} />
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
         {children}

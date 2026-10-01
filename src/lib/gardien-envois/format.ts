@@ -7,6 +7,11 @@ export function nombre(n: number, decimales = 1): string {
   return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: decimales }).format(n);
 }
 
+/** Accord en nombre : « 1 anomalie trouvée », « 3 anomalies trouvées » (0 au singulier). */
+export function quantite(n: number, singulier: string, pluriel: string): string {
+  return `${nombre(n, 0)} ${n > 1 ? pluriel : singulier}`;
+}
+
 export function montant(valeur: number, monnaie: Monnaie): string {
   const texte = new Intl.NumberFormat("fr-FR", {
     minimumFractionDigits: 2,

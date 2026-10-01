@@ -38,6 +38,8 @@ import { TITRES_RAPPORT, type TypeRapport } from "@/lib/gardien-rapports/contenu
 import { moisLong, montantRond as formaterMontantRond, nombre } from "@/lib/gardien-envois/format";
 import { dernierMoisComplet, indicateursSites } from "@/lib/gardien/indicateursSites";
 import { dateLocale } from "@/lib/moteur-gardien/temps";
+import { CLASSES_CARTE, CLASSES_TON, etatSurveillance } from "@/lib/gardien/etatSurveillance";
+import { cn } from "@/lib/utils";
 
 type Ligne = Record<string, unknown>;
 const un = <T,>(v: T | T[] | null | undefined): T | null =>
@@ -56,6 +58,8 @@ export default async function SitesPage() {
   const peutAjouter =
     adhesion !== null && ["admin_client", "agent"].includes(adhesion.role);
   const simulation = process.env.NODE_ENV === "development" && peutGererAppareils(ctx);
+  // Équipe de l'organisation : voit le détail des capteurs muets (comme la page « Alertes »).
+  const equipe = adhesion !== null || ctx.isPlatformAdmin;
 
   let requeteSites = supabase
     .from("sites")
@@ -77,7 +81,14 @@ export default async function SitesPage() {
       .maybeSingle(),
   ]);
   const siteIds = (sites ?? []).map((s) => s.id);
-  const [{ data: fuitesBrutes }, { data: reparees }, { data: rapports }] = await Promise.all([
+  const [
+    { data: fuitesBrutes },
+    { data: reparees },
+    { data: rapports },
+    { data: alertesEnCours },
+    { count: compteursPoses },
+    { count: sondes },
+  ] = await Promise.all([
     supabase
       .from("leak_events")
       .select(
@@ -97,10 +108,28 @@ export default async function SitesPage() {
       .in("site_id", siteIds)
       .order("created_at", { ascending: false })
       .limit(12),
+    supabase
+      .from("alerts")
+      .select("site_id, type")
+      .in("site_id", siteIds)
+      .in("statut", ["ouverte", "acquittee"])
+      .in("type", ["compteur_muet", "temperature_basse"]),
+    supabase
+      .from("meters")
+      .select("id", { count: "exact", head: true })
+      .in("site_id", siteIds)
+      .eq("type", "point_comptage")
+      .eq("actif", true)
+      .not("installed_at", "is", null),
+    supabase
+      .from("temperature_points")
+      .select("id", { count: "exact", head: true })
+      .in("site_id", siteIds)
+      .eq("active", true),
   ]);
   const nomSite = new Map((sites ?? []).map((s) => [s.id, s.name]));
   const aujourdhui = dateLocale(new Date().getTime(), REGLAGES_PAYS[org?.country === "MA" ? "MA" : "FR"].fuseau);
-  const indicateurs = await indicateursSites(supabase, sites ?? [], aujourdhui);
+  const indicateurs = await indicateursSites(supabase, sites ?? [], aujourdhui, { equipe });
   const moisIndicateur = dernierMoisComplet(aujourdhui).debut;
   const avecClients = (sites ?? []).some((s) => un(s.clients as Ligne | Ligne[] | null));
   // Vue groupe : classement par litres par unité (le plus sobre en premier).
@@ -112,15 +141,7 @@ export default async function SitesPage() {
     if (lb === null) return -1;
     return la - lb;
   });
-  const { count: pointsActifs } = peutAjouter
-    ? await supabase
-        .from("meters")
-        .select("id", { count: "exact", head: true })
-        .in("site_id", siteIds)
-        .eq("type", "point_comptage")
-        .eq("actif", true)
-        .not("installed_at", "is", null)
-    : { count: null };
+  const pointsActifs = peutAjouter ? (compteursPoses ?? 0) : null;
   const peutPreuve =
     peutAjouter || ctx.adhesionsSite.some((a) => a.role === "directeur_site");
   const sitesPreuve = (sites ?? [])
@@ -147,6 +168,13 @@ export default async function SitesPage() {
     };
   });
   const economies = totalEconomies(reparees ?? []);
+  const etat = etatSurveillance({
+    fuites: fuites.length,
+    pointsPoses: (compteursPoses ?? 0) + (sondes ?? 0),
+    capteursMuets: (alertesEnCours ?? []).filter((a) => a.type === "compteur_muet").length,
+    temperaturesBasses: (alertesEnCours ?? []).filter((a) => a.type === "temperature_basse").length,
+    equipe,
+  });
   const rendueA = new Date().getTime();
 
   const pays = org?.country === "MA" ? "MA" : "FR";
@@ -182,24 +210,22 @@ export default async function SitesPage() {
         </p>
       </section>
 
-      <Card className={fuites.length ? "border-destructive/40" : undefined}>
+      <Card className={CLASSES_CARTE[etat.ton]}>
         <CardHeader>
-          <CardTitle className="text-xl">
-            {fuites.length === 0
-              ? "Tout est sous surveillance"
-              : fuites.length === 1
-                ? "1 fuite en cours"
-                : `${fuites.length} fuites en cours`}
-          </CardTitle>
+          <CardTitle className={cn("text-xl", CLASSES_TON[etat.ton])}>{etat.titre}</CardTitle>
           <CardDescription>{MENTION_SURVEILLANCE}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {fuites.length === 0 ? (
-            <p className="text-sm">
-              Votre eau est surveillée jour et nuit : vous êtes prévenu dès qu&apos;une fuite apparaît.
+          {etat.lignes.map((l) => (
+            <p key={l} className="text-sm">
+              {l}
             </p>
-          ) : (
-            <FuitesEnCours fuites={fuites} rendueA={rendueA} />
+          ))}
+          {fuites.length > 0 && <FuitesEnCours fuites={fuites} rendueA={rendueA} />}
+          {etat.titre === "Aucun capteur posé" && peutGererAppareils(ctx) && (
+            <Link href="/sites/appareils" className="text-sm font-medium underline underline-offset-4">
+              Ajouter des capteurs au stock, puis les poser
+            </Link>
           )}
           {simulation && (
             <SimulerFuite
@@ -257,19 +283,61 @@ export default async function SitesPage() {
               : ""}
             Chaque site a son fuseau horaire et sa monnaie : la nuit, les
             alertes et les rapports suivent l&apos;heure locale.
-            {pointsActifs != null && ` Usage du mois : ${pointsActifs} point(s) de comptage actif(s).`}
+            {pointsActifs != null &&
+              ` Usage du mois : ${pointsActifs} ${pointsActifs > 1 ? "points de comptage actifs" : "point de comptage actif"}.`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {peutAjouter && <NouveauSite paysParDefaut={pays} />}
           {(sites ?? []).length === 0 ? (
             <p className="text-muted-foreground text-sm">
               {peutAjouter
-                ? "Aucun site pour l'instant. Ajoutez votre premier site ci-dessus."
-                : "Aucun site ne vous est encore attribué."}
+                ? "Aucun site pour l'instant. Ajoutez votre premier site ci-dessous."
+                : "Aucun site ne vous est encore attribué. Demandez-le à l'administrateur de votre établissement."}
             </p>
           ) : (
-            <Table>
+            <>
+              <ul className="divide-y rounded-lg border sm:hidden">
+                {sitesTries.map((s) => {
+                  const ind = indicateurs.get(s.id);
+                  const client = un(s.clients as Ligne | Ligne[] | null);
+                  return (
+                    <li key={s.id}>
+                      <Link href={`/sites/${s.id}`} className="hover:bg-muted flex items-start justify-between gap-3 p-3">
+                        <span className="min-w-0 space-y-0.5">
+                          <span className="text-primary block font-medium">
+                            {s.name}
+                            {!s.active && <span className="text-muted-foreground font-normal"> (désactivé)</span>}
+                          </span>
+                          <span className="text-muted-foreground block text-xs">
+                            {[
+                              (client?.name as string | undefined) ?? null,
+                              LIBELLES_TYPE_SITE[s.type as TypeSite] ?? s.type,
+                              s.city,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                          {ind?.litresParUnite != null && ind.unite && (
+                            <span className="block text-sm tabular-nums">
+                              {`${nombre(ind.litresParUnite, 0)} L par ${ind.unite}${ind.estimation ? " (estimation)" : ""} en ${moisLong(moisIndicateur)}`}
+                            </span>
+                          )}
+                        </span>
+                        {ind?.alertes ? (
+                          <Badge variant="destructive" aria-label={`Alertes en cours : ${ind.alertes}`}>
+                            {ind.alertes}
+                          </Badge>
+                        ) : (
+                          <span aria-hidden className="text-muted-foreground">
+                            ›
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+              <Table className="hidden sm:table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Nom</TableHead>
@@ -288,7 +356,7 @@ export default async function SitesPage() {
                   return (
                     <TableRow key={s.id}>
                       <TableCell className="font-medium">
-                        <Link href={`/sites/${s.id}`} className="hover:underline">
+                        <Link href={`/sites/${s.id}`} className="text-primary underline-offset-4 hover:underline">
                           {s.name}
                         </Link>
                         {!s.active && (
@@ -320,6 +388,13 @@ export default async function SitesPage() {
                 })}
               </TableBody>
             </Table>
+            </>
+          )}
+          {peutAjouter && (
+            <div className="space-y-3 border-t pt-4">
+              <h3 className="text-sm font-semibold">Ajouter un site</h3>
+              <NouveauSite paysParDefaut={pays} />
+            </div>
           )}
         </CardContent>
       </Card>

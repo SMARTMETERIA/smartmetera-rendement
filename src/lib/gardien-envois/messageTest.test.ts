@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { MARQUE_PLATEFORME } from "../marque";
 import { configEnvois, notify } from "./notify";
 import { libelleResultat, messagesTest, validerMessageTest } from "./messageTest";
+import { quantite } from "./format";
 
 describe("message de test du superadmin", () => {
   it("valide les canaux, l'adresse et le numéro", () => {
@@ -59,5 +60,14 @@ describe("message de test du superadmin", () => {
     expect(
       libelleResultat({ canal: "appel", mode: "journal", statut: "journalise", fournisseur: null, erreur: "Aucun fournisseur configuré pour ce canal (TODO(RAYAN))." }),
     ).toContain("Aucun fournisseur");
+  });
+});
+
+describe("accord en nombre", () => {
+  it("singulier pour 0 et 1, pluriel au-delà, nombre au format français", () => {
+    expect(quantite(0, "anomalie trouvée", "anomalies trouvées")).toBe("0 anomalie trouvée");
+    expect(quantite(1, "anomalie trouvée", "anomalies trouvées")).toBe("1 anomalie trouvée");
+    expect(quantite(3, "anomalie trouvée", "anomalies trouvées")).toBe("3 anomalies trouvées");
+    expect(quantite(1200, "ligne", "lignes").replace(/\s/g, " ")).toBe("1 200 lignes");
   });
 });

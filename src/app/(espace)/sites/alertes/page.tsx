@@ -16,6 +16,8 @@ const TYPES: Record<string, string> = {
   rappel_analyses: "Analyses avant réouverture",
 };
 
+const ORDRE_TYPES = ["temperature_basse", "rappel_analyses", "compteur_muet"];
+
 /**
  * Alertes en cours sur les sites de la personne (technicien d'abord) :
  * fuites avec « Je m'en occupe », capteurs muets (équipe seulement, jamais
@@ -62,6 +64,34 @@ export default async function AlertesPage() {
     };
   });
 
+  // Regroupées par site (plusieurs sites ont souvent les mêmes zones :
+  // « Cuisine », « Chambres »), les plus importantes d'abord.
+  const autres = ((alertes ?? []) as Ligne[])
+    .map((a) => {
+      const site = un(a.sites as Ligne | Ligne[] | null);
+      const type = a.type as string;
+      const titre = a.titre as string;
+      const prefixe = `${TYPES[type] ?? ""} : `;
+      return {
+        id: a.id as string,
+        siteId: a.site_id as string,
+        site: (site?.name as string | undefined) ?? "Site",
+        fuseau: (site?.timezone as string | undefined) ?? "Europe/Paris",
+        type,
+        titre: titre.startsWith(prefixe) ? titre.slice(prefixe.length) : titre,
+        description: a.description as string,
+        depuis: a.declenchee_le as string,
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.site.localeCompare(b.site, "fr") ||
+        ORDRE_TYPES.indexOf(a.type) - ORDRE_TYPES.indexOf(b.type) ||
+        a.titre.localeCompare(b.titre, "fr"),
+    );
+  const parSite = [...new Set(autres.map((a) => a.siteId))].map((siteId) => autres.filter((a) => a.siteId === siteId));
+  const muets = autres.filter((a) => a.type === "compteur_muet").length;
+
   return (
     <div className="space-y-6">
       <div>
@@ -77,7 +107,11 @@ export default async function AlertesPage() {
           {affichees.length > 0 ? (
             <FuitesEnCours fuites={affichees} rendueA={new Date().getTime()} />
           ) : (
-            <p className="text-sm">Votre eau est sous surveillance jour et nuit.</p>
+            <p className="text-sm">
+              {muets > 0
+                ? `Aucune fuite repérée. Attention : ${muets > 1 ? `${muets} capteurs ne transmettent plus` : "1 capteur ne transmet plus"}, aucune fuite ne peut y être repérée tant que les données manquent (voir ci-dessous).`
+                : "Votre eau est sous surveillance jour et nuit."}
+            </p>
           )}
         </CardContent>
       </Card>
@@ -86,30 +120,35 @@ export default async function AlertesPage() {
           <CardTitle>Autres alertes</CardTitle>
         </CardHeader>
         <CardContent>
-          {(alertes ?? []).length === 0 ? (
+          {autres.length === 0 ? (
             <p className="text-muted-foreground text-sm">Aucune alerte en cours.</p>
           ) : (
-            <ul className="divide-y rounded-lg border">
-              {((alertes ?? []) as Ligne[]).map((a) => {
-                const site = un(a.sites as Ligne | Ligne[] | null);
-                return (
-                  <li key={a.id as string} className="space-y-1 p-3 text-sm">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={a.type === "temperature_basse" ? "destructive" : "secondary"}>
-                        {TYPES[a.type as string] ?? (a.type as string)}
-                      </Badge>
-                      <Link href={`/sites/${a.site_id}`} className="font-medium hover:underline">
-                        {a.titre as string}
-                      </Link>
-                    </div>
-                    <p className="text-muted-foreground">
-                      {a.description as string} Depuis le{" "}
-                      {formaterDateHeure(a.declenchee_le as string, (site?.timezone as string | undefined) ?? "Europe/Paris")}.
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="space-y-4">
+              {parSite.map((liste) => (
+                <section key={liste[0].siteId} className="space-y-2">
+                  <h3 className="text-sm font-semibold">
+                    <Link href={`/sites/${liste[0].siteId}`} className="text-primary underline-offset-4 hover:underline">
+                      {liste[0].site}
+                    </Link>
+                  </h3>
+                  <ul className="divide-y rounded-lg border">
+                    {liste.map((a) => (
+                      <li key={a.id} className="space-y-1 p-3 text-sm">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={a.type === "compteur_muet" ? "secondary" : "destructive"}>
+                            {TYPES[a.type] ?? a.type}
+                          </Badge>
+                          <span className="font-medium">{a.titre}</span>
+                        </div>
+                        <p className="text-muted-foreground">
+                          {a.description} Depuis le {formaterDateHeure(a.depuis, a.fuseau)}.
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

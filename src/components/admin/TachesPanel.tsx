@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { quantite } from "@/lib/gardien-envois/format";
 import { terminerTache } from "@/app/(dashboard)/admin/actions";
 
 export interface Tache {
@@ -62,7 +63,7 @@ export function TachesPanel({ taches }: { taches: Tache[] }) {
             <p className="text-muted-foreground text-sm">
               {t.organisation}
               {typeof t.details.site === "string" ? ` — ${t.details.site}` : ""} · échéance {date(t.due_at ?? t.created_at)}
-              {typeof t.details.anomalies === "number" ? ` · ${t.details.anomalies} anomalie(s) trouvée(s)` : ""}
+              {typeof t.details.anomalies === "number" ? ` · ${quantite(t.details.anomalies, "anomalie trouvée", "anomalies trouvées")}` : ""}
             </p>
             {t.status === "a_faire" && (
               <div className="flex gap-2">

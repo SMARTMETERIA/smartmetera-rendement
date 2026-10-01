@@ -14,6 +14,7 @@ import type { Tarifs } from "@/lib/gardien-rapports/contenus";
 import { consommerQuota } from "@/lib/securite/protection";
 import { validerMessageTest, type ResultatTest } from "@/lib/gardien-envois/messageTest";
 import type { ModeEnvois } from "@/lib/gardien-envois/notify";
+import { validerFacturation, type SaisieFacturation } from "@/lib/gardien/facturationOrganisation";
 
 async function verifierSuperadmin(): Promise<{ userId: string } | { erreur: string }> {
   const supabase = await createClient();
@@ -379,4 +380,49 @@ export async function envoyerMessageTest(params: {
   } catch {
     return { erreur: "Fonction d'envoi injoignable. Réessayez dans un instant." };
   }
+}
+
+/**
+ * Statut et facturation d'une organisation Gardien (superadmin) : statut,
+ * fin d'essai, remise fondateur, retenue à la source, prix partenaire par
+ * point. Enregistré avec la session du superadmin (la base refuse ces
+ * champs à tout autre rôle), tracé dans le journal d'audit.
+ */
+export async function majFacturationOrganisation(
+  params: { organizationId: string } & SaisieFacturation,
+): Promise<{ ok: true } | { erreur: string }> {
+  const verification = await verifierSuperadmin();
+  if ("erreur" in verification) return verification;
+  const supabase = await createClient();
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("id, country, status, trial_ends_at, founder_discount_pct, withholding_tax_pct, partner_price_per_point")
+    .eq("id", params.organizationId)
+    .eq("kind", "sites")
+    .maybeSingle();
+  if (!org) return { erreur: "Organisation introuvable." };
+  const validation = validerFacturation(params, org.country === "MA" ? "Africa/Casablanca" : "Europe/Paris");
+  if (!validation.ok) return { erreur: validation.erreur };
+  const { trial_ends_at, ...valeurs } = validation.valeurs;
+  const changement = trial_ends_at ? { ...valeurs, trial_ends_at } : valeurs;
+  const { error } = await supabase.from("organizations").update(changement).eq("id", org.id);
+  if (error) return { erreur: "Enregistrement impossible. Réessayez." };
+  await createAdminClient().from("audit_log").insert({
+    organization_id: org.id,
+    user_id: verification.userId,
+    action: "facturation",
+    entite: "organizations",
+    entite_id: org.id,
+    avant: {
+      status: org.status,
+      trial_ends_at: org.trial_ends_at,
+      founder_discount_pct: org.founder_discount_pct,
+      withholding_tax_pct: org.withholding_tax_pct,
+      partner_price_per_point: org.partner_price_per_point,
+    },
+    apres: changement,
+  });
+  revalidatePath(`/admin/organisations/${org.id}`);
+  revalidatePath("/admin");
+  return { ok: true };
 }

@@ -585,6 +585,61 @@ Reste (dépend de Rayan) : créer les comptes et suivre
 `docs/MISE_EN_LIGNE.md` ; critère de fin du plan (`app.smartmeteria.com`
 en ligne, test de fumée réussi) impossible sans eux.
 
+
+### Relecture complète de l'application (1er octobre 2026)
+
+Méthode : Chrome piloté automatiquement sur l'application compilée (mode
+production), avec les 7 comptes de démonstration, en format téléphone
+(390 px, écran tactile) et ordinateur (1 366 px) : 132 pages ouvertes et
+18 tentatives d'accès aux données d'un autre client ou à une page
+réservée. Connexion par lien à usage unique (aucun mot de passe changé,
+aucun compte créé). Fonctions SQL appelables et dépôts de fichiers relus
+un par un.
+
+Constats sans correction nécessaire : aucune fuite de données entre
+clients (pages d'un autre client : « Page introuvable » ; pages réservées :
+retour à « Mes sites » ; PDF d'un autre client : 404) ; toutes les pages
+sous 2,5 s ; aucun texte anglais ni valeur absurde à l'écran ; écrans vides
+tous expliqués.
+
+Corrigé (avec tests) :
+- **État honnête** : « Tout est sous surveillance » s'affichait sans
+  capteur posé ou quand plus aucun capteur ne transmettait. Désormais
+  « Aucun capteur posé », « Surveillance interrompue » ou « Surveillance
+  partielle » (détail pour l'équipe, message général pour un directeur de
+  site), et l'eau chaude sous le seuil est signalée (« Mes sites », fiche du
+  site avec badges « Ne transmet plus » et « Sous le seuil », « Alertes »).
+- **Alertes** : regroupées par site (le nom de l'hôtel manquait : trois
+  « Capteur muet : Chambres » indiscernables), les plus importantes
+  d'abord.
+- **Téléphone** : sites et équipe en cartes (les colonnes consommation,
+  alertes, rôle et « Retirer » étaient coupées hors de l'écran),
+  formulaire d'ajout après la liste, boutons et champs d'au moins 40 px sur
+  écran tactile, page en cours mise en évidence dans la navigation.
+- **Compteur de pertes** : la méthode disait « depuis le début de la
+  fuite » alors que le calcul part de la détection (plus prudent) ; texte
+  corrigé à l'écran et dans les e-mails.
+- **Accessibilité** : listes déroulantes reliées à leur libellé (type et
+  pays d'un site, rôle et site d'une invitation, pays du pré-diagnostic,
+  organisation et rôle côté superadmin, site de la page preuve).
+- **Messages d'erreur** : plus aucun message technique anglais de la base
+  (pose, correction du poids d'impulsion, import et attribution
+  d'appareils) ; nos propres messages en français sont gardés.
+- **Français** : « Continuer le repose » remplacé par une phrase claire ;
+  pluriels « (s) » remplacés par des accords justes.
+- **Superadmin** : écran « Statut et facturation » sur la fiche d'une
+  organisation (statut, fin d'essai, remise fondateur, retenue à la source,
+  prix partenaire par point), qui n'existait qu'en SQL ; chaque
+  modification écrite dans le journal d'audit.
+- **Liens légaux** aussi sur la page de connexion d'un partenaire.
+
+Non vérifié à l'écran : l'espace superadmin (aucun superadmin sur la base
+de développement ; le droit temporaire pour un compte de démonstration a
+été refusé par la protection automatique) ; vérifié par le code et les
+tests. Laissé tel quel : le tableau « Appareils » défile horizontalement
+sur téléphone (outil de gestion, surtout sur ordinateur) ; les offres
+Réseau et Immeuble (en pause) n'ont pas été relues.
+
 ---
 
 # Historique — offre Immeuble (en pause)

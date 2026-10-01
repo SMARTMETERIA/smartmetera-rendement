@@ -64,9 +64,9 @@ export function InviterUtilisateur({ organisations }: { organisations: Organisat
         </Alert>
       )}
       <div className="space-y-2">
-        <Label>Organisation</Label>
+        <Label htmlFor="invitation-organisation">Organisation</Label>
         <Select value={organizationId} onValueChange={(v) => v && setOrganizationId(v)}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger id="invitation-organisation" className="w-full">
             <SelectValue placeholder="Choisir une organisation" />
           </SelectTrigger>
           <SelectContent>
@@ -90,9 +90,9 @@ export function InviterUtilisateur({ organisations }: { organisations: Organisat
         />
       </div>
       <div className="space-y-2">
-        <Label>Rôle</Label>
+        <Label htmlFor="invitation-role-admin">Rôle</Label>
         <Select value={role} onValueChange={(v) => v && setRole(v)}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger id="invitation-role-admin" className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

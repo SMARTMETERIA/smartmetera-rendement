@@ -13,14 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { InviterMembreSites } from "@/components/sites/InviterMembreSites";
 import { RetirerMembreSites } from "@/components/sites/RetirerMembreSites";
 
@@ -67,36 +59,30 @@ export default async function EquipeSitesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <InviterMembreSites sites={sites ?? []} />
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Adresse</TableHead>
-                <TableHead>Rôle</TableHead>
-                <TableHead>Site</TableHead>
-                <TableHead className="w-24" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {((membres ?? []) as Membre[]).map((m) => (
-                <TableRow key={m.membership_id}>
-                  <TableCell>{m.email}</TableCell>
-                  <TableCell>{LIBELLES_ROLE[m.role] ?? m.role}</TableCell>
-                  <TableCell>
-                    {m.scope_type === "site" ? m.site_name : "Tous les sites"}
-                  </TableCell>
-                  <TableCell>
-                    {m.user_id !== ctx.userId && (
-                      <RetirerMembreSites
-                        membershipId={m.membership_id}
-                        email={m.email}
-                      />
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ul className="divide-y rounded-lg border">
+            {((membres ?? []) as Membre[]).map((m) => (
+              <li
+                key={m.membership_id}
+                className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+              >
+                <span className="min-w-0 space-y-0.5">
+                  <span className="block font-medium break-all">{m.email}</span>
+                  <span className="text-muted-foreground block">
+                    {LIBELLES_ROLE[m.role] ?? m.role} ·{" "}
+                    {m.scope_type === "site" ? m.site_name : "tous les sites"}
+                    {m.user_id === ctx.userId ? " (vous)" : ""}
+                  </span>
+                </span>
+                {m.user_id !== ctx.userId && (
+                  <RetirerMembreSites membershipId={m.membership_id} email={m.email} />
+                )}
+              </li>
+            ))}
+          </ul>
+          <div className="space-y-3 border-t pt-4">
+            <h3 className="text-sm font-semibold">Inviter une personne</h3>
+            <InviterMembreSites sites={sites ?? []} />
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -48,13 +48,13 @@ export function FormulairePrediagnostic({
     <div className="space-y-6">
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => e.preventDefault()}>
         <div className="space-y-1">
-          <Label>Pays</Label>
+          <Label htmlFor="prediagnostic-pays">Pays</Label>
           <Select
             items={{ FR: "France (euros)", MA: "Maroc (dirhams)" }}
             value={valeurs.pays}
             onValueChange={(v) => v && setValeurs((x) => ({ ...x, pays: v, prixM3: v === "MA" ? "" : x.prixM3 }))}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger id="prediagnostic-pays" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

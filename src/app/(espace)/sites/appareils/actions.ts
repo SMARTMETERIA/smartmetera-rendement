@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { messageBase } from "@/lib/erreurs/base";
 import { createClient } from "@/lib/supabase/server";
 import {
   getEspaceSites,
@@ -55,7 +56,7 @@ export async function importerStock(texte: string): Promise<ResultatImport> {
   });
   if (error)
     return {
-      erreurs: [{ ligne: 0, message: `Import impossible : ${error.message}` }],
+      erreurs: [{ ligne: 0, message: messageBase(error, "Import impossible pour le moment. Vérifiez le fichier puis réessayez.") }],
     };
   revalidatePath("/sites/appareils");
   const r = data as { importes: number; deja_enregistres: string[] };
@@ -79,7 +80,7 @@ export async function attribuerLot(
     p_device_ids: deviceIds,
     p_site_id: siteId,
   });
-  if (error) return { erreur: `Attribution impossible : ${error.message}` };
+  if (error) return { erreur: messageBase(error, "Attribution impossible pour le moment. Réessayez.") };
   revalidatePath("/sites/appareils");
   return { ok: true, nombre: Number(data) };
 }

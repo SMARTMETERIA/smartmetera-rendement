@@ -17,9 +17,10 @@ import {
   totalEconomies,
 } from "@/lib/gardien/fuites";
 import { formaterDateHeure } from "@/lib/gardien/format";
+import { CLASSES_CARTE, CLASSES_TON, etatSurveillance } from "@/lib/gardien/etatSurveillance";
 import { LIBELLES_TYPE_SITE, type TypeSite } from "@/lib/gardien/libelles";
 import { UNITES_ACTIVITE, TITRES_RAPPORT, type TypeRapport } from "@/lib/gardien-rapports/contenus";
-import { dateLongue, montant, montantRond, moisLong, nombre, volume } from "@/lib/gardien-envois/format";
+import { dateLongue, montant, montantRond, moisLong, nombre, quantite as accord, volume } from "@/lib/gardien-envois/format";
 import { REGLAGES_DEFAUT } from "@/lib/moteur-gardien/reglages";
 import { dateLocale, decalerJour, instantLocal } from "@/lib/moteur-gardien/temps";
 import type { StatutFuite, TypeFuite } from "@/lib/moteur-gardien/analyse";
@@ -70,6 +71,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
     { data: activite },
     { data: pilotes },
     { data: rapports },
+    { data: alertesEnCours },
   ] = await Promise.all([
     supabase
       .from("leak_events")
@@ -103,6 +105,12 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
       .eq("site_id", id)
       .order("created_at", { ascending: false })
       .limit(8),
+    supabase
+      .from("alerts")
+      .select("type, donnees")
+      .eq("site_id", id)
+      .in("statut", ["ouverte", "acquittee"])
+      .in("type", ["compteur_muet", "temperature_basse"]),
   ]);
 
   const toutes = (fuites ?? []) as Ligne[];
@@ -174,6 +182,31 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
   };
   const annee = aujourdhui.slice(0, 4);
 
+  // État honnête : capteurs muets (détail pour l'équipe), eau chaude sous le seuil.
+  const equipe =
+    ctx.isPlatformAdmin || (ctx.adhesion?.kind === "sites" && ctx.adhesion.organizationId === site.organization_id);
+  const alertesOuvertes = (alertesEnCours ?? []) as { type: string; donnees: Ligne | null }[];
+  const muets = new Set(
+    alertesOuvertes
+      .filter((a) => a.type === "compteur_muet")
+      .flatMap((a) => [a.donnees?.meter_id, a.donnees?.point_id])
+      .filter((v): v is string => typeof v === "string"),
+  );
+  const sousSeuil = new Set(
+    alertesOuvertes
+      .filter((a) => a.type === "temperature_basse")
+      .map((a) => a.donnees?.point_id)
+      .filter((v): v is string => typeof v === "string"),
+  );
+  const etat = etatSurveillance({
+    fuites: ouvertes.length,
+    pointsPoses:
+      ((compteurs ?? []) as Ligne[]).filter((m) => m.installed_at).length + (points ?? []).length,
+    capteursMuets: alertesOuvertes.filter((a) => a.type === "compteur_muet").length,
+    temperaturesBasses: alertesOuvertes.filter((a) => a.type === "temperature_basse").length,
+    equipe,
+  });
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -199,14 +232,19 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
             Méthode prudente : excès de débit × 24 h × délai de découverte évité × prix du m³ du site.
           </CardContent>
         </Card>
-        <Card>
+        <Card className={CLASSES_CARTE[etat.ton]}>
           <CardHeader>
             <CardDescription>État</CardDescription>
-            <CardTitle className={ouvertes.length === 0 ? "text-succes text-2xl" : "text-destructive text-2xl"}>
-              {ouvertes.length === 0 ? "Sous surveillance" : ouvertes.length === 1 ? "Fuite en cours" : `${ouvertes.length} fuites en cours`}
-            </CardTitle>
+            <CardTitle className={cn("text-2xl", CLASSES_TON[etat.ton])}>{etat.titre}</CardTitle>
           </CardHeader>
-          <CardContent className="text-muted-foreground text-xs">{MENTION_SURVEILLANCE}</CardContent>
+          <CardContent className="space-y-2 text-sm">
+            {etat.lignes
+              .filter((l) => !l.startsWith("Votre eau est surveillée"))
+              .map((l) => (
+                <p key={l}>{l}</p>
+              ))}
+            <p className="text-muted-foreground text-xs">{MENTION_SURVEILLANCE}</p>
+          </CardContent>
         </Card>
       </div>
 
@@ -228,7 +266,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
             <CardDescription>
               Jusqu&apos;au {dateLongue(dateLocale(Date.parse(pilote.ends_at as string), fuseau))} —{" "}
               {Math.max(0, Math.ceil((Date.parse(pilote.ends_at as string) - maintenant) / 86_400_000))} jours restants,{" "}
-              {Number(pilote.anomalies_found)} anomalie(s) trouvée(s).
+              {accord(Number(pilote.anomalies_found), "anomalie trouvée", "anomalies trouvées")}.
             </CardDescription>
           </CardHeader>
           {peutConsentir && (
@@ -267,6 +305,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
                     {appareil?.battery_pct != null ? ` · pile ${nombre(Number(appareil.battery_pct), 0)} %` : ""}
                   </span>
                   {m.surveillance === "limitee" && <Badge variant="secondary">Surveillance limitée</Badge>}
+                  {equipe && muets.has(m.id as string) && <Badge variant="destructive">Ne transmet plus</Badge>}
                 </li>
               );
             })}
@@ -278,6 +317,8 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
                 <span className="text-muted-foreground tabular-nums">
                   {p.dernier ? `${nombre(Number(p.dernier.value_c))} °C le ${formaterDateHeure(p.dernier.ts, fuseau)}` : "aucun relevé"}
                 </span>
+                {sousSeuil.has(p.id) && <Badge variant="destructive">Sous le seuil</Badge>}
+                {equipe && muets.has(p.id) && <Badge variant="destructive">Ne transmet plus</Badge>}
               </li>
             ))}
           </ul>

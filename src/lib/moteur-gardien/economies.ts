@@ -82,6 +82,6 @@ export function economiesPrudentes(params: {
 export function methodePertes(excesLph: number, prixM3: number | null, monnaie: Monnaie): string {
   const unite = symboleMonnaie(monnaie);
   return prixM3 === null
-    ? `Méthode prudente : ${nombreFr(excesLph, 1)} L/h d'excès mesuré, depuis le début de la fuite (prix de l'eau du site à renseigner).`
-    : `Méthode prudente : ${nombreFr(excesLph, 1)} L/h d'excès mesuré × ${nombreFr(prixM3, 2)} ${unite}/m³, depuis le début de la fuite.`;
+    ? `Méthode prudente : ${nombreFr(excesLph, 1)} L/h d'excès mesuré, compté depuis la détection, la fuite a pu commencer avant (prix de l'eau du site à renseigner).`
+    : `Méthode prudente : ${nombreFr(excesLph, 1)} L/h d'excès mesuré × ${nombreFr(prixM3, 2)} ${unite}/m³, compté depuis la détection (la fuite a pu commencer avant).`;
 }

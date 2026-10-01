@@ -36,7 +36,7 @@ export function PagePreuveBouton({ sites }: { sites: { id: string; name: string 
             value={siteId}
             onValueChange={(v) => v && setSiteId(v)}
           >
-            <SelectTrigger className="w-60">
+            <SelectTrigger className="w-full sm:w-60" aria-label="Site de la page preuve">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

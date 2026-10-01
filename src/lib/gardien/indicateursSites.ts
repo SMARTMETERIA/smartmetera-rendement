@@ -32,6 +32,7 @@ export async function indicateursSites(
   supabase: SupabaseClient,
   sites: SiteIndicateurs[],
   aujourdhui: string,
+  options: { equipe?: boolean } = {},
 ): Promise<Map<string, Indicateurs>> {
   const resultat = new Map<string, Indicateurs>();
   if (!sites.length) return resultat;
@@ -46,7 +47,13 @@ export async function indicateursSites(
       .gte("date", mois.debut)
       .lt("date", mois.fin),
     supabase.from("leak_events").select("site_id").in("site_id", ids).in("status", ["ouverte", "prise_en_compte"]),
-    supabase.from("alerts").select("site_id").in("site_id", ids).in("statut", ["ouverte", "acquittee"]),
+    // Capteurs muets : comptés pour l'équipe seulement (comme la page « Alertes »).
+    supabase
+      .from("alerts")
+      .select("site_id")
+      .in("site_id", ids)
+      .in("statut", ["ouverte", "acquittee"])
+      .in("type", options.equipe === false ? ["temperature_basse", "rappel_analyses"] : ["compteur_muet", "temperature_basse", "rappel_analyses"]),
   ]);
   const siteDuCompteur = new Map((compteurs ?? []).map((m) => [m.id as string, m.site_id as string]));
   const { data: jours } = siteDuCompteur.size

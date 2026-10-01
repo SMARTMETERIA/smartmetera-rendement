@@ -57,13 +57,13 @@ export function NouveauSite({ paysParDefaut }: { paysParDefaut: "FR" | "MA" }) {
         />
       </div>
       <div className="space-y-2">
-        <Label>Type</Label>
+        <Label htmlFor="site-type">Type</Label>
         <Select
           items={LIBELLES_TYPE_SITE}
           value={type}
           onValueChange={(v) => v && setType(v)}
         >
-          <SelectTrigger className="w-full lg:w-52">
+          <SelectTrigger id="site-type" className="w-full lg:w-52">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -76,13 +76,13 @@ export function NouveauSite({ paysParDefaut }: { paysParDefaut: "FR" | "MA" }) {
         </Select>
       </div>
       <div className="space-y-2">
-        <Label>Pays</Label>
+        <Label htmlFor="site-pays">Pays</Label>
         <Select
           items={{ FR: REGLAGES_PAYS.FR.libelle, MA: REGLAGES_PAYS.MA.libelle }}
           value={pays}
           onValueChange={(v) => v && setPays(v)}
         >
-          <SelectTrigger className="w-full lg:w-36">
+          <SelectTrigger id="site-pays" className="w-full lg:w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

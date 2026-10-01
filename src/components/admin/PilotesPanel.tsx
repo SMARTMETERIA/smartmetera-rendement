@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { creerPilote, majPilote } from "@/app/(dashboard)/admin/actions";
+import { quantite } from "@/lib/gardien-envois/format";
 
 export interface PiloteSuivi {
   id: string;
@@ -65,7 +66,7 @@ function LignePilote({ p }: { p: PiloteSuivi }) {
         {p.statut === "en_cours" && <span className="text-muted-foreground">{p.joursRestants} jours restants</span>}
       </div>
       <p className="text-muted-foreground">
-        Du {p.debut} au {p.fin} · {p.anomalies} anomalie(s) trouvée(s) ·{" "}
+        Du {p.debut} au {p.fin} · {quantite(p.anomalies, "anomalie trouvée", "anomalies trouvées")} ·{" "}
         {p.consentement ? `conversion acceptée (${p.consentement})` : "pas d'accord écrit de conversion : appel à prévoir"}
         {p.remboursement ? " · remboursement si rien n'est trouvé" : ""}
       </p>
