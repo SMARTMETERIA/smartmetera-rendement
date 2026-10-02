@@ -1,7 +1,7 @@
 # Guide d'exploitation (RUNBOOK)
 
 Que faire, pas à pas, quand il faut déployer, revenir en arrière ou réagir
-à un incident. Pour la toute première mise en ligne : `docs/MISE_EN_LIGNE.md`.
+à un incident. Pour la toute première mise en ligne : `docs/A_FAIRE_RAYAN.md` (partie « Réglages »).
 
 Règle d'or : **ne jamais supprimer de relevés**, **ne jamais envoyer
 directement sur `main`**, et **toujours vérifier dans l'onglet

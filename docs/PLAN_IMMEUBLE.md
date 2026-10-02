@@ -48,7 +48,7 @@ Tout arbitrage se fait en faveur de ce test.
    d. commit `phase N : <résumé>` ;
    e. mets à jour `docs/PROGRESS.md` : fait, reste, et comment tester à l'écran en 5 étapes maximum.
 3. Enchaîne la phase suivante sans attendre de validation tant que le critère de fin est atteint et que les tests sont verts.
-4. Blocage réel (secret absent, action manuelle, décision métier ou juridique) : écris la question précise dans `docs/BLOCKERS.md`, contourne avec un bouchon clairement marqué `TODO(RAYAN)`, et continue sur ce qui n'en dépend pas.
+4. Blocage réel (secret absent, action manuelle, décision métier ou juridique) : écris la question précise dans `docs/A_FAIRE_RAYAN.md`, contourne avec un bouchon clairement marqué `TODO(RAYAN)`, et continue sur ce qui n'en dépend pas.
 5. N'invente jamais un contenu juridique ni un format de fichier fabricant : rends-le paramétrable et marque-le `TODO(RAYAN)`.
 6. Avant la fin de la session (temps ou contexte), fais un commit propre et note dans `docs/PROGRESS.md` la prochaine action exacte.
 7. Conserve les conventions du code existant (nommage, structure de dossiers, bibliothèques PDF et e-mail déjà en place). Aucune nouvelle dépendance lourde sans justification écrite dans `docs/PROGRESS.md`.
@@ -220,7 +220,7 @@ Critère de fin : `demo:reset` fonctionne, tests de bout en bout verts.
 
 ### Phase 10 : mise en ligne (ancien prompt 9 corrigé, prompt C)
 
-Claude Code prépare tout et rédige `docs/MISE_EN_LIGNE.md` avec les étapes manuelles de Rayan, à cocher.
+Claude Code prépare tout et rédige `docs/A_FAIRE_RAYAN.md` avec les étapes manuelles de Rayan, à cocher.
 
 - Supabase production (Paris), distinct du développement : migrations, extensions `pg_cron` et `pg_net`, tâches planifiées créées par migration, sauvegardes, réglages Auth (URL du site `https://app.smartmeteria.com`, URL de redirection, confirmation d'adresse, Google, CAPTCHA Turnstile, **SMTP personnalisé via Resend**, car le service d'e-mail intégré de Supabase est limité et réservé aux tests).
 - Vercel : projet, région `cdg1`, variables d'environnement (liste complète documentée dans `.env.example`), domaine `app.smartmeteria.com`, déploiements de prévisualisation branchés sur la préproduction.
@@ -239,7 +239,7 @@ Critère de fin : `app.smartmeteria.com` en ligne, test de fumée réussi, aucun
 
 Stripe ; déchiffrement Wireless M-Bus et coffre à clés ; domaines personnalisés des partenaires ; SMS ; application mobile native ; répartition des charges en euros ; facturation des occupants ; pilotage du chauffage ; API publique ; langues autres que le français. Les fonctions Réseau (RPQS, plan d'actions, ROI) restent en place, réservées aux organisations `reseau`.
 
-## 6. Actions manuelles de Rayan (Claude Code les note dans BLOCKERS.md au bon moment)
+## 6. Actions manuelles de Rayan (Claude Code les note dans A_FAIRE_RAYAN.md au bon moment)
 
 1. Créer les identifiants Google OAuth (Google Cloud Console).
 2. Vérifier le domaine d'envoi chez Resend (enregistrements DNS).
@@ -279,4 +279,4 @@ Règles supplémentaires :
 - [ ] Deux marques de démonstration distinctes partout.
 - [ ] `demo:reset` et tests de bout en bout verts.
 - [ ] `app.smartmeteria.com` en ligne, Sentry actif, sauvegardes actives.
-- [ ] `docs/PROGRESS.md`, `BLOCKERS.md`, `MISE_EN_LIGNE.md`, `RUNBOOK.md` et `DESIGN.md` à jour.
+- [ ] `docs/PROGRESS.md`, `A_FAIRE_RAYAN.md`, `RUNBOOK.md` et `DESIGN.md` à jour.

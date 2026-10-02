@@ -4,7 +4,7 @@
 // Pourquoi pas @sentry/nextjs : une dépendance lourde (instrumentation
 // complète, dizaines de paquets) pour un besoin limité aux erreurs ; ici on
 // contrôle exactement ce qui part. Limite : pas d'envoi des « source maps »,
-// les piles du navigateur restent minifiées (voir docs/BLOCKERS.md).
+// les piles du navigateur restent minifiées (voir docs/A_FAIRE_RAYAN.md).
 //
 // Ce qui part : type et message de l'erreur, pile (fichiers et lignes),
 // chemin de la page sans paramètres, méthode, environnement, version.

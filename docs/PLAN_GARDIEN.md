@@ -76,7 +76,7 @@ Pas de paiement en ligne en v1 : un export d'usage mensuel sert à facturer à l
    d. enregistre ton travail avec un message `phase GN : <résumé>` ;
    e. mets à jour `docs/PROGRESS.md` : fait, reste, et comment tester à l'écran en 5 étapes maximum, écrites pour un débutant.
 4. Enchaîne la phase suivante sans attendre tant que le critère de fin est atteint et que les tests sont verts.
-5. Blocage réel (secret absent, action manuelle, décision métier ou juridique) : écris la question précise dans `docs/BLOCKERS.md`, contourne avec un bouchon marqué `TODO(RAYAN)`, et continue sur ce qui n'en dépend pas.
+5. Blocage réel (secret absent, action manuelle, décision métier ou juridique) : écris la question précise dans `docs/A_FAIRE_RAYAN.md`, contourne avec un bouchon marqué `TODO(RAYAN)`, et continue sur ce qui n'en dépend pas.
 6. N'invente jamais un format de trame, un protocole de capteur, un seuil réglementaire ou un contenu juridique : rends-le paramétrable et marque-le `TODO(RAYAN)`.
 7. Avant la fin de la session, sauvegarde tout sur GitHub (copie `feat/gardien`) et explique à Rayan, en français simple et sans mot technique, ce qu'il doit tester.
 8. Conserve les conventions du code existant. Aucune nouvelle dépendance lourde sans justification écrite dans `docs/PROGRESS.md`.
@@ -237,7 +237,7 @@ Critère de fin : `docs/DESIGN.md` écrit, écrans principaux refaits.
 Critère de fin : `demo:reset` et tests de bout en bout verts.
 
 ### Phase G10 : mise en ligne
-Reprends la phase 10 du plan Immeuble, avec ces ajouts : broker MQTT et serveur LoRaWAN en production (Union européenne), fournisseurs SMS, appel et WhatsApp (clés côté serveur uniquement), et `docs/MISE_EN_LIGNE.md` avec les étapes manuelles de Rayan, à cocher, expliquées pour un débutant. Domaine `app.smartmeteria.com`, Vercel `cdg1`, Supabase de production à Paris, SMTP personnalisé via Resend, Sentry sans données personnelles, en-têtes de sécurité, limitation de débit, guide d'exploitation `docs/RUNBOOK.md`, pages légales en modèles « à faire valider » (CGU et CGV B2B avec obligation de moyens, confidentialité, accord de sous-traitance, conditions de pilote avec consentement de conversion).
+Reprends la phase 10 du plan Immeuble, avec ces ajouts : broker MQTT et serveur LoRaWAN en production (Union européenne), fournisseurs SMS, appel et WhatsApp (clés côté serveur uniquement), et `docs/A_FAIRE_RAYAN.md` avec les étapes manuelles de Rayan, à cocher, expliquées pour un débutant. Domaine `app.smartmeteria.com`, Vercel `cdg1`, Supabase de production à Paris, SMTP personnalisé via Resend, Sentry sans données personnelles, en-têtes de sécurité, limitation de débit, guide d'exploitation `docs/RUNBOOK.md`, pages légales en modèles « à faire valider » (CGU et CGV B2B avec obligation de moyens, confidentialité, accord de sous-traitance, conditions de pilote avec consentement de conversion).
 
 Critère de fin : `app.smartmeteria.com` en ligne, test de fumée réussi (inscription d'essai, pose simulée, alerte de test vers le téléphone de Rayan, page preuve).
 

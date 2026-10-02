@@ -13,7 +13,7 @@ import { consentirConversion } from "@/app/(espace)/sites/actions";
  * l'abonnement à la fin du pilote : case cochée, nom, date enregistrée.
  * Sans cet accord, SmartMeteria appelle le client avant toute conversion.
  * TODO(RAYAN) : formulation à faire valider avec les conditions de pilote
- * (docs/BLOCKERS.md).
+ * (docs/A_FAIRE_RAYAN.md).
  */
 export function ConsentementPilote({
   piloteId,

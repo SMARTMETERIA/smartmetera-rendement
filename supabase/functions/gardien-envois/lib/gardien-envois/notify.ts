@@ -11,7 +11,7 @@
 // SMS, appel et WhatsApp : fournisseur Twilio (./telephone), désactivé tant
 // que ses clés manquent (seulement journalisés). En « redirection », ils
 // partent vers GARDIEN_TELEPHONE_REDIRECT (numéro de test) s'il est donné.
-// TODO(RAYAN) : choix définitif du fournisseur (docs/BLOCKERS.md).
+// TODO(RAYAN) : choix définitif du fournisseur (docs/A_FAIRE_RAYAN.md).
 import { formaterExpediteur } from "../email/expediteur.ts";
 import {
   canauxDisponibles,

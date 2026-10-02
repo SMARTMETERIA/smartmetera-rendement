@@ -17,7 +17,7 @@
 // --env <fichier> (par exemple .env.production.local, jamais versionné).
 // Code de sortie 1 si une vérification échoue. Les étapes manuelles qui
 // restent (inscription d'essai, pose, message de test, page preuve) sont
-// rappelées à la fin : docs/MISE_EN_LIGNE.md, étape « Test de fumée ».
+// rappelées à la fin : docs/A_FAIRE_RAYAN.md, point R9 « Test de fumée ».
 import { createRequire } from "node:module";
 import path from "node:path";
 
@@ -267,7 +267,7 @@ async function principal() {
 
   console.log(`\nRésultat : ${echecs} échec(s), ${alertes} point(s) à regarder.`);
   console.log(`
-Reste à faire à la main (docs/MISE_EN_LIGNE.md, étape « Test de fumée ») :
+Reste à faire à la main (docs/A_FAIRE_RAYAN.md, point R9 « Test de fumée ») :
   - créer un compte d'essai depuis /inscription avec une adresse de test ;
   - poser un capteur de test avec l'assistant (/pose) et attendre « données reçues » ;
   - espace superadmin > Surveillance > « Envoyer le message de test » vers votre téléphone ;

@@ -1,6 +1,6 @@
 // Pages légales en modèles « à faire valider » (plan, phase G10).
 // TODO(RAYAN) : chaque texte doit être relu et validé par un juriste avant
-// la mise en ligne, et l'entité juridique renseignée (docs/BLOCKERS.md).
+// la mise en ligne, et l'entité juridique renseignée (docs/A_FAIRE_RAYAN.md).
 // Aucun texte n'est présenté comme définitif : le bandeau « Modèle à faire
 // valider » reste affiché tant que STATUT_DOCUMENTS vaut « modele ».
 // Les passages entre crochets « [à compléter : …] » sont surlignés à

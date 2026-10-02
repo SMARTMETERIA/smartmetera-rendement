@@ -1,9 +1,13 @@
 # Avancement — Gardien de l'eau
 
 Copie de travail : `feat/gardien` (partie de `feat/immeuble`, commit
-`5810423`). Plan : `docs/PLAN_GARDIEN.md` (version 2). Questions en
-attente : `docs/BLOCKERS.md`. L'historique de l'offre Immeuble (en pause)
-est conservé en bas de ce fichier.
+`5810423`). Plan : `docs/PLAN_GARDIEN.md` (version 2). Ce que Rayan doit
+faire (décisions, comptes, matériel, juridique, réglages) :
+`docs/A_FAIRE_RAYAN.md`, qui remplace depuis le 2 octobre 2026
+`docs/BLOCKERS.md` et `docs/MISE_EN_LIGNE.md` (les numéros de points cités
+dans l'historique ci-dessous renvoient à ces anciens fichiers).
+L'historique de l'offre Immeuble (en pause) est conservé en bas de ce
+fichier.
 
 ## Phase G0 : point de situation — terminée
 
@@ -789,6 +793,27 @@ Comment tester à l'écran :
    d'eau et coupures du réseau ».
 5. Connectez-vous avec `demo-mine-admin@example.com` : le site minier, ses
    trois points et ses montants en francs congolais.
+
+## Entonnoir : un seul fichier « À faire par Rayan » — terminé
+
+Demande de Rayan du 2 octobre 2026.
+
+Fait :
+- `docs/A_FAIRE_RAYAN.md` remplace `docs/BLOCKERS.md` (38 points) et
+  `docs/MISE_EN_LIGNE.md` (17 étapes), supprimés. Ordre : accès superadmin
+  sur la base d'essai (point 0), décisions (D1 à D11), comptes à créer (C1
+  à C10), matériel (M1 à M4), juridique (J1 à J7), réglages dans l'ordre de
+  la mise en ligne (R1 à R15). Pour chaque point : pourquoi, temps estimé,
+  « bloque la mise en ligne » ou « peut attendre », étapes clic par clic ;
+  tableau récapitulatif en tête (environ 2 jours de travail pour les
+  points bloquants, plus les délais d'attente).
+- Renvois mis à jour : plans (protocole « blocage réel »), README,
+  `RUNBOOK.md`, registre des traitements, `.env.example`, script de test de
+  fumée, commentaires du code (copies des fonctions resynchronisées ;
+  commentaires seulement, rien à redéployer).
+
+Comment tester : ouvrez `docs/A_FAIRE_RAYAN.md` dans VS Code (clic droit,
+« Ouvrir l'aperçu ») et faites le point 0.
 
 ---
 

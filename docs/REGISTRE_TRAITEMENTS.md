@@ -1,7 +1,7 @@
 # Registre des traitements (modèle à faire valider)
 
 Article 30 du RGPD. **Modèle du 1er octobre 2026, à faire valider par un
-juriste** (`docs/BLOCKERS.md`). Les passages « à compléter » attendent les
+juriste** (`docs/A_FAIRE_RAYAN.md`). Les passages « à compléter » attendent les
 informations de l'entité qui exploite SmartMeteria.
 
 Responsable : [à compléter : raison sociale, adresse, représentant].

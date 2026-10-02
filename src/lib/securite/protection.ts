@@ -68,8 +68,7 @@ export type VerificationCaptcha =
 /**
  * Vérifie un jeton Turnstile. Sans TURNSTILE_SECRET_KEY, la vérification
  * est ignorée (développement). TODO(RAYAN) : créer les clés Turnstile
- * (voir docs/BLOCKERS.md) ; en production elles sont obligatoires
- * (docs/MISE_EN_LIGNE.md).
+ * (voir docs/A_FAIRE_RAYAN.md) ; en production elles sont obligatoires.
  */
 export async function verifierCaptcha(
   jeton: string | null,

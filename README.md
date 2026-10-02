@@ -210,7 +210,7 @@ invisibles, page preuve sans connexion).
   `technicien` (un site). Superadmin de plateforme : `platform_admins`,
   attribué par `scripts/grant-superadmin.sql`.
 - Connexion : e-mail et mot de passe, lien magique, Google (identifiants à
-  créer, voir `docs/BLOCKERS.md`). Mot de passe oublié, réinitialisation,
+  créer, voir `docs/A_FAIRE_RAYAN.md`, point C10). Mot de passe oublié, réinitialisation,
   `/compte`. Après connexion, `/accueil` envoie chacun vers son espace
   (`/sites` pour le Gardien).
 - Inscription autonome `/inscription` : établissement en France ou au
@@ -452,7 +452,7 @@ les limites des fonctions Supabase.
 
 ### Mise en ligne (Gardien de l'eau, phase G10)
 
-- **Pas à pas pour la première mise en ligne** : `docs/MISE_EN_LIGNE.md`
+- **Pas à pas pour la première mise en ligne** : `docs/A_FAIRE_RAYAN.md`
   (étapes manuelles à cocher). **Exploitation et incidents** :
   `docs/RUNBOOK.md`. **Registre des traitements** :
   `docs/REGISTRE_TRAITEMENTS.md`.
@@ -488,7 +488,7 @@ les limites des fonctions Supabase.
   rien ne part.
 - **E-mails** : l'application envoie elle-même ses e-mails par Resend ; le
   SMTP personnalisé de Supabase Auth (Resend) est un réglage du tableau de
-  bord (`docs/MISE_EN_LIGNE.md`, étape 5).
+  bord (`docs/A_FAIRE_RAYAN.md`, point R4).
 - **Surveillance** : onglet superadmin « Surveillance » (état de chaque
   tâche planifiée), récapitulatif quotidien à 7 h (heure de Paris),
   **message de test** vers soi-même (e-mail, SMS, appel, WhatsApp) par la
