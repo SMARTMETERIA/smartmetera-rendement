@@ -407,7 +407,7 @@ dépendance de polices embarquées).
 
 ### Démonstration et parcours complet (Gardien de l'eau)
 
-`npm run demo:reset` (`scripts/demo-reset.mjs`, environ 1 minute) efface
+`npm run demo:reset` (`scripts/demo-reset.mjs`, environ 2 minutes) efface
 puis recrée les organisations marquées `settings.demo = true` et les
 comptes `demo-…@example.com`. Il refuse de tourner si `NODE_ENV=production`
 ou si l'URL Supabase est égale à `SUPABASE_URL_PRODUCTION`.
@@ -425,6 +425,16 @@ ou si l'URL Supabase est égale à `SUPABASE_URL_PRODUCTION`.
 - **Hôtel Bellecour Démo** (Lyon, pilote à J+20) : fuite en cours avec son
   compteur de pertes, rapports de première nuit et de première semaine,
   page preuve. Comptes : `demo-lyon-admin`, `demo-lyon-directeur`.
+- **Hôtel du Fleuve Démo** (Kinshasa, USD, sans prix de l'eau) : deux
+  citernes avec capteur de niveau (une debout, une couchée), coupure du
+  réseau public en cours depuis la veille à 16 h (autonomie qui baisse,
+  heure du niveau bas), une coupure terminée le 12 du mois dernier (section
+  du rapport mensuel), chasse d'eau qui fuit aux chambres (« débit
+  continu »). Le moteur passe aux instants de chaque coupure, dans l'ordre
+  du temps. Comptes : `demo-kinshasa-admin`, `demo-kinshasa-technicien`.
+- **Société Minière Démo** (Likasi, CDF) : site minier, trois points
+  (forage, cité des travailleurs, atelier et lavage des engins). Compte :
+  `demo-mine-admin`.
 
 Le mot de passe commun est `DEMO_MOT_DE_PASSE` (sinon tiré au hasard) ; il
 est affiché à la fin avec les liens des pages preuve. Les envois restent en

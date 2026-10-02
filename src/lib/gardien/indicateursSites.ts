@@ -1,5 +1,6 @@
 // Indicateurs de chaque site pour la vue groupe (siège, partenaire) :
-// litres par unité d'activité du dernier mois complet et alertes en cours.
+// litres par unité d'activité (ou volume, pour un site sans unité) du
+// dernier mois complet et alertes en cours.
 // Code serveur, avec le client Supabase de l'utilisateur (RLS).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { indicateurActivite } from "@/lib/moteur-gardien/activite";
@@ -16,6 +17,8 @@ export interface Indicateurs {
   litresParUnite: number | null;
   estimation: boolean;
   unite: string | null;
+  /** Volume du dernier mois complet (m³), affiché pour un site sans unité d'activité. */
+  volumeM3: number | null;
   alertes: number;
 }
 
@@ -94,6 +97,7 @@ export async function indicateursSites(
       litresParUnite: indicateur?.litresParUnite ?? null,
       estimation: indicateur?.estimation ?? false,
       unite: UNITES_ACTIVITE[s.activity_unit] ?? null,
+      volumeM3: volume ?? null,
       alertes:
         (fuites ?? []).filter((f) => f.site_id === s.id).length +
         (alertes ?? []).filter((a) => a.site_id === s.id).length,

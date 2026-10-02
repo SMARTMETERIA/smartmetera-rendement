@@ -169,6 +169,19 @@ describe("messages", () => {
     expect(texte(r.court)).toContain("depuis 00:00. 6,90 MAD par jour, 207,00 MAD par mois");
   });
 
+  it("débit continu sans prix de l'eau (RDC) : accord du titre, volumes seulement", () => {
+    const r = messageFuite(
+      ctx,
+      { ...fuite, type: "debit_continu", fuseau: "Africa/Kinshasa", prixM3: null, monnaie: "USD" },
+      "initial",
+      fuite.detecteeMs + 24 * H,
+    );
+    expect(r.sujet).toBe("Débit continu détecté : Hôtel Atlas, Cuisine");
+    expect(texte(r.texte)).toContain("Eau perdue depuis la détection : 0,6 m³");
+    expect(r.texte).not.toContain("Coût depuis");
+    expect(texte(r.vocal)).toContain("Elle fait perdre environ 0,6 m³ par jour");
+  });
+
   it("escalade au directeur", () => {
     const r = messageFuite(ctx, fuite, "directeur", fuite.detecteeMs + 12 * H);
     expect(r.sujet).toBe("Fuite sans prise en charge depuis 12 h : Hôtel Atlas, Cuisine");

@@ -738,6 +738,58 @@ WhatsApp, agréments radio et pages légales pour la RDC
 
 Comment tester à l'écran : voir la démonstration RDC, plus bas.
 
+## Démonstration RDC — terminée
+
+Demande de Rayan du 2 octobre 2026.
+
+Plan :
+1. `demo:reset` : hôtel à Kinshasa en dollars, deux citernes, compteur d'arrivée du réseau, coupure en cours, fuite détectée.
+2. Site minier à Likasi (francs congolais) avec trois points de mesure.
+3. Moteur déclenché aux instants des coupures et du rapport mensuel ; vérification des écrans avec les comptes de démonstration.
+
+Fait :
+- **Hôtel du Fleuve Démo** : 62 jours de relevés ; citerne principale
+  (7 m³, debout) et citerne de toit (4 m³, couchée), capteurs au-dessus de
+  l'eau ; le robinet à flotteur remplit au plus 0,45 m³/h. Coupure en
+  cours depuis la veille à 16 h (détectée à 19 h 10, alerte et SMS
+  journalisés), coupure du 12 du mois dernier (retour de l'eau, section du
+  rapport mensuel). Chasse d'eau des chambres qui fuit depuis 20 h, pendant
+  la coupure : une seule fuite (« débit continu »), le compteur d'arrivée
+  étant à sec. Prix de l'eau vide (aucun prix inventé) : volumes seulement.
+- **Société Minière Démo** : site minier de Likasi, forage, cité des
+  travailleurs, atelier et lavage des engins ; aucune anomalie.
+- Moteur et envois déclenchés par le script aux instants voulus, dans
+  l'ordre du temps (le rapport de septembre est produit le 1er à 10 h,
+  heure de Kinshasa).
+- Corrigé en chemin : « Mes sites » affiche le volume du mois pour un site
+  sans nuitées (site minier : « 217,1 m³ ») et le total des économies dans
+  la monnaie des sites (« 0 CDF ») ; messages de fuite : « Débit continu
+  détecté » (accord) et « Eau perdue depuis la détection » quand le prix
+  de l'eau manque.
+- Vérifié avec les comptes de démonstration : « Réserves d'eau » (réseau
+  coupé, autonomie, heure du niveau bas, deux citernes, courbe, coupures),
+  « Mes sites », « Alertes », rapport de septembre.
+- Typecheck, lint, 1 226 tests unitaires verts.
+
+À savoir : la fonction d'envois de la base d'essai n'a pas été
+redéployée (trop volumineuse pour l'outil de déploiement disponible ici) :
+le journal de la démonstration garde les deux anciennes formulations
+(« Débit continu détectée », « Coût depuis la détection : 0,45 m³ »). Le
+prochain déploiement (`npx supabase functions deploy gardien-envois`)
+emporte la correction.
+
+Comment tester à l'écran :
+1. Dans le terminal : `npm run demo:reset`, puis `npm run dev` ; notez le
+   mot de passe affiché à la fin.
+2. Connectez-vous avec `demo-kinshasa-admin@example.com` et ouvrez
+   « Réserves d'eau » : réseau coupé, heures d'autonomie, heure du niveau
+   bas, les deux citernes et la courbe qui descend.
+3. Ouvrez « Alertes » : la fuite des chambres et la coupure du réseau.
+4. Dans « Mes sites », ouvrez le rapport de septembre : section « Réserves
+   d'eau et coupures du réseau ».
+5. Connectez-vous avec `demo-mine-admin@example.com` : le site minier, ses
+   trois points et ses montants en francs congolais.
+
 ---
 
 # Historique — offre Immeuble (en pause)

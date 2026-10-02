@@ -13,7 +13,14 @@
 //   avec arrosage de nuit déclaré (aucune fausse alerte) et une rupture,
 //   camping fermé pour l'hiver avec une fuite détectée en mode fermeture ;
 // - « Hôtel Bellecour Démo » : hôtel lyonnais en pilote à J+20 (kit A),
-//   fuite ouverte avec son compteur de pertes, page preuve.
+//   fuite ouverte avec son compteur de pertes, page preuve ;
+// - « Hôtel du Fleuve Démo » : hôtel à Kinshasa en dollars, deux citernes
+//   avec capteur de niveau, coupure du réseau public en cours depuis la
+//   veille à 16 h (autonomie qui baisse), une coupure terminée le mois
+//   dernier (rapport mensuel), fuite de chasse d'eau détectée ;
+// - « Société Minière Démo » : site minier à Likasi (francs congolais),
+//   trois points de mesure.
+// Aucun prix de l'eau en RDC : vide, comme en production (TODO(RAYAN)).
 // Puis fait tourner le moteur et les envois (mode journal : rien ne part).
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -83,6 +90,8 @@ function profil(type, heure) {
     piscine: [0, 0, 0, 0, 0, 0, 0, 0, 20, 40, 40, 40, 40, 40, 40, 40, 40, 40, 20, 0, 0, 0, 0, 0],
     sanitaires: [5, 3, 2, 2, 3, 10, 60, 120, 100, 60, 40, 40, 50, 40, 30, 30, 40, 60, 90, 110, 80, 40, 15, 8],
     arrosage: [300, 300, 300, 300, 300, 300, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 300, 300],
+    buanderie: [0, 0, 0, 0, 0, 0, 0, 20, 40, 50, 50, 40, 30, 40, 50, 40, 30, 10, 0, 0, 0, 0, 0, 0],
+    atelier: [0, 0, 0, 0, 0, 0, 150, 300, 350, 350, 300, 150, 100, 300, 350, 350, 300, 150, 0, 0, 0, 0, 0, 0],
   };
   return table[type][heure];
 }
@@ -121,6 +130,41 @@ async function fonction(nom, corps) {
 
 function devEui(prefixe, n) {
   return `${prefixe}${String(n).padStart(16 - prefixe.length, "0")}`.toUpperCase();
+}
+
+/** Date locale AAAA-MM-JJ décalée de n jours. */
+function decalerDate(date, n) {
+  return new Date(Date.parse(`${date}T12:00:00Z`) + n * J).toISOString().slice(0, 10);
+}
+
+/** Instant UTC d'une heure locale entière (fuseaux sans changement d'heure). */
+function instantLocal(date, heure, fuseau) {
+  const [a, m, j] = date.split("-").map(Number);
+  const essai = Date.UTC(a, m - 1, j, heure);
+  const vu = heureLocale(essai, fuseau);
+  const [va, vm, vj] = vu.date.split("-").map(Number);
+  return essai - (Date.UTC(va, vm - 1, vj, vu.heure) - essai);
+}
+
+/** Part du volume plein à la hauteur h (cuve debout ou couchée), comme le moteur. */
+function fractionVolume(h, r) {
+  const x = Math.min(1, Math.max(0, h / r.full_height_m));
+  if (r.shape === "verticale") return x;
+  const theta = 2 * Math.acos(1 - 2 * x);
+  return (theta - Math.sin(theta)) / (2 * Math.PI);
+}
+const volumeUtile = (h, r) => r.capacity_m3 * (fractionVolume(h, r) - fractionVolume(r.outlet_height_m, r));
+
+/** Distance mesurée par un capteur posé au-dessus de l'eau pour un volume utile donné. */
+function distancePourVolume(v, r) {
+  let bas = r.outlet_height_m;
+  let haut = r.full_height_m;
+  for (let i = 0; i < 50; i++) {
+    const milieu = (bas + haut) / 2;
+    if (volumeUtile(milieu, r) < v) bas = milieu;
+    else haut = milieu;
+  }
+  return r.sensor_height_m - (bas + haut) / 2;
 }
 
 // ---------------------------------------------------------------------------
@@ -493,9 +537,183 @@ async function lyon(comptes) {
 }
 
 // ---------------------------------------------------------------------------
-// 5) Moteur, rapports, pages preuve
+// 5) Hôtel du Fleuve Démo (Kinshasa, dollars, deux citernes)
 // ---------------------------------------------------------------------------
-async function calculer(a, c, l) {
+async function kinshasa(comptes) {
+  const fuseau = "Africa/Kinshasa";
+  const org = await organisation({ nom: "Hôtel du Fleuve Démo", kind: "sites", status: "actif", country: "CD", slug: "hotel-du-fleuve-demo" });
+  const source = await ok(admin.from("sources").insert({ organization_id: org.id, type: "saisie_manuelle", nom: "Démonstration" }).select("id").single(), "source Kinshasa");
+  const debutDonnees = maintenant - 62 * J;
+  const heureCourante = Math.floor(maintenant / H) * H;
+  // Prix de l'eau vide : aucun prix par défaut en RDC (TODO(RAYAN)), seuls les volumes sont donnés.
+  const site = await ok(
+    admin
+      .from("sites")
+      .insert({ organization_id: org.id, name: "Hôtel du Fleuve", type: "hotel", city: "Kinshasa", country: "CD", timezone: fuseau, currency: "USD", activity_unit: "nuitee", capacity: 40, occupancy_rate_default: 0.6 })
+      .select("id")
+      .single(),
+    "Hôtel du Fleuve",
+  );
+
+  // Repères en heure locale. La coupure commence la veille de la dernière
+  // nuit à 16 h ; la chasse d'eau des chambres fuit depuis 20 h, pendant la
+  // coupure : le compteur d'arrivée, à sec, ne la voit pas (une seule fuite,
+  // « débit continu », sur le compteur des chambres).
+  const local = heureLocale(maintenant, fuseau);
+  const derniereNuit = local.heure >= 5 ? local.date : decalerDate(local.date, -1);
+  const coupure = instantLocal(decalerDate(derniereNuit, -1), 16, fuseau);
+  const debutFuite = instantLocal(decalerDate(derniereNuit, -1), 20, fuseau);
+  const d = new Date(maintenant);
+  const le12 = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 1, 12)).toISOString().slice(0, 10);
+  const ancienne = { debut: instantLocal(le12, 9, fuseau), fin: instantLocal(le12, 22, fuseau) };
+
+  // Points de comptage en aval des citernes, et leur consommation heure par heure.
+  let n = 1;
+  const appareil = async (compteur, kit = "C") =>
+    ok(
+      admin
+        .from("devices")
+        .insert({ organization_id: org.id, site_id: site.id, meter_id: compteur, source_id: source.id, device_ref: devEui("CD0F1E", n++), model: "Milesight EM300-DI", kit, transmission: "lorawan", provisioning_status: "actif", battery_pct: 90, rssi: -97, snr: 5, last_seen_at: new Date(maintenant - 25 * 60_000).toISOString() })
+        .select("id")
+        .single(),
+      "appareil Kinshasa",
+    );
+  const consommation = new Map();
+  for (const [i, [type, zone, facteur]] of [["chambres", "Chambres", 2], ["cuisine", "Cuisine", 3], ["buanderie", "Buanderie", 1.5]].entries()) {
+    const compteur = await ok(
+      admin
+        .from("meters")
+        .insert({ organization_id: org.id, site_id: site.id, type: "point_comptage", numero_serie: `KIN-${i + 1}`, nom: zone, zone, transmission: "lorawan", pulse_weight_l: 10, installed_at: new Date(debutDonnees).toISOString() })
+        .select("id")
+        .single(),
+      `point ${zone}`,
+    );
+    await appareil(compteur.id);
+    // Chasse d'eau qui fuit aux chambres : +25 L/h.
+    const lignes = releves({ organisation: org.id, compteur: compteur.id, source: source.id, fuseau, type, depuis: debutDonnees, jusqua: maintenant, graine: 7000 + i, facteur, ajout: (t) => (type === "chambres" && t >= debutFuite ? 25 : 0) });
+    for (const l of lignes) {
+      const h = Date.parse(l.ts) - H;
+      consommation.set(h, (consommation.get(h) ?? 0) + l.volume_m3);
+    }
+    await inserer("readings", lignes, "relevés Kinshasa");
+  }
+
+  // Citernes : la principale (debout) et celle du toit (couchée), capteurs posés au-dessus de l'eau.
+  const reserves = [
+    { label: "Citerne principale", capacity_m3: 7, shape: "verticale", full_height_m: 2, outlet_height_m: 0.1, sensor_height_m: 2.25 },
+    { label: "Citerne de toit", capacity_m3: 4, shape: "cylindre_horizontal", full_height_m: 1.5, outlet_height_m: 0.08, sensor_height_m: 1.6 },
+  ];
+  const maxima = reserves.map((r) => volumeUtile(r.full_height_m, r));
+  const total = maxima.reduce((s, v) => s + v, 0);
+
+  // Arrivée du réseau public : le robinet à flotteur remplace l'eau
+  // consommée, au plus 0,45 m³/h (pression faible) ; rien pendant une coupure.
+  const arrivee = await ok(
+    admin
+      .from("meters")
+      .insert({ organization_id: org.id, site_id: site.id, type: "point_comptage", numero_serie: "KIN-0", nom: "Arrivée du réseau public", zone: "Arrivée du réseau", transmission: "lorawan", pulse_weight_l: 10, installed_at: new Date(debutDonnees).toISOString(), public_inlet: true })
+      .select("id")
+      .single(),
+    "arrivée du réseau",
+  );
+  await appareil(arrivee.id);
+  const plein = 0.95 * total;
+  const coupee = (h) => h >= coupure || (h >= ancienne.debut && h < ancienne.fin);
+  const volumes = new Map();
+  const lignesArrivee = [];
+  let v = plein;
+  for (let h = Math.floor(debutDonnees / H) * H; h < heureCourante; h += H) {
+    volumes.set(h, v);
+    const c = consommation.get(h) ?? 0;
+    const a = coupee(h) ? 0 : Math.min(0.45, Math.max(0, c + plein - v));
+    v = Math.min(total, Math.max(0, v - c + a));
+    lignesArrivee.push({ organization_id: org.id, meter_id: arrivee.id, source_id: source.id, ts: new Date(h + H).toISOString(), volume_m3: Math.round(a * 1000) / 1000 });
+  }
+  volumes.set(heureCourante, v);
+  await inserer("readings", lignesArrivee, "relevés de l'arrivée");
+
+  // Mesures de niveau toutes les heures (à h + 5 min), au millimètre.
+  const aleatoire = hasard(7100);
+  for (const [i, r] of reserves.entries()) {
+    const capteur = await ok(
+      admin
+        .from("devices")
+        .insert({ organization_id: org.id, site_id: site.id, source_id: source.id, device_ref: devEui("CD0F2E", i + 1), model: "Capteur de niveau (modèle à choisir)", kit: "niveau", decodeur: "niveau_objet", transmission: "lorawan", provisioning_status: "actif", battery_pct: 96, rssi: -92, snr: 7, last_seen_at: new Date(maintenant - 5 * 60_000).toISOString() })
+        .select("id")
+        .single(),
+      "capteur de niveau",
+    );
+    const reserve = await ok(
+      admin
+        .from("water_reserves")
+        .insert({ organization_id: org.id, site_id: site.id, kind: "citerne", sensor_mounting: "distance", device_id: capteur.id, created_at: new Date(debutDonnees).toISOString(), ...r })
+        .select("id")
+        .single(),
+      r.label,
+    );
+    const mesures = [];
+    for (let h = Math.floor(debutDonnees / H) * H; h <= heureCourante; h += H) {
+      const suivant = volumes.get(h + H) ?? (volumes.get(h) - (consommation.get(h - H) ?? 0));
+      const total5 = volumes.get(h) + ((suivant - volumes.get(h)) * 5) / 60;
+      const distance = distancePourVolume((maxima[i] * total5) / total, r) + (aleatoire() - 0.5) * 0.004;
+      mesures.push({ organization_id: org.id, reserve_id: reserve.id, ts: new Date(h + 5 * 60_000).toISOString(), measure_m: Math.round(distance * 1000) / 1000 });
+    }
+    await inserer("reserve_levels", mesures, "niveaux des citernes");
+  }
+
+  await activite(org.id, site.id, 40, 0.6, 41);
+  comptes.push(await compte("demo-kinshasa-admin@example.com", org.id, "admin_client"));
+  comptes.push(await compte("demo-kinshasa-technicien@example.com", org.id, "technicien", "organisation", null, "+243810000001"));
+  etape(`Hôtel du Fleuve Démo : 2 citernes, coupure en cours (réserves à ${Math.round((v / total) * 100)} %), fuite aux chambres`);
+  // Instants où le passage horaire du moteur aurait vu les coupures.
+  const vues = [ancienne.debut + 3 * H, ancienne.debut + 8 * H, ancienne.fin + 2 * H, coupure + 3 * H].map((t) => t + 10 * 60_000);
+  return { org: org.id, sites: [site.id], vues };
+}
+
+// ---------------------------------------------------------------------------
+// 6) Société Minière Démo (Likasi, francs congolais, trois points)
+// ---------------------------------------------------------------------------
+async function mine(comptes) {
+  const fuseau = "Africa/Lubumbashi";
+  const org = await organisation({ nom: "Société Minière Démo", kind: "sites", status: "actif", country: "CD", slug: "societe-miniere-demo" });
+  const source = await ok(admin.from("sources").insert({ organization_id: org.id, type: "saisie_manuelle", nom: "Démonstration" }).select("id").single(), "source mine");
+  const debutDonnees = maintenant - 62 * J;
+  const site = await ok(
+    admin
+      .from("sites")
+      .insert({ organization_id: org.id, name: "Site minier de Likasi", type: "autre", city: "Likasi", country: "CD", timezone: fuseau, currency: "CDF", activity_unit: "aucune" })
+      .select("id")
+      .single(),
+    "site minier",
+  );
+  for (const [i, [type, zone, facteur]] of [["general", "Forage", 2], ["chambres", "Cité des travailleurs", 2], ["atelier", "Atelier et lavage des engins", 1]].entries()) {
+    const compteur = await ok(
+      admin
+        .from("meters")
+        .insert({ organization_id: org.id, site_id: site.id, type: "point_comptage", numero_serie: `LIK-${i + 1}`, nom: zone, zone, transmission: "lorawan", pulse_weight_l: 10, installed_at: new Date(debutDonnees).toISOString() })
+        .select("id")
+        .single(),
+      `point ${zone}`,
+    );
+    await ok(
+      admin.from("devices").insert({ organization_id: org.id, site_id: site.id, meter_id: compteur.id, source_id: source.id, device_ref: devEui("CD3A1E", i + 1), model: "Milesight EM300-DI", kit: "C", transmission: "lorawan", provisioning_status: "actif", battery_pct: 85 - i * 4, rssi: -104, snr: 3, last_seen_at: new Date(maintenant - 45 * 60_000).toISOString() }),
+      "appareil mine",
+    );
+    await inserer(
+      "readings",
+      releves({ organisation: org.id, compteur: compteur.id, source: source.id, fuseau, type, depuis: debutDonnees, jusqua: maintenant, graine: 8000 + i, facteur }),
+      "relevés mine",
+    );
+  }
+  comptes.push(await compte("demo-mine-admin@example.com", org.id, "admin_client"));
+  etape("Société Minière Démo : site minier de Likasi, 3 points");
+  return { org: org.id, sites: [site.id] };
+}
+
+// ---------------------------------------------------------------------------
+// 7) Moteur, rapports, pages preuve
+// ---------------------------------------------------------------------------
+async function calculer(a, c, l, k, m) {
   // Bilans de 6 mois en trois passes de 61 jours (limite de calcul d'une
   // fonction), aux instants choisis en dehors de toute anomalie ; la
   // dernière passe, aujourd'hui, détecte les situations en cours (capteur
@@ -506,11 +724,33 @@ async function calculer(a, c, l) {
     }
   }
   await fonction("gardien-moteur", { site_id: l.sites[0], maintenant: new Date(maintenant).toISOString(), jours: 21 });
-  etape("moteur : 6 mois de bilans, détections du jour");
-
-  // Rapports mensuels du mois dernier (le 1er, après 8 h à Paris comme à Casablanca).
+  // RDC : deux passes de 31 jours ; pour l'hôtel, le moteur passe aussi
+  // pendant les coupures (détection, suivi, retour de l'eau), dans l'ordre
+  // du temps, et les alertes partent au journal à ces mêmes instants.
+  await fonction("gardien-moteur", { site_id: m.sites[0], maintenant: new Date(maintenant - 31 * J).toISOString(), jours: 31 });
+  await fonction("gardien-moteur", { site_id: m.sites[0], maintenant: new Date(maintenant).toISOString(), jours: 31 });
+  // Rapports mensuels du mois dernier (le 1er, après 8 h à Paris comme à Casablanca et en RDC).
   const premier = new Date(Date.UTC(new Date(maintenant).getUTCFullYear(), new Date(maintenant).getUTCMonth(), 1, 9, 0));
-  for (const org of [a.org, c.org]) {
+  // Le rapport de l'hôtel du Fleuve est produit à sa date, après un bilan
+  // du mois écoulé : il ne connaît pas encore ce qui est arrivé ensuite.
+  const passages = [
+    ...k.vues.map((t) => ({ t, jours: 1, envois: true })),
+    { t: maintenant - 31 * J, jours: 31, envois: false },
+    { t: maintenant, jours: 31, envois: false },
+    ...(premier.getTime() < maintenant ? [{ t: premier.getTime() - 50 * 60_000, jours: 31, envois: false, rapport: true }] : []),
+  ].sort((x, y) => x.t - y.t);
+  for (const p of passages) {
+    await fonction("gardien-moteur", { site_id: k.sites[0], maintenant: new Date(p.t).toISOString(), jours: p.jours });
+    if (p.envois) {
+      await fonction("gardien-envois", { organization_id: k.org, maintenant: new Date(p.t + 5 * 60_000).toISOString(), sections: ["alertes"] });
+    }
+    if (p.rapport) {
+      await fonction("gardien-envois", { organization_id: k.org, maintenant: premier.toISOString(), sections: ["rapports"] });
+    }
+  }
+  etape("moteur : 6 mois de bilans, détections du jour, coupures du réseau à Kinshasa");
+
+  for (const org of [a.org, c.org, m.org]) {
     await fonction("gardien-envois", { organization_id: org, maintenant: premier.toISOString(), sections: ["rapports"] });
   }
   // Rapports de première nuit et de première semaine du pilote.
@@ -520,7 +760,7 @@ async function calculer(a, c, l) {
     await fonction("gardien-envois", { organization_id: l.org, maintenant: new Date(matin).toISOString(), sections: ["rapports"] });
   }
   // Alertes du jour (journal seulement).
-  for (const org of [a.org, c.org, l.org]) {
+  for (const org of [a.org, c.org, l.org, k.org, m.org]) {
     await fonction("gardien-envois", { organization_id: org, sections: ["fuites", "alertes"] });
   }
   etape("envois : rapports mensuels, première nuit, première semaine, alertes");
@@ -541,7 +781,9 @@ try {
   const a = await atlas(comptes);
   const c = await camping(comptes);
   const l = await lyon(comptes);
-  const preuves = await calculer(a, c, l);
+  const k = await kinshasa(comptes);
+  const m = await mine(comptes);
+  const preuves = await calculer(a, c, l, k, m);
   const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
   console.log("\nComptes de démonstration (mot de passe : " + motDePasse + ") :");
   for (const e of comptes) console.log(`  ${e}`);

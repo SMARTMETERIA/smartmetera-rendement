@@ -80,10 +80,12 @@ export function messageFuite(
   const parMois =
     cout.coutMensuelProjete !== null ? montant(cout.coutMensuelProjete, f.monnaie) : volume(cout.m3ParJour * 30);
   const debut = heure(f.debutMs ?? f.detecteeMs, f.fuseau);
+  // Sans prix de l'eau (site à renseigner) : volumes seulement.
+  const avecPrix = cout.coutParJour !== null;
   const titre =
     etape === "directeur"
       ? `Fuite sans prise en charge depuis ${nombre((maintenantMs - f.detecteeMs) / 3_600_000, 0)} h : ${lieu}`
-      : `${LIBELLES_FUITE[f.type]} détectée : ${lieu}`;
+      : `${LIBELLES_FUITE[f.type]} ${f.type === "debit_continu" ? "détecté" : "détectée"} : ${lieu}`;
   const blocs: Bloc[] = [
     {
       type: "paragraphe",
@@ -98,10 +100,9 @@ export function messageFuite(
         ["Site", lieu],
         ["Début estimé", dateHeure(f.debutMs ?? f.detecteeMs, f.fuseau)],
         ["Débit en trop", `${nombre(f.excesLph)} L/h`],
-        [
-          "Coût depuis la détection",
-          cout.coutCumule !== null ? montant(cout.coutCumule, f.monnaie) : volume(cout.m3Cumules),
-        ],
+        cout.coutCumule !== null
+          ? ["Coût depuis la détection", montant(cout.coutCumule, f.monnaie)]
+          : ["Eau perdue depuis la détection", volume(cout.m3Cumules)],
         ["Si rien n'est fait", `${parMois} par mois (${parJour} par jour)`],
       ],
     },
@@ -113,7 +114,7 @@ export function messageFuite(
     etape === "directeur"
       ? `fuite à ${lieu} sans prise en charge. ${parJour} par jour. Voir : ${lien}`
       : `${LIBELLES_FUITE[f.type].toLowerCase()} à ${lieu}, ${nombre(f.excesLph)} L/h depuis ${debut}. ${parJour} par jour, ${parMois} par mois si rien n'est fait. Je m'en occupe : ${lien}`;
-  const vocal = `Une fuite est détectée à ${lieu} depuis ${debut}. Elle coûte environ ${parJour} par jour. Personne ne l'a encore prise en charge. Ouvrez le lien reçu par SMS pour indiquer que vous vous en occupez.`;
+  const vocal = `Une fuite est détectée à ${lieu} depuis ${debut}. Elle ${avecPrix ? "coûte" : "fait perdre"} environ ${parJour} par jour. Personne ne l'a encore prise en charge. Ouvrez le lien reçu par SMS pour indiquer que vous vous en occupez.`;
   return rendu(ctx, titre, blocs, court, vocal);
 }
 

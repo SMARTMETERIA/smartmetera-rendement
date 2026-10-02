@@ -38,7 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { PagePreuveBouton } from "@/components/sites/PagePreuveBouton";
 import { TITRES_RAPPORT, type TypeRapport } from "@/lib/gardien-rapports/contenus";
 import { moisLong, montantRond as formaterMontantRond, nombre } from "@/lib/gardien-envois/format";
-import { dernierMoisComplet, indicateursSites } from "@/lib/gardien/indicateursSites";
+import { dernierMoisComplet, indicateursSites, type Indicateurs } from "@/lib/gardien/indicateursSites";
 import { dateLocale } from "@/lib/moteur-gardien/temps";
 import { CLASSES_CARTE, CLASSES_TON, etatSurveillance } from "@/lib/gardien/etatSurveillance";
 import { cn } from "@/lib/utils";
@@ -46,6 +46,14 @@ import { cn } from "@/lib/utils";
 type Ligne = Record<string, unknown>;
 const un = <T,>(v: T | T[] | null | undefined): T | null =>
   Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+
+/** Litres par unité d'activité, ou volume du mois pour un site sans unité. */
+function consommationMois(ind: Indicateurs | undefined): string | null {
+  if (ind?.litresParUnite != null && ind.unite) {
+    return `${nombre(ind.litresParUnite, 0)} L par ${ind.unite}${ind.estimation ? " (estimation)" : ""}`;
+  }
+  return ind?.volumeM3 != null ? `${nombre(ind.volumeM3, 1)} m³` : null;
+}
 
 /**
  * Espace Gardien de l'eau : les sites accessibles, les fuites en cours
@@ -65,7 +73,7 @@ export default async function SitesPage() {
 
   let requeteSites = supabase
     .from("sites")
-    .select("id, name, type, city, country, active, timezone, activity_unit, capacity, occupancy_rate_default, clients(name)")
+    .select("id, name, type, city, country, active, timezone, currency, activity_unit, capacity, occupancy_rate_default, clients(name)")
     .order("name");
   requeteSites = adhesion
     ? requeteSites.eq("organization_id", organizationId)
@@ -180,6 +188,9 @@ export default async function SitesPage() {
   const rendueA = new Date().getTime();
 
   const pays = paysDe(org?.country);
+  // Économies nulles : dans la monnaie des sites s'ils en ont une seule, sinon celle du pays.
+  const monnaiesSites = [...new Set((sites ?? []).map((s) => s.currency as string))];
+  const monnaieParDefaut = monnaiesSites.length === 1 ? monnaieDe(monnaiesSites[0]) : REGLAGES_PAYS[pays].monnaie;
   const finEssai =
     org?.status === "essai" && org.trial_ends_at
       ? new Intl.DateTimeFormat("fr-FR", {
@@ -202,7 +213,7 @@ export default async function SitesPage() {
         <p className="text-muted-foreground text-sm">Économies depuis le début, tous sites</p>
         <p className="text-primary font-heading text-5xl font-semibold tabular-nums sm:text-6xl">
           {economies.length === 0
-            ? formaterMontantRond(0, REGLAGES_PAYS[pays].monnaie)
+            ? formaterMontantRond(0, monnaieParDefaut)
             : economies
                 .map((e) => (e.montant !== null ? formaterMontantRond(e.montant, e.monnaie) : formaterVolume(e.m3)))
                 .join(" + ")}
@@ -319,9 +330,9 @@ export default async function SitesPage() {
                               .filter(Boolean)
                               .join(" · ")}
                           </span>
-                          {ind?.litresParUnite != null && ind.unite && (
+                          {consommationMois(ind) && (
                             <span className="block text-sm tabular-nums">
-                              {`${nombre(ind.litresParUnite, 0)} L par ${ind.unite}${ind.estimation ? " (estimation)" : ""} en ${moisLong(moisIndicateur)}`}
+                              {`${consommationMois(ind)} en ${moisLong(moisIndicateur)}`}
                             </span>
                           )}
                         </span>
@@ -378,9 +389,7 @@ export default async function SitesPage() {
                           s.country}
                       </TableCell>
                       <TableCell className="tabular-nums">
-                        {ind?.litresParUnite != null && ind.unite
-                          ? `${nombre(ind.litresParUnite, 0)} L par ${ind.unite}${ind.estimation ? " (estimation)" : ""}`
-                          : "—"}
+                        {consommationMois(ind) ?? "—"}
                       </TableCell>
                       <TableCell>
                         {ind?.alertes ? <Badge variant="destructive">{ind.alertes}</Badge> : "—"}
