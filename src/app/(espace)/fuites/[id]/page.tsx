@@ -12,7 +12,7 @@ import {
 } from "@/lib/gardien/fuites";
 import { formaterDateHeure } from "@/lib/gardien/format";
 import type { StatutFuite, TypeFuite } from "@/lib/moteur-gardien/analyse";
-import type { Monnaie } from "@/lib/moteur-gardien/economies";
+import { monnaieDe, type Monnaie } from "@/lib/moteur-gardien/economies";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 type Ligne = Record<string, unknown>;
@@ -36,7 +36,7 @@ export default async function FuitePage({ params }: { params: Promise<{ id: stri
   const compteur = un(f.meters as Ligne | Ligne[] | null);
   const details = (f.details ?? {}) as Ligne;
   const fuseau = (site?.timezone as string | undefined) ?? "Europe/Paris";
-  const monnaie: Monnaie = f.currency === "MAD" ? "MAD" : "EUR";
+  const monnaie: Monnaie = monnaieDe(f.currency);
   const statut = f.status as StatutFuite;
   const zone = (compteur?.zone as string | null) ?? (compteur?.nom as string | null) ?? null;
 

@@ -4,8 +4,8 @@
 Source de vérité : docs/PLAN_GARDIEN.md ; avancement : docs/PROGRESS.md.
 Offres Réseau et Immeuble en pause (docs/PLAN_IMMEUBLE.md) : ne pas les casser.
 Règles supplémentaires :
-- Fenêtres de nuit, envois et rapports à l'heure locale du site (Europe/Paris ou Africa/Casablanca).
-- Montants dans la monnaie du site (EUR ou MAD).
+- Fenêtres de nuit, envois et rapports à l'heure locale du site (Europe/Paris, Africa/Casablanca, Africa/Kinshasa ou Africa/Lubumbashi).
+- Montants dans la monnaie du site (EUR, MAD, USD ou CDF).
 - Pertes et économies : toujours la méthode prudente, affichée à côté du montant.
 - Aucune garantie de détection promise ; mention « surveillance fondée sur les données transmises par les capteurs ».
 - Conversion automatique d'un pilote uniquement avec un consentement écrit horodaté.

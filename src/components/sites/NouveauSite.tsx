@@ -14,24 +14,35 @@ import {
 } from "@/components/ui/select";
 import { creerSite } from "@/app/(espace)/sites/actions";
 import { LIBELLES_TYPE_SITE, TYPES_SITE } from "@/lib/gardien/libelles";
-import { REGLAGES_PAYS } from "@/lib/gardien/pays";
+import { LIBELLES_FUSEAU, LIBELLES_MONNAIE, REGLAGES_PAYS } from "@/lib/gardien/pays";
+import { PAYS, type Pays } from "@/lib/auth/validation";
 
-export function NouveauSite({ paysParDefaut }: { paysParDefaut: "FR" | "MA" }) {
+export function NouveauSite({ paysParDefaut }: { paysParDefaut: Pays }) {
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("hotel");
-  const [pays, setPays] = useState<string>(paysParDefaut);
+  const [pays, setPays] = useState<Pays>(paysParDefaut);
+  const [fuseau, setFuseau] = useState<string>(REGLAGES_PAYS[paysParDefaut].fuseau);
+  const [monnaie, setMonnaie] = useState<string>(REGLAGES_PAYS[paysParDefaut].monnaie);
   const [ville, setVille] = useState("");
   const [enCours, setEnCours] = useState(false);
   const [retour, setRetour] = useState<{
     type: "ok" | "erreur";
     texte: string;
   } | null>(null);
+  const reglages = REGLAGES_PAYS[pays];
+  const choix = reglages.fuseaux.length > 1 || reglages.monnaies.length > 1;
+
+  function changerPays(p: Pays) {
+    setPays(p);
+    setFuseau(REGLAGES_PAYS[p].fuseau);
+    setMonnaie(REGLAGES_PAYS[p].monnaie);
+  }
 
   async function ajouter(e: React.FormEvent) {
     e.preventDefault();
     setEnCours(true);
     setRetour(null);
-    const resultat = await creerSite({ name, type, pays, ville });
+    const resultat = await creerSite({ name, type, pays, ville, fuseau, monnaie });
     setEnCours(false);
     if ("erreur" in resultat) {
       setRetour({ type: "erreur", texte: resultat.erreur });
@@ -78,15 +89,15 @@ export function NouveauSite({ paysParDefaut }: { paysParDefaut: "FR" | "MA" }) {
       <div className="space-y-2">
         <Label htmlFor="site-pays">Pays</Label>
         <Select
-          items={{ FR: REGLAGES_PAYS.FR.libelle, MA: REGLAGES_PAYS.MA.libelle }}
+          items={Object.fromEntries(PAYS.map((p) => [p, REGLAGES_PAYS[p].libelle]))}
           value={pays}
-          onValueChange={(v) => v && setPays(v)}
+          onValueChange={(v) => v && changerPays(v as Pays)}
         >
-          <SelectTrigger id="site-pays" className="w-full lg:w-36">
+          <SelectTrigger id="site-pays" className="w-full lg:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {(["FR", "MA"] as const).map((p) => (
+            {PAYS.map((p) => (
               <SelectItem key={p} value={p}>
                 {REGLAGES_PAYS[p].libelle}
               </SelectItem>
@@ -105,6 +116,48 @@ export function NouveauSite({ paysParDefaut }: { paysParDefaut: "FR" | "MA" }) {
       <Button type="submit" disabled={enCours}>
         {enCours ? "Ajout…" : "Ajouter le site"}
       </Button>
+      {choix && (
+        <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2 lg:col-span-5">
+          <div className="space-y-2">
+            <Label htmlFor="site-fuseau">Fuseau horaire</Label>
+            <Select
+              items={Object.fromEntries(reglages.fuseaux.map((f) => [f, LIBELLES_FUSEAU[f]]))}
+              value={fuseau}
+              onValueChange={(v) => v && setFuseau(v)}
+            >
+              <SelectTrigger id="site-fuseau" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {reglages.fuseaux.map((f) => (
+                  <SelectItem key={f} value={f}>
+                    {LIBELLES_FUSEAU[f]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="site-monnaie">Monnaie</Label>
+            <Select
+              items={Object.fromEntries(reglages.monnaies.map((m) => [m, `${LIBELLES_MONNAIE[m]} (${m})`]))}
+              value={monnaie}
+              onValueChange={(v) => v && setMonnaie(v)}
+            >
+              <SelectTrigger id="site-monnaie" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {reglages.monnaies.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {`${LIBELLES_MONNAIE[m]} (${m})`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
       {retour && (
         <Alert
           variant={retour.type === "erreur" ? "destructive" : "default"}

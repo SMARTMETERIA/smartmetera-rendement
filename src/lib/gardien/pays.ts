@@ -1,21 +1,67 @@
 // Pays couverts par le Gardien de l'eau : fuseau horaire et monnaie d'un
 // site, retenue à la source par défaut d'une organisation (pur, testable).
+// La RDC a deux fuseaux (Kinshasa à l'ouest, Lubumbashi à l'est) et deux
+// monnaies (dollar américain, franc congolais) : le site choisit.
 
-import type { Pays } from "@/lib/auth/validation";
+import { paysDe, type Pays } from "@/lib/auth/validation";
+import type { Monnaie } from "@/lib/moteur-gardien/economies";
 
-export type Monnaie = "EUR" | "MAD";
-export type Fuseau = "Europe/Paris" | "Africa/Casablanca";
+export type { Monnaie };
+export type Fuseau = "Europe/Paris" | "Africa/Casablanca" | "Africa/Kinshasa" | "Africa/Lubumbashi";
 
 export const REGLAGES_PAYS: Record<
   Pays,
-  { fuseau: Fuseau; monnaie: Monnaie; libelle: string }
+  {
+    /** Valeurs par défaut d'un nouveau site. */
+    fuseau: Fuseau;
+    monnaie: Monnaie;
+    libelle: string;
+    /** Choix proposés pour un site de ce pays. */
+    fuseaux: readonly Fuseau[];
+    monnaies: readonly Monnaie[];
+  }
 > = {
-  FR: { fuseau: "Europe/Paris", monnaie: "EUR", libelle: "France" },
-  MA: { fuseau: "Africa/Casablanca", monnaie: "MAD", libelle: "Maroc" },
+  FR: { fuseau: "Europe/Paris", monnaie: "EUR", libelle: "France", fuseaux: ["Europe/Paris"], monnaies: ["EUR"] },
+  MA: { fuseau: "Africa/Casablanca", monnaie: "MAD", libelle: "Maroc", fuseaux: ["Africa/Casablanca"], monnaies: ["MAD"] },
+  CD: {
+    fuseau: "Africa/Kinshasa",
+    monnaie: "USD",
+    libelle: "République démocratique du Congo",
+    fuseaux: ["Africa/Kinshasa", "Africa/Lubumbashi"],
+    monnaies: ["USD", "CDF"],
+  },
 };
 
-/** Valeurs de repli si platform_settings.tarifs est illisible. */
-const RETENUE_PAR_DEFAUT: Record<Pays, number> = { FR: 0, MA: 10 };
+export const LIBELLES_FUSEAU: Record<Fuseau, string> = {
+  "Europe/Paris": "Heure de Paris",
+  "Africa/Casablanca": "Heure de Casablanca",
+  "Africa/Kinshasa": "Heure de Kinshasa (ouest)",
+  "Africa/Lubumbashi": "Heure de Lubumbashi (est)",
+};
+
+export const LIBELLES_MONNAIE: Record<Monnaie, string> = {
+  EUR: "euros",
+  MAD: "dirhams",
+  USD: "dollars américains",
+  CDF: "francs congolais",
+};
+
+/** Fuseau horaire par défaut d'une organisation (dates d'essai, totaux). */
+export function fuseauPays(country: unknown): Fuseau {
+  return REGLAGES_PAYS[paysDe(country)].fuseau;
+}
+
+/** Monnaie par défaut d'une organisation (totaux affichés sans site). */
+export function monnaiePays(country: unknown): Monnaie {
+  return REGLAGES_PAYS[paysDe(country)].monnaie;
+}
+
+/**
+ * Valeurs de repli si platform_settings.tarifs est illisible.
+ * TODO(RAYAN) : retenue à la source pour un client en RDC (0 % tant que
+ * rien n'est décidé).
+ */
+const RETENUE_PAR_DEFAUT: Record<Pays, number> = { FR: 0, MA: 10, CD: 0 };
 
 /**
  * Retenue à la source (%) d'une nouvelle organisation, lue dans

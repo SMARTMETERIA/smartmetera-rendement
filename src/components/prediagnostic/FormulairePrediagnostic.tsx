@@ -26,6 +26,14 @@ const CHAMPS = [
   ["nbPoints", "Nombre de points à surveiller", "1"],
 ] as const;
 
+/** Pays et monnaie de l'établissement (RDC : dollar ou franc congolais). */
+const PAYS_MONNAIES: Record<string, string> = {
+  "FR|EUR": "France (euros)",
+  "MA|MAD": "Maroc (dirhams)",
+  "CD|USD": "RD Congo (dollars américains)",
+  "CD|CDF": "RD Congo (francs congolais)",
+};
+
 /** Saisie et résultat en direct ; le PDF reprend exactement la même vue. */
 export function FormulairePrediagnostic({
   tarifs,
@@ -34,12 +42,12 @@ export function FormulairePrediagnostic({
   tarifs: Record<string, Tarifs>;
   debits: { chasseLph: number; fuiteEnterreeLph: number };
 }) {
-  const [valeurs, setValeurs] = useState<Record<string, string>>({ pays: "FR", nbPoints: "1", prixM3: "4,89" });
+  const [valeurs, setValeurs] = useState<Record<string, string>>({ pays: "FR", monnaie: "EUR", nbPoints: "1", prixM3: "4,89" });
   const validation = useMemo(() => validerPrediagnostic(valeurs), [valeurs]);
   const vue = validation.ok
     ? vuePrediagnostic(
         validation.entree,
-        prediagnostic(validation.entree, tarifs[validation.entree.pays === "MA" ? "MAD" : "EUR"] ?? null, debits),
+        prediagnostic(validation.entree, tarifs[validation.entree.monnaie] ?? null, debits),
       )
     : null;
   const lienPdf = `/prediagnostic/pdf?${new URLSearchParams(valeurs).toString()}`;
@@ -50,16 +58,24 @@ export function FormulairePrediagnostic({
         <div className="space-y-1">
           <Label htmlFor="prediagnostic-pays">Pays</Label>
           <Select
-            items={{ FR: "France (euros)", MA: "Maroc (dirhams)" }}
-            value={valeurs.pays}
-            onValueChange={(v) => v && setValeurs((x) => ({ ...x, pays: v, prixM3: v === "MA" ? "" : x.prixM3 }))}
+            items={PAYS_MONNAIES}
+            value={`${valeurs.pays}|${valeurs.monnaie}`}
+            onValueChange={(v) => {
+              if (!v) return;
+              const [pays, monnaie] = v.split("|");
+              // Aucun prix de l'eau par défaut hors de France : à saisir.
+              setValeurs((x) => ({ ...x, pays, monnaie, prixM3: pays === "FR" ? x.prixM3 : "" }));
+            }}
           >
             <SelectTrigger id="prediagnostic-pays" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="FR">France (euros)</SelectItem>
-              <SelectItem value="MA">Maroc (dirhams)</SelectItem>
+              {Object.entries(PAYS_MONNAIES).map(([valeur, libelle]) => (
+                <SelectItem key={valeur} value={valeur}>
+                  {libelle}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

@@ -705,6 +705,39 @@ champ de mesure, valeurs de départ des seuils (`docs/A_FAIRE_RAYAN.md`).
 Comment tester à l'écran : voir la démonstration RDC (hôtel de Kinshasa),
 plus bas.
 
+## République démocratique du Congo — terminée
+
+Demande de Rayan du 2 octobre 2026, sur le modèle du Maroc.
+
+Plan :
+1. Migration `0055` : pays `CD`, fuseaux Kinshasa et Lubumbashi, monnaies USD et CDF (sites, fuites, usage), tarifs et prix de l'eau vides, méthode prudente avec le code de la monnaie.
+2. Pays : fuseaux et monnaies proposés par pays, téléphone `+243`, inscription « RD Congo », relance WhatsApp, retenue à la source non inventée.
+3. Écrans : choix du fuseau et de la monnaie d'un site congolais, totaux et dates dans la monnaie et le fuseau du pays, pré-diagnostic en dollars ou en francs congolais, superadmin.
+4. Pages légales : passages « à compléter » pour la RDC ; `CLAUDE.md` et le plan mis à jour.
+5. Tests et README.
+
+Fait :
+- Base : migration `0055` appliquée sur la base de développement ;
+  vérifié par une transaction annulée : site à Kinshasa en dollars et site
+  à Lubumbashi en francs congolais créés sans prix de l'eau, méthode
+  prudente « … × 2,00 USD/m³ = 36,00 USD ».
+- Application : partout où le code disait « Maroc sinon France », il lit
+  maintenant le pays, le fuseau et la monnaie (sites, fuites, alertes,
+  compte, usage, superadmin, pré-diagnostic). Garde-fous de prix relevés
+  pour le franc congolais (pré-diagnostic jusqu'à 100 000 CDF le m³, prix
+  partenaire jusqu'à la limite de la base).
+- Fonctions : rien à redéployer (la fonction d'envois déployée à la phase
+  G11 connaît déjà USD, CDF et la relance WhatsApp en RDC).
+- Tests : 8 tests RDC ; typecheck, lint, 1 225 tests unitaires verts.
+
+Aucune dépendance ajoutée.
+
+Reste (dépend de Rayan) : tarifs, prix de l'eau, retenue à la source,
+WhatsApp, agréments radio et pages légales pour la RDC
+(`docs/A_FAIRE_RAYAN.md`).
+
+Comment tester à l'écran : voir la démonstration RDC, plus bas.
+
 ---
 
 # Historique — offre Immeuble (en pause)

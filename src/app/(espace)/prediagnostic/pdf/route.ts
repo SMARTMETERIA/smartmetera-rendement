@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   if (!validation.ok) return NextResponse.json({ erreur: validation.erreur }, { status: 400 });
   const { tarifs, debits } = await reglagesPrediagnostic();
   const e = validation.entree;
-  const vue = vuePrediagnostic(e, prediagnostic(e, tarifs[e.pays === "MA" ? "MAD" : "EUR"] ?? null, debits));
+  const vue = vuePrediagnostic(e, prediagnostic(e, tarifs[e.monnaie] ?? null, debits));
   const marque =
     ctx.adhesion?.kind === "sites"
       ? await marqueOrganisation(await createClient(), ctx.adhesion.organizationId)

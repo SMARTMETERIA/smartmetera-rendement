@@ -157,3 +157,22 @@ Chaque point est contourné dans le code par un bouchon marqué
     `autonomie`).
 32. **Tarif de l'option « autonomie en eau »** — aucun prix n'est prévu
     pour le capteur de niveau dans l'export d'usage : à décider.
+
+## Ajoutés avec la République démocratique du Congo
+
+33. **Tarifs en dollars et en francs congolais** — mise en service,
+    abonnements, sonde : tous vides (`platform_settings`, clé `tarifs`,
+    valeurs `USD` et `CDF`). Sans eux, l'export d'usage marque les lignes
+    « à paramétrer » et la page preuve n'affiche pas le coût du service.
+34. **Prix de l'eau en RDC** — aucun prix par défaut (`prix_eau_defaut`,
+    `USD` et `CDF` vides) : chaque site congolais doit recevoir son prix au
+    m³, sinon seuls les volumes sont donnés.
+35. **Retenue à la source en RDC** — 0 % par défaut tant qu'un conseil
+    fiscal n'a rien dit (`tarifs.USD.retenue_source_pct_defaut`).
+36. **Relance par WhatsApp en RDC** — choisie comme au Maroc : à
+    confirmer.
+37. **Radio et agréments en RDC** — vérifier la bande LoRaWAN utilisable et
+    les agréments des capteurs et passerelles auprès du régulateur congolais
+    avant la pose.
+38. **Pages légales pour la RDC** — droit applicable, fiscalité et
+    autorité de protection des données : passages « à compléter ».

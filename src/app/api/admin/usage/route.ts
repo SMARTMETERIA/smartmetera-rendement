@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ENTETE_CSV_USAGE, lignesCsvUsage, type UsageMonnaie } from "@/lib/gardien/usage";
+import { monnaieDe } from "@/lib/moteur-gardien/economies";
 
 /** Export CSV de l'usage mensuel (superadmin), à partir des lignes calculées. */
 export async function GET(request: Request) {
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
     const org = Array.isArray(u.organizations) ? u.organizations[0] : u.organizations;
     const d = (u.details ?? {}) as Record<string, unknown>;
     const usage: UsageMonnaie = {
-      monnaie: u.currency === "MAD" ? "MAD" : "EUR",
+      monnaie: monnaieDe(u.currency),
       pointsActifs: u.active_points,
       misesEnService: u.setup_points,
       sondes: u.temperature_points,

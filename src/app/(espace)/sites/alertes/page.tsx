@@ -7,6 +7,7 @@ import { FuitesEnCours, type FuiteAffichee } from "@/components/sites/FuitesEnCo
 import { MENTION_SURVEILLANCE } from "@/lib/gardien/fuites";
 import { formaterDateHeure } from "@/lib/gardien/format";
 import type { StatutFuite, TypeFuite } from "@/lib/moteur-gardien/analyse";
+import { monnaieDe } from "@/lib/moteur-gardien/economies";
 
 type Ligne = Record<string, unknown>;
 const un = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
@@ -58,7 +59,7 @@ export default async function AlertesPage() {
       detectedAt: f.detected_at as string,
       excesLph: Number(f.excess_flow_lph),
       prixM3: site?.water_price_per_m3 == null ? null : Number(site.water_price_per_m3),
-      monnaie: f.currency === "MAD" ? "MAD" : "EUR",
+      monnaie: monnaieDe(f.currency),
       fuseau: (site?.timezone as string | undefined) ?? "Europe/Paris",
       explication: typeof details.explication === "string" ? details.explication : null,
       simulation: details.simulation === true,

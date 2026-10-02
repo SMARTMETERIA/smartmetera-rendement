@@ -95,11 +95,12 @@ function ChoixPays({
   const options: { valeur: Pays; libelle: string }[] = [
     { valeur: "FR", libelle: "France" },
     { valeur: "MA", libelle: "Maroc" },
+    { valeur: "CD", libelle: "RD Congo" },
   ];
   return (
     <fieldset className="space-y-1.5">
       <legend className="text-sm leading-none font-medium">Pays</legend>
-      <div className="flex gap-2 pt-1">
+      <div className="flex flex-wrap gap-2 pt-1">
         {options.map((o) => (
           <label
             key={o.valeur}

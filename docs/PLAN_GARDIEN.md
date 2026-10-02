@@ -88,8 +88,8 @@ Pas de paiement en ligne en v1 : un export d'usage mensuel sert à facturer à l
 |---|---|
 | Une seule application | `organizations.kind` : `reseau` (pause), `immeuble` (pause), `sites` (actif). La navigation dépend de `kind`. |
 | Hiérarchie | organisation (partenaire, chaîne ou client direct) → clients (facultatif, pour les partenaires) → sites → points de comptage et points de température |
-| Fuseau horaire | Par site : `Europe/Paris` ou `Africa/Casablanca`. Fenêtres de nuit, envois et rapports à l'heure locale du site. |
-| Monnaie | Par site : EUR ou MAD. Le prix de l'eau au m³ est saisi dans la monnaie du site. |
+| Fuseau horaire | Par site : `Europe/Paris` ou `Africa/Casablanca` ; RDC (ajout du 2 octobre 2026) : `Africa/Kinshasa` ou `Africa/Lubumbashi`. Fenêtres de nuit, envois et rapports à l'heure locale du site. |
+| Monnaie | Par site : EUR ou MAD ; RDC : USD ou CDF. Le prix de l'eau au m³ est saisi dans la monnaie du site. |
 | Rôles | superadmin (plateforme) ; admin, agent, lecteur (organisation) ; directeur de site (portée : ses sites) ; technicien (alertes et poses) |
 | Connexion | E-mail et mot de passe, Google, lien magique. Inscription autonome possible en essai de 30 jours. |
 | Réception NB-IoT (kit A) | MQTTS via un broker MQTT managé hébergé dans l'Union européenne (`TODO(RAYAN)` : choix du broker), avec transfert HTTP vers un point d'entrée `/ingest/mqtt` protégé par jeton. Pas de LwM2M ni de CoAP en v1. |
@@ -267,8 +267,8 @@ Stripe ; LwM2M, CoAP et serveur UDP ; électrovanne de coupure automatique ; sui
 Source de vérité : docs/PLAN_GARDIEN.md ; avancement : docs/PROGRESS.md.
 Offres Réseau et Immeuble en pause (docs/PLAN_IMMEUBLE.md) : ne pas les casser.
 Règles supplémentaires :
-- Fenêtres de nuit, envois et rapports à l'heure locale du site (Europe/Paris ou Africa/Casablanca).
-- Montants dans la monnaie du site (EUR ou MAD).
+- Fenêtres de nuit, envois et rapports à l'heure locale du site (Europe/Paris, Africa/Casablanca, Africa/Kinshasa ou Africa/Lubumbashi).
+- Montants dans la monnaie du site (EUR, MAD, USD ou CDF).
 - Pertes et économies : toujours la méthode prudente, affichée à côté du montant.
 - Aucune garantie de détection promise ; mention « surveillance fondée sur les données transmises par les capteurs ».
 - Conversion automatique d'un pilote uniquement avec un consentement écrit horodaté.

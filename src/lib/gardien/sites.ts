@@ -1,5 +1,6 @@
 // Création d'un site (pur, testable) : le pays fixe le fuseau horaire et
-// la monnaie ; le type propose l'unité d'activité (nuitée, emplacement…).
+// la monnaie (en RDC, au choix parmi ceux du pays) ; le type propose
+// l'unité d'activité (nuitée, emplacement…).
 
 import { PAYS, type Pays } from "@/lib/auth/validation";
 import { REGLAGES_PAYS, type Fuseau, type Monnaie } from "./pays";
@@ -20,6 +21,8 @@ export function validerNouveauSite(brut: {
   type?: string;
   pays?: string;
   ville?: string;
+  fuseau?: string;
+  monnaie?: string;
 }): { ok: true; site: NouveauSite } | { ok: false; erreur: string } {
   const name = (brut.name ?? "").trim();
   if (name.length < 2 || name.length > 160) {
@@ -29,10 +32,19 @@ export function validerNouveauSite(brut: {
     return { ok: false, erreur: "Choisissez le type de site." };
   }
   if (!(PAYS as readonly string[]).includes(brut.pays ?? "")) {
-    return { ok: false, erreur: "Choisissez la France ou le Maroc." };
+    return { ok: false, erreur: "Choisissez le pays du site." };
   }
   const type = brut.type as TypeSite;
   const country = brut.pays as Pays;
+  const reglages = REGLAGES_PAYS[country];
+  const fuseau = brut.fuseau || reglages.fuseau;
+  if (!(reglages.fuseaux as readonly string[]).includes(fuseau)) {
+    return { ok: false, erreur: "Choisissez le fuseau horaire du site." };
+  }
+  const monnaie = brut.monnaie || reglages.monnaie;
+  if (!(reglages.monnaies as readonly string[]).includes(monnaie)) {
+    return { ok: false, erreur: "Choisissez la monnaie du site." };
+  }
   const ville = (brut.ville ?? "").trim();
   return {
     ok: true,
@@ -40,8 +52,8 @@ export function validerNouveauSite(brut: {
       name,
       type,
       country,
-      timezone: REGLAGES_PAYS[country].fuseau,
-      currency: REGLAGES_PAYS[country].monnaie,
+      timezone: fuseau as Fuseau,
+      currency: monnaie as Monnaie,
       city: ville ? ville.slice(0, 120) : null,
       activity_unit: UNITE_ACTIVITE_PAR_TYPE[type],
     },

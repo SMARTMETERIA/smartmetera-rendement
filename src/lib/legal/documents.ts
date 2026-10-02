@@ -190,6 +190,7 @@ export const DOCUMENTS: DocumentLegal[] = [
         paragraphes: [
           "Les prix (mise en service par point, abonnement mensuel, options) figurent sur le bon de commande ou le devis accepté. Pas de paiement en ligne : facture mensuelle. [à compléter : délai de paiement, pénalités de retard et indemnité forfaitaire de recouvrement]",
           "Pour un client établi au Maroc facturé depuis l'étranger, une retenue à la source peut s'appliquer. [à compléter : modalités validées par un conseil fiscal]",
+          "Pour un client établi en République démocratique du Congo : [à compléter : fiscalité applicable, validée par un conseil fiscal]",
         ],
       },
       {
@@ -212,7 +213,7 @@ export const DOCUMENTS: DocumentLegal[] = [
       },
       {
         titre: "Droit applicable et litiges",
-        paragraphes: ["[à compléter : droit applicable et tribunal compétent, pour la France et pour le Maroc]"],
+        paragraphes: ["[à compléter : droit applicable et tribunal compétent, pour la France, le Maroc et la République démocratique du Congo]"],
       },
     ],
   },
@@ -287,7 +288,7 @@ export const DOCUMENTS: DocumentLegal[] = [
       {
         titre: "Vos droits",
         paragraphes: [
-          `Vous pouvez demander l'accès, la rectification, l'effacement, la limitation ou la portabilité de vos données, et vous opposer à certains traitements, en écrivant à ${contactDonnees()}. Vous pouvez aussi saisir l'autorité de protection des données de votre pays (CNIL en France, CNDP au Maroc).`,
+          `Vous pouvez demander l'accès, la rectification, l'effacement, la limitation ou la portabilité de vos données, et vous opposer à certains traitements, en écrivant à ${contactDonnees()}. Vous pouvez aussi saisir l'autorité de protection des données de votre pays (CNIL en France, CNDP au Maroc ; en République démocratique du Congo : [à compléter : autorité compétente]).`,
         ],
       },
       {

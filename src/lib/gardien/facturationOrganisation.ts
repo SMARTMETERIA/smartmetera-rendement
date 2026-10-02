@@ -61,7 +61,8 @@ export function validerFacturation(
   const retenue = pourcentage(s.retenuePct, "Retenue à la source");
   if (typeof retenue === "string") return { ok: false, erreur: retenue };
   const prix = lireNombre(s.prixPartenaire);
-  if (prix === "invalide" || (prix !== null && prix > 1000)) {
+  // Plafond de la base (le franc congolais compte en milliers).
+  if (prix === "invalide" || (prix !== null && prix > 999_999)) {
     return { ok: false, erreur: "Prix partenaire : un montant par point, par exemple 7,50." };
   }
   return {

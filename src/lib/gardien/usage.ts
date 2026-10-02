@@ -4,8 +4,9 @@
 // platform_settings.tarifs, surchargés par site (price_overrides). Un tarif
 // absent n'est jamais inventé : la ligne reste « à paramétrer ».
 import type { Tarifs } from "@/lib/gardien-rapports/contenus";
+import type { Monnaie } from "@/lib/moteur-gardien/economies";
 
-export type MonnaieUsage = "EUR" | "MAD";
+export type MonnaieUsage = Monnaie;
 
 export interface SiteUsage {
   id: string;

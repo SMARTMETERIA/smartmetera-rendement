@@ -24,7 +24,7 @@ import { dateLongue, montant, montantRond, moisLong, nombre, quantite as accord,
 import { REGLAGES_DEFAUT } from "@/lib/moteur-gardien/reglages";
 import { dateLocale, decalerJour, instantLocal } from "@/lib/moteur-gardien/temps";
 import type { StatutFuite, TypeFuite } from "@/lib/moteur-gardien/analyse";
-import type { Monnaie } from "@/lib/moteur-gardien/economies";
+import { monnaieDe, type Monnaie } from "@/lib/moteur-gardien/economies";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 type Ligne = Record<string, unknown>;
@@ -57,7 +57,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
   }
 
   const fuseau = site.timezone as string;
-  const monnaie: Monnaie = site.currency === "MAD" ? "MAD" : "EUR";
+  const monnaie: Monnaie = monnaieDe(site.currency);
   const maintenant = new Date().getTime();
   const aujourdhui = dateLocale(maintenant, fuseau);
   const moisCourant = aujourdhui.slice(0, 7);

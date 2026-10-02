@@ -536,6 +536,22 @@ les limites des fonctions Supabase.
   et `src/test/integration/autonomie-gardien.test.ts` (réglage par un
   technicien, trame du capteur, coupure détectée, alertes, retour de l'eau).
 
+### République démocratique du Congo
+
+- **Sur le modèle du Maroc** (migration `0055`) : pays `CD`, fuseaux
+  `Africa/Kinshasa` (ouest, UTC+1) et `Africa/Lubumbashi` (est, UTC+2),
+  monnaies de site `USD` et `CDF` (montants affichés « 12,50 USD »,
+  « 125 000 CDF »). Un site congolais choisit son fuseau et sa monnaie à la
+  création (dollar à Kinshasa par défaut).
+- **Rien d'inventé** : tarifs `USD` et `CDF` et prix de l'eau par défaut
+  vides dans `platform_settings` (`TODO(RAYAN)`) ; sans prix de l'eau, seuls
+  les volumes sont donnés. Retenue à la source par défaut : 0 %.
+- **Inscription, téléphone et relances** : établissement en « RD Congo »
+  (sans SIREN), numéros `+243`, relance d'une fuite par WhatsApp comme au
+  Maroc. Pré-diagnostic en dollars ou en francs congolais. Mentions des
+  pages légales « à compléter » pour la RDC.
+- **Tests** : `src/lib/gardien/rdc.test.ts`.
+
 ### Import CSV/Excel
 
 Page `/import` : assistant en 5 étapes (modèle → fichier → mapping → aperçu

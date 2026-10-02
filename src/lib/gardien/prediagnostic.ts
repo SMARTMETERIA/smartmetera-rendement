@@ -5,13 +5,20 @@
 import { coutFuite, type Monnaie } from "@/lib/moteur-gardien/economies";
 import { coutService, type CoutService, type Tarifs } from "@/lib/gardien-rapports/contenus";
 import { montant, montantRond, nombre } from "@/lib/gardien-envois/format";
+import { paysDe, type Pays } from "@/lib/auth/validation";
+import { REGLAGES_PAYS } from "./pays";
 import type { VueRapport } from "@/lib/gardien-rapports/affichage";
 
 export const DEBITS_REFERENCE = { chasseLph: 25, fuiteEnterreeLph: 500 };
 
+/** Garde-fou contre une faute de frappe (le franc congolais compte en milliers). */
+const PRIX_M3_MAX: Record<Monnaie, number> = { EUR: 100, MAD: 100, USD: 100, CDF: 100_000 };
+
 export interface EntreePrediagnostic {
   etablissement: string;
-  pays: "FR" | "MA";
+  pays: Pays;
+  /** Monnaie de l'établissement, parmi celles de son pays (RDC : USD ou CDF). */
+  monnaie: Monnaie;
   prixM3: number;
   factureAnnuelle: number | null;
   capacite: number | null;
@@ -43,8 +50,12 @@ export function validerPrediagnostic(e: Partial<Record<keyof EntreePrediagnostic
   const taux = nombreOuNull(e.tauxOccupation);
   const points = nombreOuNull(e.nbPoints);
   const etablissement = String(e.etablissement ?? "").trim();
+  const pays = paysDe(e.pays);
+  const monnaie: Monnaie = (REGLAGES_PAYS[pays].monnaies as readonly unknown[]).includes(e.monnaie)
+    ? (e.monnaie as Monnaie)
+    : REGLAGES_PAYS[pays].monnaie;
   if (!etablissement) return { ok: false, erreur: "Indiquez le nom de l'établissement." };
-  if (prix === null || Number.isNaN(prix) || prix <= 0 || prix > 100) {
+  if (prix === null || Number.isNaN(prix) || prix <= 0 || prix > PRIX_M3_MAX[monnaie]) {
     return { ok: false, erreur: "Indiquez le prix de l'eau au m³ (par exemple 4,89)." };
   }
   if ([facture, capacite, taux, points].some((v) => Number.isNaN(v))) {
@@ -57,7 +68,8 @@ export function validerPrediagnostic(e: Partial<Record<keyof EntreePrediagnostic
     ok: true,
     entree: {
       etablissement: etablissement.slice(0, 120),
-      pays: e.pays === "MA" ? "MA" : "FR",
+      pays,
+      monnaie,
       prixM3: prix,
       factureAnnuelle: facture,
       capacite: capacite === null ? null : Math.round(capacite),
@@ -72,7 +84,7 @@ export function prediagnostic(
   tarifs: Tarifs | null,
   debits = DEBITS_REFERENCE,
 ): ResultatPrediagnostic {
-  const monnaie: Monnaie = e.pays === "MA" ? "MAD" : "EUR";
+  const monnaie: Monnaie = e.monnaie;
   const cas = (lph: number) => {
     const c = coutFuite({ excesLph: lph, prixM3: e.prixM3, depuisMs: 0, maintenantMs: 0 });
     return { lph, m3ParJour: c.m3ParJour, parJour: c.coutParJour as number, parAn: c.coutAnnuel as number };

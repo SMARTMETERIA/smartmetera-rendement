@@ -7,6 +7,8 @@ import {
 } from "@/lib/auth/espaces";
 import { LIBELLES_TYPE_SITE, type TypeSite } from "@/lib/gardien/libelles";
 import { REGLAGES_PAYS } from "@/lib/gardien/pays";
+import { paysDe } from "@/lib/auth/validation";
+import { monnaieDe } from "@/lib/moteur-gardien/economies";
 import {
   Card,
   CardContent,
@@ -128,7 +130,7 @@ export default async function SitesPage() {
       .eq("active", true),
   ]);
   const nomSite = new Map((sites ?? []).map((s) => [s.id, s.name]));
-  const aujourdhui = dateLocale(new Date().getTime(), REGLAGES_PAYS[org?.country === "MA" ? "MA" : "FR"].fuseau);
+  const aujourdhui = dateLocale(new Date().getTime(), REGLAGES_PAYS[paysDe(org?.country)].fuseau);
   const indicateurs = await indicateursSites(supabase, sites ?? [], aujourdhui, { equipe });
   const moisIndicateur = dernierMoisComplet(aujourdhui).debut;
   const avecClients = (sites ?? []).some((s) => un(s.clients as Ligne | Ligne[] | null));
@@ -160,7 +162,7 @@ export default async function SitesPage() {
       detectedAt: f.detected_at as string,
       excesLph: Number(f.excess_flow_lph),
       prixM3: site?.water_price_per_m3 == null ? null : Number(site.water_price_per_m3),
-      monnaie: f.currency === "MAD" ? "MAD" : "EUR",
+      monnaie: monnaieDe(f.currency),
       fuseau: (site?.timezone as string | undefined) ?? "Europe/Paris",
       explication: typeof details.explication === "string" ? details.explication : null,
       simulation: details.simulation === true,
@@ -177,7 +179,7 @@ export default async function SitesPage() {
   });
   const rendueA = new Date().getTime();
 
-  const pays = org?.country === "MA" ? "MA" : "FR";
+  const pays = paysDe(org?.country);
   const finEssai =
     org?.status === "essai" && org.trial_ends_at
       ? new Intl.DateTimeFormat("fr-FR", {
@@ -200,7 +202,7 @@ export default async function SitesPage() {
         <p className="text-muted-foreground text-sm">Économies depuis le début, tous sites</p>
         <p className="text-primary font-heading text-5xl font-semibold tabular-nums sm:text-6xl">
           {economies.length === 0
-            ? formaterMontantRond(0, pays === "MA" ? "MAD" : "EUR")
+            ? formaterMontantRond(0, REGLAGES_PAYS[pays].monnaie)
             : economies
                 .map((e) => (e.montant !== null ? formaterMontantRond(e.montant, e.monnaie) : formaterVolume(e.m3)))
                 .join(" + ")}
@@ -372,7 +374,7 @@ export default async function SitesPage() {
                       </TableCell>
                       <TableCell>{s.city ?? "—"}</TableCell>
                       <TableCell>
-                        {REGLAGES_PAYS[s.country as "FR" | "MA"]?.libelle ??
+                        {REGLAGES_PAYS[paysDe(s.country)]?.libelle ??
                           s.country}
                       </TableCell>
                       <TableCell className="tabular-nums">

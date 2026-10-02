@@ -8,6 +8,8 @@ import { ReglagesFacturation } from "@/components/admin/ReglagesFacturation";
 import { LIBELLES_STATUT_ORGANISATION, type StatutOrganisation } from "@/lib/gardien/facturationOrganisation";
 import { dateLocale } from "@/lib/moteur-gardien/temps";
 import { quantite } from "@/lib/gardien-envois/format";
+import { fuseauPays, monnaiePays } from "@/lib/gardien/pays";
+import { symboleMonnaie } from "@/lib/moteur-gardien/economies";
 
 const decimal = (v: number | string | null) => (v == null ? "" : String(Number(v)).replace(".", ","));
 
@@ -69,11 +71,11 @@ export default async function ConsultationOrganisation({ params }: { params: Pro
         <CardContent>
           <ReglagesFacturation
             organizationId={org.id}
-            monnaie={org.country === "MA" ? "MAD" : "€"}
+            monnaie={symboleMonnaie(monnaiePays(org.country))}
             initial={{
               statut: org.status,
               finEssai: org.trial_ends_at
-                ? dateLocale(Date.parse(org.trial_ends_at), org.country === "MA" ? "Africa/Casablanca" : "Europe/Paris")
+                ? dateLocale(Date.parse(org.trial_ends_at), fuseauPays(org.country))
                 : "",
               remisePct: decimal(org.founder_discount_pct),
               retenuePct: decimal(org.withholding_tax_pct),

@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { paysDe } from "@/lib/auth/validation";
 import {
   ChangerAdresse,
   ChangerMotDePasse,
@@ -34,7 +35,7 @@ export default async function ComptePage({
       supabase.from("organizations").select("country").eq("id", orgId ?? "").maybeSingle(),
     ]);
     telephone = (adhesions?.[0]?.alert_phone as string | undefined) ?? null;
-    pays = org?.country === "MA" ? "MA" : "FR";
+    pays = paysDe(org?.country);
   }
 
   return (

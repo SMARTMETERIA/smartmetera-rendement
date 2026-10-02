@@ -18,6 +18,8 @@ export async function creerSite(params: {
   type: string;
   pays: string;
   ville: string;
+  fuseau?: string;
+  monnaie?: string;
 }): Promise<Resultat> {
   const ctx = await getEspaceSites();
   const adhesion = ctx.adhesion?.kind === "sites" ? ctx.adhesion : null;

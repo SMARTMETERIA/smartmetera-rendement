@@ -15,6 +15,8 @@ import { consommerQuota } from "@/lib/securite/protection";
 import { validerMessageTest, type ResultatTest } from "@/lib/gardien-envois/messageTest";
 import type { ModeEnvois } from "@/lib/gardien-envois/notify";
 import { validerFacturation, type SaisieFacturation } from "@/lib/gardien/facturationOrganisation";
+import { monnaieDe } from "@/lib/moteur-gardien/economies";
+import { fuseauPays } from "@/lib/gardien/pays";
 
 async function verifierSuperadmin(): Promise<{ userId: string } | { erreur: string }> {
   const supabase = await createClient();
@@ -297,7 +299,7 @@ export async function calculerUsageMensuel(params: { mois: string }): Promise<{ 
       sites: sites.map((s) => ({
         id: s.id,
         nom: s.name,
-        monnaie: s.currency === "MAD" ? "MAD" : "EUR",
+        monnaie: monnaieDe(s.currency),
         surcharges: ((s.price_overrides ?? {}) as Record<string, Tarifs>)[s.currency] ?? null,
         avecPasserelle: (passerelles ?? []).some((p) => p.site_id === s.id),
         poses: (compteurs ?? []).filter((m) => m.site_id === s.id).map((m) => m.installed_at as string),
@@ -401,7 +403,7 @@ export async function majFacturationOrganisation(
     .eq("kind", "sites")
     .maybeSingle();
   if (!org) return { erreur: "Organisation introuvable." };
-  const validation = validerFacturation(params, org.country === "MA" ? "Africa/Casablanca" : "Europe/Paris");
+  const validation = validerFacturation(params, fuseauPays(org.country));
   if (!validation.ok) return { erreur: validation.erreur };
   const { trial_ends_at, ...valeurs } = validation.valeurs;
   const changement = trial_ends_at ? { ...valeurs, trial_ends_at } : valeurs;

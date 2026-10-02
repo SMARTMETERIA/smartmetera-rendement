@@ -1,6 +1,6 @@
 // Fuites : libellés, montants au format français et économies cumulées
 // (pur, testable). Les calculs viennent de src/lib/moteur-gardien.
-import { symboleMonnaie, type Monnaie } from "@/lib/moteur-gardien/economies";
+import { monnaieDe, symboleMonnaie, type Monnaie } from "@/lib/moteur-gardien/economies";
 import type { StatutFuite, TypeFuite } from "@/lib/moteur-gardien/analyse";
 
 export const MENTION_SURVEILLANCE =
@@ -45,7 +45,7 @@ export function totalEconomies(
 ): { monnaie: Monnaie; m3: number; montant: number | null }[] {
   const parMonnaie = new Map<Monnaie, { m3: number; montant: number | null }>();
   for (const l of lignes) {
-    const monnaie: Monnaie = l.currency === "MAD" ? "MAD" : "EUR";
+    const monnaie: Monnaie = monnaieDe(l.currency);
     const total = parMonnaie.get(monnaie) ?? { m3: 0, montant: null };
     total.m3 += Number(l.saved_m3 ?? 0);
     if (l.saved_amount !== null) total.montant = (total.montant ?? 0) + Number(l.saved_amount);

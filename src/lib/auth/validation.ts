@@ -23,13 +23,21 @@ export function erreurMotDePasse(motDePasse: string): string | null {
   return null;
 }
 
-export type Pays = "FR" | "MA";
+/** France, Maroc, République démocratique du Congo. */
+export type Pays = "FR" | "MA" | "CD";
 
-export const PAYS: readonly Pays[] = ["FR", "MA"];
+export const PAYS: readonly Pays[] = ["FR", "MA", "CD"];
+
+/** Pays d'une saisie ou d'une ligne de la base, France par défaut. */
+export function paysDe(valeur: unknown): Pays {
+  return (PAYS as readonly unknown[]).includes(valeur) ? (valeur as Pays) : "FR";
+}
 
 /**
  * Numéro français : 10 chiffres (0X…), ou +33 suivi de 9 chiffres.
  * Numéro marocain : 10 chiffres (05, 06, 07…), ou +212 suivi de 9 chiffres.
+ * Numéro congolais (RDC) : 10 chiffres (08…, 09… : mobiles), ou +243 suivi
+ * de 9 chiffres.
  * Renvoie le format national à 10 chiffres.
  */
 export function normaliserTelephone(
@@ -41,6 +49,12 @@ export function normaliserTelephone(
     if (/^0[5-8]\d{8}$/.test(brut)) return brut;
     if (/^\+212[5-8]\d{8}$/.test(brut)) return `0${brut.slice(4)}`;
     if (/^00212[5-8]\d{8}$/.test(brut)) return `0${brut.slice(5)}`;
+    return null;
+  }
+  if (pays === "CD") {
+    if (/^0[89]\d{8}$/.test(brut)) return brut;
+    if (/^\+243[89]\d{8}$/.test(brut)) return `0${brut.slice(4)}`;
+    if (/^00243[89]\d{8}$/.test(brut)) return `0${brut.slice(5)}`;
     return null;
   }
   if (/^0[1-9]\d{8}$/.test(brut)) return brut;
@@ -93,9 +107,9 @@ export function validerInscription(brut: {
   const raisonSociale = (brut.raisonSociale ?? "").trim();
   const nom = (brut.nom ?? "").trim();
   const email = normaliserEmail(brut.email ?? "");
-  const pays: Pays = brut.pays === "MA" ? "MA" : "FR";
+  const pays: Pays = paysDe(brut.pays);
   const telephone = normaliserTelephone(brut.telephone ?? "", pays);
-  // Le SIREN n'existe qu'en France : ignoré pour un établissement marocain.
+  // Le SIREN n'existe qu'en France : ignoré ailleurs.
   const siren = pays === "FR" ? (brut.siren ?? "").replace(/\s/g, "") : "";
   const motDePasse = brut.motDePasse ?? "";
 
@@ -103,7 +117,7 @@ export function validerInscription(brut: {
     brut.pays !== undefined &&
     !(PAYS as readonly string[]).includes(brut.pays)
   ) {
-    erreurs.pays = "Choisissez la France ou le Maroc.";
+    erreurs.pays = "Choisissez la France, le Maroc ou la République démocratique du Congo.";
   }
   if (raisonSociale.length < 2 || raisonSociale.length > 120) {
     erreurs.raisonSociale =
@@ -119,7 +133,9 @@ export function validerInscription(brut: {
     erreurs.telephone =
       pays === "MA"
         ? "Indiquez un numéro de téléphone marocain (10 chiffres, ou +212)."
-        : "Indiquez un numéro de téléphone français (10 chiffres).";
+        : pays === "CD"
+          ? "Indiquez un numéro de téléphone congolais (10 chiffres, ou +243)."
+          : "Indiquez un numéro de téléphone français (10 chiffres).";
   }
   if (siren && !sirenValide(siren)) {
     erreurs.siren =

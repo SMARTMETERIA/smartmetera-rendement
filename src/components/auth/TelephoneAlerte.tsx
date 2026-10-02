@@ -30,7 +30,9 @@ export function TelephoneAlerte({ actuel, pays }: { actuel: string | null; pays:
           type="tel"
           inputMode="tel"
           autoComplete="tel"
-          placeholder={pays === "MA" ? "06 12 34 56 78 ou +212 6…" : "06 12 34 56 78"}
+          placeholder={
+            pays === "MA" ? "06 12 34 56 78 ou +212 6…" : pays === "CD" ? "081 234 5678 ou +243 81…" : "06 12 34 56 78"
+          }
           value={saisie}
           onChange={(e) => setSaisie(e.target.value)}
         />

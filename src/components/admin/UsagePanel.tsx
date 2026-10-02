@@ -25,9 +25,9 @@ export interface LigneUsageAdmin {
 }
 
 const montant = (n: number, monnaie: string) =>
-  `${new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ${monnaie === "EUR" ? "€" : "MAD"}`;
+  `${new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ${monnaie === "EUR" ? "€" : monnaie}`;
 
-/** Usage mensuel et export CSV de facturation (EUR et MAD). */
+/** Usage mensuel et export CSV de facturation (EUR, MAD, USD, CDF). */
 export function UsagePanel({ mois, lignes }: { mois: string; lignes: LigneUsageAdmin[] }) {
   const [choix, setChoix] = useState(mois);
   const [enCours, setEnCours] = useState(false);
