@@ -54,7 +54,15 @@ export interface CompteurSite {
   nom: string;
   zone: string | null;
   surveillance: "complete" | "limitee";
+  /**
+   * Compteur d'arrivée du réseau public (G11) : pendant une coupure et les
+   * 24 h qui suivent, le remplissage des réserves n'est pas une rupture.
+   */
+  periodesSansRupture?: { debutMs: number; finMs: number }[];
 }
+
+/** Après le retour de l'eau, durée pendant laquelle les réserves se remplissent. */
+export const REMPLISSAGE_APRES_COUPURE_MS = 24 * HEURE_MS;
 
 /** Bilan d'un jour déjà enregistré (table meter_days). */
 export interface JourStocke {
@@ -413,8 +421,10 @@ export function analyserSite(d: DonneesSite): ResultatSite {
       const candidates = heures.filter(
         (h) => complete(h.heureMs) && h.heureMs >= heureCourante - 3 * HEURE_MS,
       );
+      const remplissage = (t: number) =>
+        (compteur.periodesSansRupture ?? []).some((p) => t >= p.debutMs && t < p.finMs);
       for (const h of candidates) {
-        if (h.calme || h.lph === null || h.heureMs <= derniereClotureMs(["rupture"])) continue;
+        if (h.calme || h.lph === null || h.heureMs <= derniereClotureMs(["rupture"]) || remplissage(h.heureMs)) continue;
         const avant = heures
           .filter((x) => x.heureMs < h.heureMs && !x.calme && x.lph !== null)
           .map((x) => x.lph as number);

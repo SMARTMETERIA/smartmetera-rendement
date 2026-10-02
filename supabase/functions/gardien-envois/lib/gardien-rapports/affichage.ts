@@ -23,6 +23,7 @@ import {
   type FuiteRapport,
 } from "./contenus.ts";
 import { decalerJour } from "../moteur-gardien/temps.ts";
+import { dureeLisible } from "../moteur-gardien/autonomie.ts";
 import type { Monnaie } from "../moteur-gardien/economies.ts";
 
 export type ContenuRapport =
@@ -190,6 +191,30 @@ function vueMensuel(c: ContenuMensuel): VueRapport {
         ],
       ],
     });
+  }
+  if (c.reserves) {
+    const r = c.reserves;
+    const lignes: [string, string][] = [
+      [
+        "Réserves suivies",
+        `${r.nbReserves > 1 ? `${r.nbReserves} réserves` : "1 réserve"}, ${nombre(r.volumeUtileMaxM3)} m³ utiles`,
+      ],
+      [
+        "Coupures du réseau public",
+        r.coupures.length === 0
+          ? "aucune ce mois"
+          : `${r.coupures.length > 1 ? `${r.coupures.length} coupures` : "1 coupure"}, ${dureeLisible(r.dureeTotaleH)} au total${r.coupures.length > 1 && r.plusLongueH !== null ? ` (la plus longue : ${dureeLisible(r.plusLongueH)})` : ""}`,
+      ],
+    ];
+    if (r.autonomieMinH !== null) lignes.push(["Autonomie la plus basse", dureeLisible(r.autonomieMinH)]);
+    lignes.push(["Alertes de niveau bas", r.alertesNiveauBas === 0 ? "aucune" : nombre(r.alertesNiveauBas, 0)]);
+    for (const x of r.coupures) {
+      lignes.push([
+        `Coupure du ${dateHeure(Date.parse(x.debut), c.site.fuseau)}`,
+        `${x.fin ? `jusqu'au ${dateHeure(Date.parse(x.fin), c.site.fuseau)}` : "toujours en cours à la fin du mois"} ; ${dureeLisible(x.dureeH)}${x.autonomieMinH !== null ? `, autonomie la plus basse ${dureeLisible(x.autonomieMinH)}` : ""}`,
+      ]);
+    }
+    blocs.push({ titre: "Réserves d'eau et coupures du réseau", lignes });
   }
   blocs.push({ titre: "Conseil", paragraphes: [c.conseil] });
   return {

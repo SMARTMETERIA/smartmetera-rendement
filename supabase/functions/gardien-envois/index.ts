@@ -5,7 +5,9 @@
 //    (Maroc) après 2 h sans prise en charge, escalade au directeur après
 //    12 h (délais : platform_settings.alertes).
 // 2. Alertes : capteur muet (au partenaire ou à SmartMeteria, jamais au
-//    client en premier), température basse, rappel des analyses.
+//    client en premier), température basse, rappel des analyses ;
+//    autonomie en eau (G11) : coupure du réseau public, niveau bas des
+//    réserves, retour de l'eau.
 // 3. Première donnée reçue après une pose : au technicien qui a posé.
 // 4. Rapports à 8 h (heure du site) : première nuit, première semaine,
 //    mensuel (le 1er), synthèse de groupe.
@@ -42,6 +44,7 @@ import {
   type Membre,
 } from "./lib/gardien-envois/destinataires.ts";
 import {
+  messageAutonomie,
   messageCapteurMuet,
   messageConversion,
   messageFinPilote,
@@ -50,6 +53,7 @@ import {
   messagePremiereDonnee,
   messageRapport,
   messageRappelAnalyses,
+  messageRetourReseau,
   messageTemperature,
   type Rendu,
 } from "./lib/gardien-envois/messages.ts";
@@ -64,7 +68,9 @@ import {
   contenuPremiereSemaine,
   coutService,
   resumeRapport,
+  resumeReserves,
   type FuiteSource,
+  type ResumeReserves,
   type LigneTemperatureRapport,
   type SiteRapport,
   type Tarifs,
@@ -80,6 +86,7 @@ import {
   type TypePoint,
 } from "./lib/moteur-gardien/temperatures.ts";
 import type { StatutFuite, TypeFuite } from "./lib/moteur-gardien/analyse.ts";
+import { COLONNES_RESERVE, reserveDepuisLigne, volumeUtileMaxM3 } from "./lib/moteur-gardien/reserves.ts";
 import type { Monnaie } from "./lib/moteur-gardien/economies.ts";
 import {
   HEURE_MS,
@@ -409,7 +416,7 @@ async function sectionAlertes(ctx: Contexte) {
       .in("organization_id", orgIds)
       .not("site_id", "is", null)
       .eq("statut", "ouverte")
-      .in("type", ["compteur_muet", "temperature_basse", "rappel_analyses"])
+      .in("type", ["compteur_muet", "temperature_basse", "rappel_analyses", "coupure_reseau", "reserve_basse"])
       .gt("declenchee_le", iso(ctx.maintenantMs - FRAICHEUR_MS))
       .lte("declenchee_le", iso(ctx.maintenantMs)),
   );
@@ -437,10 +444,67 @@ async function sectionAlertes(ctx: Contexte) {
     } else if (a.type === "temperature_basse") {
       const marque = await marqueOrganisation(ctx, site.organization_id);
       await prevenir(ctx, e, equipeDuSite(membres, site.id), messageTemperature({ marque, urlApp }, texte), marque);
+    } else if (a.type === "coupure_reseau" || a.type === "reserve_basse") {
+      // Autonomie en eau (G11) : directeurs et techniciens du site.
+      const marque = await marqueOrganisation(ctx, site.organization_id);
+      const rendu = messageAutonomie(
+        { marque, urlApp },
+        {
+          ...texte,
+          type: a.type,
+          autonomieH: num(donnees.autonomie_h),
+          niveauBasMs: ms(donnees.niveau_bas_prevu),
+          fuseau: site.timezone,
+          maintenantMs: ctx.maintenantMs,
+        },
+      );
+      await prevenir(ctx, e, equipeDuSite(membres, site.id), rendu, marque);
     } else {
       const marque = await marqueOrganisation(ctx, site.organization_id);
       await prevenir(ctx, e, directeursDuSite(membres, site.id), messageRappelAnalyses({ marque, urlApp }, texte), marque, ["email"]);
     }
+  }
+
+  // Retour de l'eau du réseau public : la coupure est terminée.
+  const retours = await lire(
+    ctx.admin
+      .from("alerts")
+      .select("id, site_id, donnees")
+      .in("organization_id", orgIds)
+      .not("site_id", "is", null)
+      .eq("type", "coupure_reseau")
+      .eq("statut", "resolue")
+      .gt("resolue_le", iso(ctx.maintenantMs - FRAICHEUR_MS))
+      .lte("resolue_le", iso(ctx.maintenantMs)),
+  );
+  for (const a of retours) {
+    const site = ctx.sites.get(a.site_id as string);
+    const cutId = ((a.donnees ?? {}) as Ligne).cut_id;
+    if (!site || typeof cutId !== "string") continue;
+    const { data: coupure } = await ctx.admin
+      .from("supply_cuts")
+      .select("started_at, ended_at, min_autonomy_h")
+      .eq("id", cutId)
+      .maybeSingle();
+    if (!coupure?.ended_at) continue;
+    const marque = await marqueOrganisation(ctx, site.organization_id);
+    const rendu = messageRetourReseau(
+      { marque, urlApp },
+      {
+        site: site.name,
+        debutMs: ms(coupure.started_at) as number,
+        finMs: ms(coupure.ended_at) as number,
+        autonomieMinH: num(coupure.min_autonomy_h),
+        fuseau: site.timezone,
+      },
+    );
+    await prevenir(
+      ctx,
+      { organizationId: site.organization_id, siteId: site.id, objet: "alerte", objetId: a.id as string, etape: "fin" },
+      equipeDuSite(await membresOrganisation(ctx, site.organization_id), site.id),
+      rendu,
+      marque,
+    );
   }
 }
 
@@ -790,6 +854,40 @@ async function registreDuMois(ctx: Contexte, site: Site, debutMs: number, finMs:
   return lignes;
 }
 
+/** Réserves d'eau et coupures du réseau public du mois (phase G11). */
+async function reservesDuMois(ctx: Contexte, site: Site, debutMs: number, finMs: number): Promise<ResumeReserves | null> {
+  const reserves = await lire(
+    ctx.admin.from("water_reserves").select(COLONNES_RESERVE).eq("site_id", site.id).eq("active", true),
+  );
+  if (!reserves.length) return null;
+  const coupures = await lire(
+    ctx.admin
+      .from("supply_cuts")
+      .select("started_at, ended_at, min_autonomy_h")
+      .eq("site_id", site.id)
+      .lt("started_at", iso(finMs))
+      .or(`ended_at.is.null,ended_at.gt.${iso(debutMs)}`),
+  );
+  const { count } = await ctx.admin
+    .from("alerts")
+    .select("id", { count: "exact", head: true })
+    .eq("site_id", site.id)
+    .eq("type", "reserve_basse")
+    .gte("declenchee_le", iso(debutMs))
+    .lt("declenchee_le", iso(finMs));
+  return resumeReserves({
+    volumesUtilesMaxM3: reserves.map((r) => volumeUtileMaxM3(reserveDepuisLigne(r))),
+    coupures: coupures.map((c) => ({
+      debutMs: ms(c.started_at) as number,
+      finMs: ms(c.ended_at),
+      autonomieMinH: num(c.min_autonomy_h),
+    })),
+    alertesNiveauBas: count ?? 0,
+    debutMoisMs: debutMs,
+    finMoisMs: finMs,
+  });
+}
+
 async function rapportMensuel(ctx: Contexte, site: Site, premierJour: string, meterIds: string[]) {
   const fin = moisSuivant(premierJour);
   const debutMs = instantLocal(premierJour, 0, site.timezone);
@@ -836,6 +934,7 @@ async function rapportMensuel(ctx: Contexte, site: Site, premierJour: string, me
     autresLitresParUnite:
       site.activity_unit === "aucune" ? [] : await autresSites(ctx, site, premierJour, fin, joursDansMois),
     temperatures: await registreDuMois(ctx, site, debutMs, finMs),
+    reserves: await reservesDuMois(ctx, site, debutMs, finMs),
   }) as unknown as Ligne;
 }
 

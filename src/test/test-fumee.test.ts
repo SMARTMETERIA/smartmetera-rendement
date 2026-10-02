@@ -7,14 +7,14 @@ const H = 3_600_000;
 describe("test de fumée", () => {
   it("accepte exactement les en-têtes posés par l'application en production", () => {
     const production = new Headers(
-      entetesSecurite({ supabaseUrl: "https://x.supabase.co", developpement: false }).map((e) => [e.key, e.value]),
+      entetesSecurite({ supabaseUrl: "https://x.supabase.co", developpement: false }).map((e): [string, string] => [e.key, e.value]),
     );
     expect(verifierEntetes(production, true)).toEqual([]);
   });
 
   it("repère une configuration de développement ou incomplète", () => {
     const dev = new Headers(
-      entetesSecurite({ supabaseUrl: "https://x.supabase.co", developpement: true }).map((e) => [e.key, e.value]),
+      entetesSecurite({ supabaseUrl: "https://x.supabase.co", developpement: true }).map((e): [string, string] => [e.key, e.value]),
     );
     dev.set("x-powered-by", "Next.js");
     const problemes = verifierEntetes(dev, true);

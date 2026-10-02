@@ -28,6 +28,7 @@ export default async function EspaceLayout({
   if (ctx.adhesion?.kind === "sites" || ctx.adhesionsSite.length > 0) {
     liens.push({ href: "/sites", label: "Mes sites" });
     liens.push({ href: "/sites/alertes", label: "Alertes" });
+    liens.push({ href: "/sites/reserves", label: "Réserves d'eau" });
     if (peutPoser(ctx)) {
       liens.push({ href: "/pose", label: "Poser un capteur" });
     }

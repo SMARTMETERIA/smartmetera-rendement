@@ -71,6 +71,9 @@ export const TABLES_EXPORTEES: TableExportee[] = [
   { table: "proof_pages", tri: ["id"], colonne: "organization_id" },
   { table: "site_reports", tri: ["id"], colonne: "organization_id" },
   { table: "pose_sessions", tri: ["id"], colonne: "organization_id" },
+  { table: "water_reserves", tri: ["id"], colonne: "organization_id" },
+  { table: "reserve_levels", tri: ["id"], colonne: "organization_id" },
+  { table: "supply_cuts", tri: ["id"], colonne: "organization_id" },
 ];
 
 export function nomFichierExport(

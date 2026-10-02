@@ -1,7 +1,9 @@
 // Pertes et économies, toujours par la méthode prudente, affichée à côté du
 // montant (plan, section 3). Montants dans la monnaie du site.
 
-export type Monnaie = "EUR" | "MAD";
+/** Euro (France), dirham (Maroc), dollar américain et franc congolais (RDC). */
+export type Monnaie = "EUR" | "MAD" | "USD" | "CDF";
+export const MONNAIES: readonly Monnaie[] = ["EUR", "MAD", "USD", "CDF"];
 
 export interface CoutFuite {
   m3ParJour: number;
@@ -54,8 +56,14 @@ function nombreFr(n: number, decimales: number): string {
   }).format(n);
 }
 
+/** « € » pour l'euro ; le code de la monnaie sinon (MAD, USD, CDF). */
 export function symboleMonnaie(monnaie: Monnaie): string {
-  return monnaie === "EUR" ? "€" : "MAD";
+  return monnaie === "EUR" ? "€" : monnaie;
+}
+
+/** Monnaie d'une ligne de la base (sites.currency…), euro par défaut. */
+export function monnaieDe(valeur: unknown): Monnaie {
+  return (MONNAIES as readonly unknown[]).includes(valeur) ? (valeur as Monnaie) : "EUR";
 }
 
 /**

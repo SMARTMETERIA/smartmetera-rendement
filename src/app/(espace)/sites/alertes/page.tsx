@@ -14,9 +14,11 @@ const TYPES: Record<string, string> = {
   compteur_muet: "Capteur muet",
   temperature_basse: "Température basse",
   rappel_analyses: "Analyses avant réouverture",
+  coupure_reseau: "Coupure du réseau",
+  reserve_basse: "Réserves basses",
 };
 
-const ORDRE_TYPES = ["temperature_basse", "rappel_analyses", "compteur_muet"];
+const ORDRE_TYPES = ["coupure_reseau", "reserve_basse", "temperature_basse", "rappel_analyses", "compteur_muet"];
 
 /**
  * Alertes en cours sur les sites de la personne (technicien d'abord) :
@@ -39,7 +41,7 @@ export default async function AlertesPage() {
       .select("id, site_id, type, titre, description, declenchee_le, statut, sites(name, timezone)")
       .not("site_id", "is", null)
       .in("statut", ["ouverte", "acquittee"])
-      .in("type", equipe ? ["compteur_muet", "temperature_basse", "rappel_analyses"] : ["temperature_basse", "rappel_analyses"])
+      .in("type", [...(equipe ? ["compteur_muet"] : []), "temperature_basse", "rappel_analyses", "coupure_reseau", "reserve_basse"])
       .order("declenchee_le", { ascending: false })
       .limit(100),
   ]);

@@ -245,17 +245,62 @@ export function variationPct(actuel: number, reference: number | null): number |
   return Math.round(((actuel - reference) / reference) * 100);
 }
 
+/** Réserves d'eau et coupures du réseau public sur le mois (phase G11). */
+export interface ResumeReserves {
+  nbReserves: number;
+  volumeUtileMaxM3: number;
+  coupures: { debut: string; fin: string | null; dureeH: number; autonomieMinH: number | null }[];
+  /** Durée des coupures comptée dans le mois. */
+  dureeTotaleH: number;
+  plusLongueH: number | null;
+  autonomieMinH: number | null;
+  alertesNiveauBas: number;
+}
+
+export function resumeReserves(p: {
+  volumesUtilesMaxM3: number[];
+  coupures: { debutMs: number; finMs: number | null; autonomieMinH: number | null }[];
+  alertesNiveauBas: number;
+  debutMoisMs: number;
+  finMoisMs: number;
+}): ResumeReserves | null {
+  if (!p.volumesUtilesMaxM3.length) return null;
+  const coupures = p.coupures
+    .filter((c) => c.debutMs < p.finMoisMs && (c.finMs === null || c.finMs > p.debutMoisMs))
+    .sort((a, b) => a.debutMs - b.debutMs)
+    .map((c) => ({
+      debut: new Date(c.debutMs).toISOString(),
+      fin: c.finMs === null ? null : new Date(c.finMs).toISOString(),
+      dureeH: arrondi((Math.min(c.finMs ?? p.finMoisMs, p.finMoisMs) - Math.max(c.debutMs, p.debutMoisMs)) / 3_600_000, 1),
+      autonomieMinH: c.autonomieMinH,
+    }));
+  const autonomies = coupures.map((c) => c.autonomieMinH).filter((v): v is number => v !== null);
+  return {
+    nbReserves: p.volumesUtilesMaxM3.length,
+    volumeUtileMaxM3: arrondi(somme(p.volumesUtilesMaxM3), 1),
+    coupures,
+    dureeTotaleH: arrondi(somme(coupures.map((c) => c.dureeH)), 1),
+    plusLongueH: coupures.length ? Math.max(...coupures.map((c) => c.dureeH)) : null,
+    autonomieMinH: autonomies.length ? Math.min(...autonomies) : null,
+    alertesNiveauBas: p.alertesNiveauBas,
+  };
+}
+
 export function conseilMensuel(p: {
   fuitesOuvertes: number;
   fuitesDuMois: number;
   variationMoisPct: number | null;
   temperaturesSousSeuil: number;
+  alertesNiveauBas?: number;
 }): string {
   if (p.fuitesOuvertes > 0) {
     return "Une fuite est encore en cours : chaque jour sans réparation se paie. Faites intervenir un plombier puis indiquez « C'est réparé ».";
   }
   if (p.temperaturesSousSeuil > 0) {
     return "Des températures d'eau chaude sont passées sous le seuil réglé : faites vérifier la production et la boucle d'eau chaude.";
+  }
+  if ((p.alertesNiveauBas ?? 0) > 0) {
+    return "Vos réserves sont descendues jusqu'au niveau bas ce mois : pendant une coupure, réduisez les usages non essentiels (arrosage, lavage) et étudiez une capacité de stockage plus grande.";
   }
   if (p.variationMoisPct !== null && p.variationMoisPct >= 15) {
     return `Consommation en hausse de ${nombre(p.variationMoisPct, 0)} % sur un mois : vérifiez les chasses d'eau et les robinets qui gouttent.`;
@@ -290,6 +335,8 @@ export interface ContenuMensuel {
   comparaison: Comparaison | null;
   temperatures: LigneTemperatureRapport[];
   clefVerte: { litresParNuitee: number; estimation: boolean } | null;
+  /** Absent des rapports antérieurs à la phase G11. */
+  reserves?: ResumeReserves | null;
   conseil: string;
   phraseSansFuite: string | null;
   mention: string;
@@ -317,6 +364,7 @@ export function contenuMensuel(p: {
   tauxOccupation: number | null;
   autresLitresParUnite: number[];
   temperatures: LigneTemperatureRapport[];
+  reserves?: ResumeReserves | null;
 }): ContenuMensuel {
   const volumeM3 = arrondi(somme(p.jours.map((j) => j.volumeM3)), 3);
   const fuites = fuitesRapport(p.fuitesDuMois, p.site.prixM3, p.finMoisMs);
@@ -372,11 +420,13 @@ export function contenuMensuel(p: {
       activite && p.site.uniteActivite === "nuitee"
         ? { litresParNuitee: activite.litresParUnite, estimation: activite.estimation }
         : null,
+    reserves: p.reserves ?? null,
     conseil: conseilMensuel({
       fuitesOuvertes: p.fuitesOuvertes,
       fuitesDuMois: fuites.length,
       variationMoisPct,
       temperaturesSousSeuil,
+      alertesNiveauBas: p.reserves?.alertesNiveauBas ?? 0,
     }),
     phraseSansFuite: fuites.length === 0 ? PHRASE_SANS_FUITE : null,
     mention: MENTION_SURVEILLANCE,

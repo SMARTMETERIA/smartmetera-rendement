@@ -221,6 +221,24 @@ describe("autres détections", () => {
     expect(r.nouvellesFuites).toMatchObject([{ type: "rupture", excesLph: 860, startedAtMs: rupture }]);
   });
 
+  it("compteur d'arrivée : le remplissage des réserves après une coupure n'est pas une rupture", () => {
+    const maintenant = instantLocal("2026-09-10", 15, fuseau) + 10 * 60_000;
+    const retour = instantLocal("2026-09-10", 14, fuseau);
+    const releves = serie(fuseau, "2026-09-09", maintenant, normal).map((x) =>
+      x.tsMs === retour + HEURE_MS ? { ...x, volumeM3: 6 } : x,
+    );
+    const compteur = { id: M, nom: "Arrivée", zone: "Arrivée", surveillance: "complete" as const };
+    const r = analyserSite(
+      donnees({
+        maintenantMs: maintenant,
+        jours: joursARecalculer(maintenant, fuseau),
+        releves: { [M]: releves },
+        compteurs: [{ ...compteur, periodesSansRupture: [{ debutMs: retour - 10 * HEURE_MS, finMs: retour + 24 * HEURE_MS }] }],
+      }),
+    );
+    expect(r.nouvellesFuites).toEqual([]);
+  });
+
   it("mode fermeture : plus de 2 L/h pendant 2 heures pendant une fermeture", () => {
     const maintenant = instantLocal("2026-12-10", 15, fuseau) + 10 * 60_000;
     const base = {

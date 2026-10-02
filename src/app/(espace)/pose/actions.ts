@@ -49,6 +49,8 @@ export async function validerPose(saisie: SaisiePose): Promise<ResultatPose> {
   if (!cle)
     return { erreur: "Modèle de capteur inconnu : contactez le support." };
   const modele = MODELES_CAPTEURS[cle];
+  if (modele.nature === "niveau")
+    return { erreur: "Un capteur de niveau se règle dans « Réserves d'eau »." };
 
   const { data, error } = await supabase.rpc("demarrer_pose", {
     p_device_id: saisie.deviceId,

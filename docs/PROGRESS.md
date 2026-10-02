@@ -658,6 +658,53 @@ tests. Laissé tel quel : le tableau « Appareils » défile horizontalement
 sur téléphone (outil de gestion, surtout sur ordinateur) ; les offres
 Réseau et Immeuble (en pause) n'ont pas été relues.
 
+## Phase G11 : autonomie en eau — terminée
+
+Lancée sur instruction explicite de Rayan le 2 octobre 2026.
+
+Plan :
+1. Migrations `0053` et `0054` : réserves d'eau, mesures de niveau (jamais supprimées), coupures du réseau public, compteur d'arrivée, alertes `coupure_reseau` et `reserve_basse`, réglages de plateforme `autonomie` et `capteur_niveau` (`TODO(RAYAN)`).
+2. Modules purs : volume utile (cuve debout ou couchée, prise d'eau), consommation réelle heure par heure, autonomie et heure du niveau bas au rythme réel, coupure (plus d'arrivée alors que les réserves baissent), décisions d'alerte.
+3. Réception (décodeur « capteur de niveau » sans format inventé), moteur horaire, envois (coupure, niveau bas, retour de l'eau), section du rapport mensuel.
+4. Écran « Réserves d'eau » (téléphone et ordinateur) avec réglages ; lien depuis la fiche d'un site et les alertes.
+5. Tests à valeurs connues et test de bout en bout contre les fonctions déployées (moteur déclenché à la main) ; README.
+
+Fait :
+- Base : migrations `0053` et `0054` appliquées sur la base de
+  développement. Fonctions redéployées : `ingest` (version 4),
+  `gardien-moteur` (version 4), `gardien-envois` (version 4, qui contient
+  aussi les monnaies de l'étape RDC).
+- Réserves : volume utile entre la prise d'eau et le trop-plein, cuve
+  debout ou couchée ; capteur au-dessus de l'eau (distance) ou au fond
+  (hauteur) ; niveau bas par réserve ou 20 % par défaut.
+- Autonomie au rythme réel : consommation de chaque heure = eau arrivée
+  du réseau − variation des réserves ; prévision heure par heure avec le
+  profil des 7 derniers jours ; heure du niveau bas et heure où les
+  réserves seraient vides, à l'heure du site.
+- Coupure : plus aucune arrivée d'eau pendant 2 heures alors que les
+  réserves baissent ; une citerne pleine (flotteur fermé) ne déclenche
+  rien. Alerte à la coupure, alerte quand le niveau bas est prévu dans
+  moins de 6 heures (ou atteint), message au retour de l'eau. Le
+  remplissage des citernes après une coupure n'est pas pris pour une
+  « rupture ».
+- Écran `/sites/reserves` : état du réseau, autonomie qui baisse en
+  direct, niveau de chaque réserve, courbe de 48 heures avec la prévision,
+  coupures récentes, réglages (réserve, capteur, compteur d'arrivée).
+- Rapport mensuel : section « Réserves d'eau et coupures du réseau ».
+- Moteur vérifié en le déclenchant moi-même (heure imposée) : test de
+  bout en bout `autonomie-gardien` (réglage par un technicien, trame
+  ChirpStack du capteur, coupure détectée, deux alertes, e-mails et SMS
+  journalisés, retour de l'eau, aucune fausse rupture). Typecheck, lint,
+  1 215 tests unitaires et 67 tests d'intégration verts.
+
+Aucune dépendance ajoutée.
+
+Reste (dépend de Rayan) : modèle du capteur de niveau, nom et unité du
+champ de mesure, valeurs de départ des seuils (`docs/A_FAIRE_RAYAN.md`).
+
+Comment tester à l'écran : voir la démonstration RDC (hôtel de Kinshasa),
+plus bas.
+
 ---
 
 # Historique — offre Immeuble (en pause)

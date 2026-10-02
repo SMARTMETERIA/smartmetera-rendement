@@ -5,14 +5,18 @@
 import type { CodeDecodeur } from "@/lib/ingest/types";
 
 export type CleModele =
-  "adeunis_pulse_nbiot" | "milesight_em300_di" | "sonde_temperature";
+  | "adeunis_pulse_nbiot"
+  | "milesight_em300_di"
+  | "sonde_temperature"
+  | "capteur_niveau";
 
 export interface ModeleCapteur {
   libelle: string;
-  kit: "A" | "C" | "sonde";
+  kit: "A" | "C" | "sonde" | "niveau";
   transmission: "cellulaire" | "lorawan";
   decodeur: CodeDecodeur;
-  nature: "eau" | "temperature";
+  /** « niveau » : capteur de réserve d'eau, réglé dans « Réserves d'eau » (pas l'assistant de pose). */
+  nature: "eau" | "temperature" | "niveau";
   /** Entrées d'impulsions (null : une seule entrée, sans nom). */
   voies: (string | null)[];
   /**
@@ -63,6 +67,18 @@ export const MODELES_CAPTEURS: Record<CleModele, ModeleCapteur> = {
     consigne:
       "Fixez la sonde au contact du tuyau d'eau chaude et isolez-la de l'air ambiant.",
   },
+  capteur_niveau: {
+    // TODO(RAYAN) : modèle de capteur de niveau à choisir (réserves d'eau).
+    libelle: "Capteur de niveau LoRaWAN",
+    kit: "niveau",
+    transmission: "lorawan",
+    decodeur: "niveau_objet",
+    nature: "niveau",
+    voies: [null],
+    intervalleEmissionS: null,
+    consigne:
+      "Posez le capteur selon la notice du fabricant, puis mesurez la hauteur entre le fond de la réserve et le capteur.",
+  },
 };
 
 export const CLES_MODELES = Object.keys(MODELES_CAPTEURS) as CleModele[];
@@ -89,6 +105,7 @@ export function trouverModele(saisie: string): CleModele | null {
   if (/adeunis|pulse|arf8420/.test(n)) return "adeunis_pulse_nbiot";
   if (/em300|milesight/.test(n)) return "milesight_em300_di";
   if (/temperature|sonde/.test(n)) return "sonde_temperature";
+  if (/niveau|level|ultrason|citerne/.test(n)) return "capteur_niveau";
   return null;
 }
 

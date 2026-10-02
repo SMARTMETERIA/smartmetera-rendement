@@ -142,3 +142,18 @@ Chaque point est contourné dans le code par un bouchon marqué
     compacté, plus difficile à lire (celles du serveur le sont moins).
     Si cela gêne, ajouter `@sentry/nextjs` (dépendance lourde) : à décider
     plus tard, après quelques semaines d'exploitation.
+
+## Ajoutés en phase G11 (autonomie en eau)
+
+30. **Capteur de niveau** — choisir le modèle (ultrason ou radar posé
+    au-dessus de l'eau, ou capteur de pression posé au fond). Son décodeur
+    (fourni par le fabricant) est chargé dans le serveur LoRaWAN ; indiquer
+    le nom du champ de mesure et son unité (`platform_settings`, clé
+    `capteur_niveau`, par défaut `distance` en millimètres).
+31. **Seuils de l'autonomie à valider sur le terrain** — coupure après
+    2 heures sans arrivée d'eau alors que les réserves baissent d'au moins
+    2 % ; niveau bas à 20 % de l'eau utilisable ; alerte quand le niveau
+    bas est prévu dans moins de 6 heures (`platform_settings`, clé
+    `autonomie`).
+32. **Tarif de l'option « autonomie en eau »** — aucun prix n'est prévu
+    pour le capteur de niveau dans l'export d'usage : à décider.

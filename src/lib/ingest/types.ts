@@ -25,7 +25,14 @@ export type CodeDecodeur =
   | "milesight_em300_di"
   | "dragino_sw3l"
   | "adeunis_pulse_mqtt"
-  | "temperature_objet";
+  | "temperature_objet"
+  | "niveau_objet";
+
+/** Champ et unité de la mesure d'un capteur de niveau (platform_settings.capteur_niveau). */
+export interface ReglageNiveau {
+  champ: string;
+  unite: "mm" | "cm" | "m";
+}
 
 export interface ContexteDecodage {
   /** Horodatage de réception de la trame par la plateforme réseau (fallback si la trame ne porte pas son propre horodatage). */
@@ -33,6 +40,8 @@ export interface ContexteDecodage {
   fPort?: number;
   /** Valeurs déjà décodées par le serveur réseau (codec ChirpStack), si fournies. */
   objet?: Record<string, unknown>;
+  /** Capteur de niveau : où lire la mesure dans l'objet décodé. */
+  niveau?: ReglageNiveau;
 }
 
 export type FonctionDecodeur = (

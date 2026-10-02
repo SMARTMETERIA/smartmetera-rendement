@@ -5,8 +5,10 @@
 // fuites (leak_events : nuit, débit continu, rupture, fermeture),
 // réparations automatiques avec économies prudentes (calculées en SQL par
 // fuite_cloturer_reparee), capteurs muets, températures basses et rappel
-// des analyses (alerts). Toute la logique est dans lib/analyse.ts, copie
-// testée de src/lib/moteur-gardien (node scripts/synchroniser-ingest.mjs).
+// des analyses (alerts) ; autonomie en eau (phase G11) : coupures du
+// réseau public (supply_cuts), niveau bas des réserves (alerts). Toute la
+// logique est dans lib/analyse.ts et lib/autonomie.ts, copies testées de
+// src/lib/moteur-gardien (node scripts/synchroniser-ingest.mjs).
 //
 // verify_jwt reste activé : pg_cron s'authentifie avec la clé « anon ».
 // Corps facultatif, pris en compte seulement pour un appel service_role
@@ -17,6 +19,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import {
   FENETRE_LIGNE_DE_BASE_JOURS,
+  REMPLISSAGE_APRES_COUPURE_MS,
   analyserSite,
   debutFenetre,
   joursARecalculer,
@@ -34,6 +37,14 @@ import { lirePeriodesFermeture, type PlageCalme } from "./lib/plages.ts";
 import { REGLAGES_DEFAUT, fusionnerReglages, type ReglagesDetection } from "./lib/reglages.ts";
 import { lireReglagesTemperature, type ReglagesTemperature, type TypePoint } from "./lib/temperatures.ts";
 import { HEURE_MS, decalerJour } from "./lib/temps.ts";
+import {
+  analyserAutonomie,
+  decisionsAutonomie,
+  lireReglagesAutonomie,
+  type AlerteAutonomieConnue,
+  type MesureNiveau,
+} from "./lib/autonomie.ts";
+import { COLONNES_RESERVE, reserveDepuisLigne, type ReserveEau } from "./lib/reserves.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -92,7 +103,7 @@ interface Site {
   organization_id: string;
   name: string;
   timezone: string;
-  currency: "EUR" | "MAD";
+  currency: string;
   closed_periods: unknown;
   organizations: { settings: Ligne | null };
 }
@@ -103,6 +114,7 @@ interface Contexte {
   nbJours: number;
   seuilsPlateforme: Ligne | null;
   reglagesTemperature: ReglagesTemperature;
+  autonomiePlateforme: Ligne | null;
   partenaires: Map<string, boolean>;
 }
 
@@ -112,6 +124,210 @@ interface Bilan {
   reparations: number;
   alertes: number;
   resolues: number;
+  coupures: number;
+}
+
+/** Réserve chargée de la base, avec sa date de création (pose du capteur). */
+interface ReserveChargee extends ReserveEau {
+  deviceId: string | null;
+  creeeLe: string;
+}
+
+function reserveChargee(r: Ligne): ReserveChargee {
+  return {
+    ...reserveDepuisLigne(r),
+    deviceId: (r.device_id as string | null) ?? null,
+    creeeLe: r.created_at as string,
+  };
+}
+
+/**
+ * Autonomie en eau (phase G11) : coupure du réseau public, suivi de
+ * l'autonomie pendant la coupure, alertes à la coupure et avant le niveau
+ * bas (envoyées par gardien-envois). Sites avec au moins une réserve.
+ */
+async function traiterAutonomie(
+  ctx: Contexte,
+  site: Site,
+  reserves: ReserveChargee[],
+  reglagesOrg: Ligne | undefined,
+): Promise<Pick<Bilan, "coupures" | "alertes" | "resolues">> {
+  const bilan = { coupures: 0, alertes: 0, resolues: 0 };
+  if (!reserves.length) return bilan;
+  const { admin, maintenantMs } = ctx;
+  const reglages = lireReglagesAutonomie(ctx.autonomiePlateforme, reglagesOrg?.autonomie);
+  const depuis = iso(maintenantMs - (reglages.profilJours * 24 + 4) * HEURE_MS);
+
+  const [niveaux, arriveesMeters, coupures, alertesBrutes] = await Promise.all([
+    toutLire((a, b) =>
+      admin
+        .from("reserve_levels")
+        .select("reserve_id, ts, measure_m")
+        .in("reserve_id", reserves.map((r) => r.id))
+        .in("quality_flag", ["valide", "corrigee"])
+        .gt("ts", depuis)
+        .lte("ts", iso(maintenantMs))
+        .order("reserve_id")
+        .order("ts")
+        .range(a, b),
+    ),
+    verifier(
+      admin
+        .from("meters")
+        .select("id")
+        .eq("site_id", site.id)
+        .eq("type", "point_comptage")
+        .eq("actif", true)
+        .eq("public_inlet", true),
+    ),
+    verifier(
+      admin
+        .from("supply_cuts")
+        .select("id, started_at, min_autonomy_h, min_volume_m3")
+        .eq("site_id", site.id)
+        .eq("status", "en_cours"),
+    ),
+    verifier(
+      admin
+        .from("alerts")
+        .select("id, type, cle:donnees->>cle")
+        .eq("site_id", site.id)
+        .in("type", ["coupure_reseau", "reserve_basse"])
+        .in("statut", ["ouverte", "acquittee"]),
+    ),
+  ]);
+  const inletIds = (arriveesMeters as Ligne[]).map((m) => m.id as string);
+  const lecturesArrivee = inletIds.length
+    ? await toutLire((a, b) =>
+        admin
+          .from("readings")
+          .select("meter_id, ts, volume_m3")
+          .in("meter_id", inletIds)
+          .in("quality_flag", ["valide", "corrigee"])
+          .gt("ts", depuis)
+          .lte("ts", iso(maintenantMs))
+          .order("meter_id")
+          .order("ts")
+          .range(a, b),
+      )
+    : [];
+
+  const mesures = new Map<string, MesureNiveau[]>();
+  for (const n of niveaux) {
+    const liste = mesures.get(n.reserve_id as string) ?? [];
+    liste.push({ tsMs: Date.parse(n.ts as string), mesureM: Number(n.measure_m) });
+    mesures.set(n.reserve_id as string, liste);
+  }
+  const arrivees = inletIds.map((id) =>
+    lecturesArrivee
+      .filter((l) => l.meter_id === id)
+      .map((l) => ({ tsMs: Date.parse(l.ts as string), volumeM3: Number(l.volume_m3) })),
+  );
+  const coupureLigne = ((coupures as Ligne[])[0] ?? null) as Ligne | null;
+  const coupureEnCours = coupureLigne
+    ? { id: coupureLigne.id as string, debutMs: Date.parse(coupureLigne.started_at as string) }
+    : null;
+
+  const etat = analyserAutonomie({
+    fuseau: site.timezone,
+    maintenantMs,
+    reglages,
+    reserves: reserves.map((r) => ({ reserve: r, mesures: mesures.get(r.id) ?? [] })),
+    arrivees: inletIds.length ? arrivees : null,
+    coupureEnCours,
+  });
+  const alertes: AlerteAutonomieConnue[] = (alertesBrutes as Ligne[]).map((a) => ({
+    id: a.id as string,
+    type: a.type as AlerteAutonomieConnue["type"],
+    cle: (a.cle as string | null) ?? "",
+  }));
+  const decisions = decisionsAutonomie({
+    siteId: site.id,
+    fuseau: site.timezone,
+    maintenantMs,
+    reglages,
+    etat,
+    coupureEnCours,
+    alertes,
+  });
+
+  let coupureId: string | null = null;
+  if (decisions.nouvelleCoupure) {
+    const { data, error } = await admin
+      .from("supply_cuts")
+      .insert({
+        organization_id: site.organization_id,
+        site_id: site.id,
+        started_at: iso(decisions.nouvelleCoupure.debutMs),
+        detected_at: iso(maintenantMs),
+        min_autonomy_h: etat.autonomieH,
+        min_volume_m3: etat.volumeUtileM3,
+        details: {
+          volume_utile_max_m3: etat.volumeUtileMaxM3,
+          consommation_m3h: etat.consommationM3h,
+        },
+      })
+      .select("id")
+      .single();
+    // 23505 : une coupure est déjà en cours sur ce site.
+    if (error && error.code !== "23505") throw new Error(error.message);
+    if (data) {
+      coupureId = data.id as string;
+      bilan.coupures++;
+    }
+  }
+  if (decisions.finCoupure) {
+    await verifier(
+      admin
+        .from("supply_cuts")
+        .update({ status: "terminee", ended_at: iso(decisions.finCoupure.finMs) })
+        .eq("id", decisions.finCoupure.id)
+        .eq("status", "en_cours"),
+    );
+  }
+  if (decisions.suiviCoupure && coupureLigne) {
+    const plusBas = (actuel: unknown, nouveau: number | null) =>
+      nouveau === null ? num(actuel) : num(actuel) === null ? nouveau : Math.min(Number(actuel), nouveau);
+    await verifier(
+      admin
+        .from("supply_cuts")
+        .update({
+          min_autonomy_h: plusBas(coupureLigne.min_autonomy_h, decisions.suiviCoupure.autonomieH),
+          min_volume_m3: plusBas(coupureLigne.min_volume_m3, decisions.suiviCoupure.volumeUtileM3),
+        })
+        .eq("id", coupureLigne.id as string),
+    );
+  }
+
+  for (const a of decisions.alertesAOuvrir) {
+    const { error } = await admin.from("alerts").insert({
+      organization_id: site.organization_id,
+      site_id: site.id,
+      type: a.type,
+      severite: a.severite,
+      titre: a.titre,
+      description: a.description,
+      declenchee_le: iso(maintenantMs),
+      donnees: {
+        ...a.donnees,
+        cle: a.cle,
+        destinataire: "site",
+        ...(a.type === "coupure_reseau" && coupureId ? { cut_id: coupureId } : {}),
+      },
+    });
+    if (error && error.code !== "23505") throw new Error(error.message);
+    if (!error) bilan.alertes++;
+  }
+  if (decisions.alertesAResoudre.length) {
+    await verifier(
+      admin
+        .from("alerts")
+        .update({ statut: "resolue", resolue_le: iso(maintenantMs) })
+        .in("id", decisions.alertesAResoudre),
+    );
+    bilan.resolues += decisions.alertesAResoudre.length;
+  }
+  return bilan;
 }
 
 async function estPartenaire(ctx: Contexte, organizationId: string): Promise<boolean> {
@@ -136,11 +352,11 @@ async function traiterSite(ctx: Contexte, site: Site): Promise<Bilan> {
     (reglagesOrg?.seuils ?? null) as Ligne | null,
   );
 
-  const [meters, devices, points, plagesBrutes] = await Promise.all([
+  const [meters, devices, points, plagesBrutes, reservesBrutes, coupuresRecentes] = await Promise.all([
     verifier(
       admin
         .from("meters")
-        .select("id, nom, zone, surveillance, installed_at")
+        .select("id, nom, zone, surveillance, installed_at, public_inlet")
         .eq("site_id", site.id)
         .eq("type", "point_comptage")
         .eq("actif", true),
@@ -166,13 +382,35 @@ async function traiterSite(ctx: Contexte, site: Site): Promise<Bilan> {
         .eq("site_id", site.id)
         .eq("active", true),
     ),
+    verifier(
+      admin
+        .from("water_reserves")
+        .select(`${COLONNES_RESERVE}, device_id, created_at`)
+        .eq("site_id", site.id)
+        .eq("active", true),
+    ),
+    verifier(
+      admin
+        .from("supply_cuts")
+        .select("started_at, ended_at")
+        .eq("site_id", site.id)
+        .or(`status.eq.en_cours,ended_at.gt.${iso(maintenantMs - 31 * 24 * HEURE_MS)}`),
+    ),
   ]);
+  // Compteurs d'arrivée : pas de rupture pendant une coupure et le remplissage qui suit.
+  const sansRupture = (coupuresRecentes as Ligne[]).map((c) => ({
+    debutMs: Date.parse(c.started_at as string),
+    finMs: c.ended_at ? Date.parse(c.ended_at as string) + REMPLISSAGE_APRES_COUPURE_MS : Infinity,
+  }));
+  const reserves = (reservesBrutes as Ligne[]).map(reserveChargee);
+  const reserveParAppareil = new Map(reserves.filter((r) => r.deviceId).map((r) => [r.deviceId as string, r]));
 
   const compteurs: CompteurSite[] = (meters as Ligne[]).map((m) => ({
     id: m.id as string,
     nom: (m.zone as string | null) ?? (m.nom as string),
     zone: m.zone as string | null,
     surveillance: m.surveillance === "limitee" ? "limitee" : "complete",
+    ...(m.public_inlet === true && sansRupture.length ? { periodesSansRupture: sansRupture } : {}),
   }));
   const meterIds = compteurs.map((c) => c.id);
   const pointIds = (points as Ligne[]).map((p) => p.id as string);
@@ -302,9 +540,11 @@ async function traiterSite(ctx: Contexte, site: Site): Promise<Bilan> {
   const appareils: AppareilSurveille[] = (devices as Ligne[]).map((a) => {
     const compteur = a.meter_id ? compteurParId.get(a.meter_id as string) : undefined;
     const point = pointParAppareil.get(a.id as string);
+    const reserve = reserveParAppareil.get(a.id as string);
     const nom =
       (compteur ? ((compteur.zone as string | null) ?? (compteur.nom as string)) : null) ??
       (point?.label as string | undefined) ??
+      (reserve ? `niveau de ${reserve.nom}` : undefined) ??
       `${(a.model as string | null) ?? "Capteur"} ${a.device_ref as string}`;
     return {
       id: a.id as string,
@@ -313,7 +553,7 @@ async function traiterSite(ctx: Contexte, site: Site): Promise<Bilan> {
       pointId: (point?.id as string | undefined) ?? null,
       transmission: a.transmission as string | null,
       dernierMessageMs: ms(a.last_seen_at as string | null),
-      poseMs: ms((compteur?.installed_at ?? point?.created_at ?? null) as string | null),
+      poseMs: ms((compteur?.installed_at ?? point?.created_at ?? reserve?.creeeLe ?? null) as string | null),
     };
   });
   const alertes: AlerteConnue[] = (alertesBrutes as Ligne[])
@@ -431,12 +671,14 @@ async function traiterSite(ctx: Contexte, site: Site): Promise<Bilan> {
     );
   }
 
+  const autonomie = await traiterAutonomie(ctx, site, reserves, reglagesOrg);
   return {
     jours: lignesJours.length,
     fuites: fuitesOuvertes,
     reparations: resultat.reparations.length,
-    alertes: alertesOuvertes,
-    resolues: resultat.alertesAResoudre.length,
+    alertes: alertesOuvertes + autonomie.alertes,
+    resolues: resultat.alertesAResoudre.length + autonomie.resolues,
+    coupures: autonomie.coupures,
   };
 }
 
@@ -473,7 +715,7 @@ Deno.serve(async (req) => {
   const reglagesBruts = await admin
     .from("platform_settings")
     .select("key, value")
-    .in("key", ["seuils", "temperatures"]);
+    .in("key", ["seuils", "temperatures", "autonomie"]);
   if (reglagesBruts.error) {
     await journaliser("echec", {}, [reglagesBruts.error.message]);
     return json({ erreur: reglagesBruts.error.message }, 500);
@@ -500,10 +742,11 @@ Deno.serve(async (req) => {
     nbJours,
     seuilsPlateforme: reglage("seuils"),
     reglagesTemperature: lireReglagesTemperature(reglage("temperatures")),
+    autonomiePlateforme: reglage("autonomie"),
     partenaires: new Map(),
   };
 
-  const total: Bilan = { jours: 0, fuites: 0, reparations: 0, alertes: 0, resolues: 0 };
+  const total: Bilan = { jours: 0, fuites: 0, reparations: 0, alertes: 0, resolues: 0, coupures: 0 };
   const erreurs: { site_id: string; message: string }[] = [];
   for (const site of (sites ?? []) as unknown as Site[]) {
     try {

@@ -14,6 +14,7 @@ import {
   ADEUNIS_MQTT_MAX_IMPULSIONS,
 } from "./adeunisPulseMqtt";
 import { decodeTemperatureObjet } from "./temperatureObjet";
+import { decodeNiveauObjet } from "./niveauObjet";
 
 export const DECODEURS: Record<CodeDecodeur, FonctionDecodeur> = {
   adeunis_pulse_v4: decodeAdeunisPulseV4,
@@ -23,6 +24,7 @@ export const DECODEURS: Record<CodeDecodeur, FonctionDecodeur> = {
   adeunis_pulse_mqtt: decodeAdeunisPulseMqtt,
   temperature_objet: (payload, contexte) =>
     decodeTemperatureObjet(payload, contexte),
+  niveau_objet: decodeNiveauObjet,
 };
 
 export const MAX_IMPULSIONS: Record<CodeDecodeur, number> = {
@@ -31,8 +33,10 @@ export const MAX_IMPULSIONS: Record<CodeDecodeur, number> = {
   milesight_em300_di: MILESIGHT_MAX_IMPULSIONS,
   dragino_sw3l: DRAGINO_MAX_IMPULSIONS,
   adeunis_pulse_mqtt: ADEUNIS_MQTT_MAX_IMPULSIONS,
-  // Pas d'impulsions : la sonde produit une température.
+  // Pas d'impulsions : la sonde produit une température, le capteur de
+  // niveau une mesure en mètres.
   temperature_objet: 0,
+  niveau_objet: 0,
 };
 
 /** Décodeurs proposés pour un capteur LoRaWAN à impulsions (écrans Réseau). */
@@ -50,4 +54,5 @@ export const LABEL_DECODEUR: Record<CodeDecodeur, string> = {
   dragino_sw3l: "Dragino SW3L",
   adeunis_pulse_mqtt: "Adeunis PULSE NB-IoT/LTE-M (MQTTS)",
   temperature_objet: "Sonde de température (valeur décodée par le serveur réseau)",
+  niveau_objet: "Capteur de niveau (valeur décodée par le serveur réseau)",
 };

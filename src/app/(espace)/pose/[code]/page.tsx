@@ -92,6 +92,24 @@ export default async function PoseCapteurPage({
   }
   const modele = MODELES_CAPTEURS[cle];
 
+  // Capteur de niveau d'une réserve : réglé dans « Réserves d'eau »
+  // (dimensions de la cuve, hauteur du capteur), pas dans l'assistant.
+  if (modele.nature === "niveau") {
+    return (
+      <div className="mx-auto max-w-md space-y-4 text-center">
+        <h1 className="text-2xl font-semibold">Capteur de niveau</h1>
+        <p className="text-muted-foreground">
+          {modele.consigne} Ensuite, rattachez-le à sa réserve dans « Réserves d&apos;eau » : vous y
+          saisirez les dimensions de la cuve.
+        </p>
+        <Link href="/sites/reserves" className={cn(buttonVariants(), "h-12 w-full text-base")}>
+          Ouvrir Réserves d&apos;eau
+        </Link>
+      </div>
+    );
+  }
+  const nature = modele.nature;
+
   // Sites où la pose est possible : celui du capteur s'il est attribué,
   // sinon ceux de l'organisation (technicien d'un site : ses sites).
   const techniciensSite = ctx.adhesionsSite
@@ -140,7 +158,7 @@ export default async function PoseCapteurPage({
         id: appareil.id,
         reference: referenceCourte(appareil.device_ref),
         libelleModele: modele.libelle,
-        nature: modele.nature,
+        nature,
         voies: modele.voies,
         consigne: modele.consigne,
         dejaPose,

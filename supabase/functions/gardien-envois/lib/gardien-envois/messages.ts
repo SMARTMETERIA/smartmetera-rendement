@@ -4,6 +4,7 @@
 import type { Marque } from "../marque.ts";
 import { coutFuite, methodePertes, type Monnaie } from "../moteur-gardien/economies.ts";
 import type { TypeFuite } from "../moteur-gardien/analyse.ts";
+import { dureeLisible, instantLisible } from "../moteur-gardien/autonomie.ts";
 import {
   MENTION_SURVEILLANCE,
   TITRES_RAPPORT,
@@ -150,6 +151,70 @@ export function messageTemperature(
       { type: "bouton", libelle: "Ouvrir mes sites", lien: `${ctx.urlApp}/sites` },
     ],
     `${a.titre.toLowerCase()} (${a.site}) : ${a.description}`,
+  );
+}
+
+/** Coupure du réseau public ou niveau bas des réserves (phase G11). */
+export function messageAutonomie(
+  ctx: Contexte,
+  a: {
+    type: "coupure_reseau" | "reserve_basse";
+    titre: string;
+    description: string;
+    site: string;
+    autonomieH: number | null;
+    niveauBasMs: number | null;
+    fuseau: string;
+    maintenantMs: number;
+  },
+): Rendu {
+  const lien = `${ctx.urlApp}/sites/reserves`;
+  const autonomie = a.autonomieH !== null ? `Autonomie estimée : ${dureeLisible(a.autonomieH)}.` : "";
+  const niveauBas = a.niveauBasMs !== null ? ` Niveau bas prévu ${instantLisible(a.niveauBasMs, a.fuseau, a.maintenantMs)}.` : "";
+  const court =
+    a.type === "coupure_reseau"
+      ? `coupure du réseau public à ${a.site}. ${autonomie}${niveauBas} Voir : ${lien}`
+      : `${a.titre.toLowerCase()} à ${a.site}. ${autonomie}${niveauBas} Voir : ${lien}`;
+  const vocal =
+    a.type === "coupure_reseau"
+      ? `L'eau du réseau public n'arrive plus à ${a.site}. ${autonomie}${niveauBas}`
+      : `${a.titre} à ${a.site}. ${autonomie}${niveauBas}`;
+  return rendu(
+    ctx,
+    `${a.titre} — ${a.site}`,
+    [
+      { type: "paragraphe", texte: a.description },
+      {
+        type: "paragraphe",
+        texte:
+          "Pendant une coupure : réduisez les usages non essentiels (arrosage, lavage, piscine) et, si besoin, prévoyez un camion-citerne.",
+      },
+      { type: "bouton", libelle: "Voir les réserves d'eau", lien },
+    ],
+    court.replace(/\s+/g, " ").trim(),
+    vocal.replace(/\s+/g, " ").trim(),
+  );
+}
+
+/** Retour de l'eau du réseau public après une coupure. */
+export function messageRetourReseau(
+  ctx: Contexte,
+  a: { site: string; debutMs: number; finMs: number; autonomieMinH: number | null; fuseau: string },
+): Rendu {
+  const duree = dureeLisible((a.finMs - a.debutMs) / 3_600_000);
+  const minimum = a.autonomieMinH !== null ? ` Autonomie la plus basse pendant la coupure : ${dureeLisible(a.autonomieMinH)}.` : "";
+  return rendu(
+    ctx,
+    `L'eau du réseau public est revenue — ${a.site}`,
+    [
+      {
+        type: "paragraphe",
+        texte: `L'eau arrive de nouveau depuis le ${dateHeure(a.finMs, a.fuseau)}, après ${duree} de coupure.${minimum}`,
+      },
+      { type: "paragraphe", texte: "Les réserves se remplissent : vérifiez que le niveau remonte." },
+      { type: "bouton", libelle: "Voir les réserves d'eau", lien: `${ctx.urlApp}/sites/reserves` },
+    ],
+    `l'eau du réseau public est revenue à ${a.site} après ${duree} de coupure.`,
   );
 }
 

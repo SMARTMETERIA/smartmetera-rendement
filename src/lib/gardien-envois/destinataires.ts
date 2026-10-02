@@ -76,7 +76,10 @@ export function etapesDues(params: {
   return etapes;
 }
 
-/** Relance vocale : appel en France, WhatsApp au Maroc. */
+/**
+ * Relance après 2 h : appel en France, WhatsApp au Maroc et en RDC.
+ * TODO(RAYAN) : confirmer WhatsApp pour la RDC.
+ */
 export function canalRelance(pays: string): "appel" | "whatsapp" {
-  return pays === "MA" ? "whatsapp" : "appel";
+  return pays === "MA" || pays === "CD" ? "whatsapp" : "appel";
 }

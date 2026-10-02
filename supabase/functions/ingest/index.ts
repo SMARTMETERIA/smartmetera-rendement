@@ -17,7 +17,7 @@
 // (raw_frames, clé source + trame) -> registre d'appareils (référence
 // [+ voie] -> compteur ou point de température, décodeur, poids
 // d'impulsion) -> décodeur -> delta par rapport au dernier index (rollover)
-// -> relevés, températures, état de l'appareil (pile, radio, dernier
+// -> relevés, températures, niveaux des réserves, état de l'appareil (pile, radio, dernier
 // message), niveau de surveillance du point. Chaque appel est journalisé,
 // y compris les échecs (jamais de perte silencieuse). Les trames d'un
 // appareil inconnu reçues par la plateforme vont dans unknown_frames.
@@ -27,6 +27,7 @@ import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { PARSEURS_ENVELOPPE, estErreurEnveloppe, type Plateforme } from "./lib/envelopes/index.ts";
 import { evenementChirpstack, parseStatutChirpstack } from "./lib/envelopes/chirpstack.ts";
 import { DECODEURS, MAX_IMPULSIONS } from "./lib/decoders/index.ts";
+import { lireReglageNiveau } from "./lib/decoders/niveauObjet.ts";
 import { construireCleIdempotence } from "./lib/idempotency.ts";
 import { appliquerPointReleve, type EtatDevice } from "./lib/computeDelta.ts";
 import { niveauSurveillance } from "./lib/surveillance.ts";
@@ -182,12 +183,12 @@ Deno.serve(async (req: Request) => {
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
   // 1) Jeton : plateforme ou source d'organisation.
-  const { data: reglage } = await admin
+  const { data: reglages } = await admin
     .from("platform_settings")
-    .select("value")
-    .eq("key", "reception")
-    .maybeSingle();
-  const jetons = (reglage?.value ?? {}) as { jeton_mqtt?: string; jeton_lorawan?: string };
+    .select("key, value")
+    .in("key", ["reception", "capteur_niveau"]);
+  const reglage = (cle: string) => (reglages ?? []).find((r) => r.key === cle)?.value ?? null;
+  const jetons = (reglage("reception") ?? {}) as { jeton_mqtt?: string; jeton_lorawan?: string };
   const jetonAttendu = plateforme === "mqtt" ? jetons.jeton_mqtt : jetons.jeton_lorawan;
   const modePlateforme =
     plateforme !== "liveobjects" && !!jetonAttendu && egauxConstant(route.jeton, jetonAttendu);
@@ -312,6 +313,7 @@ Deno.serve(async (req: Request) => {
       recuLe: enveloppe.recuLe,
       fPort: enveloppe.fPort,
       objet: enveloppe.objet,
+      niveau: lireReglageNiveau(reglage("capteur_niveau")),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -355,7 +357,34 @@ Deno.serve(async (req: Request) => {
     activer.push(...appareils.filter((a) => a.provisioning_status === "pose").map((a) => a.id));
   }
 
-  // 6b) Impulsions : relevés d'eau, voie par voie.
+  // 6b) Capteur de niveau : relevé de la réserve d'eau (autonomie, G11).
+  if (typeof decode.brut?.niveauM === "number") {
+    const { data: reserves } = await admin
+      .from("water_reserves")
+      .select("id, organization_id")
+      .in("device_id", appareils.map((a) => a.id))
+      .eq("active", true);
+    for (const reserve of reserves ?? []) {
+      const { error } = await admin.from("reserve_levels").upsert(
+        {
+          organization_id: reserve.organization_id,
+          reserve_id: reserve.id,
+          ts: enveloppe.recuLe,
+          measure_m: decode.brut.niveauM,
+        },
+        { onConflict: "reserve_id,ts", ignoreDuplicates: true },
+      );
+      resultatsPoints.push({
+        reserve: reserve.id,
+        niveauM: decode.brut.niveauM,
+        applique: !error,
+        erreur: error?.message,
+      });
+    }
+    activer.push(...appareils.filter((a) => a.provisioning_status === "pose").map((a) => a.id));
+  }
+
+  // 6c) Impulsions : relevés d'eau, voie par voie.
   const horodatagesParCompteur = new Map<string, string[]>();
   for (const point of decode.points as PointReleve[]) {
     const appareil = appareils.find((a) => (a.canal ?? null) === point.canal);

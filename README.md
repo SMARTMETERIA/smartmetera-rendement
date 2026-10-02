@@ -495,6 +495,47 @@ les limites des fonctions Supabase.
   `FUMEE_EMAIL` et `FUMEE_MOT_DE_PASSE`, la connexion et l'état des
   tâches planifiées.
 
+### Autonomie en eau (Gardien de l'eau, phase G11)
+
+- **Modèle** (migrations `0053`, `0054`) : `water_reserves` (citerne, bâche,
+  château d'eau : volume plein, hauteur pleine, prise d'eau, forme debout
+  ou couchée, montage du capteur, niveau bas), `reserve_levels` (mesures
+  du capteur de niveau, jamais supprimées), `supply_cuts` (coupures du
+  réseau public), `meters.public_inlet` (compteur d'arrivée du réseau
+  public). Saisie par `reserve_enregistrer`, `reserve_retirer` et
+  `site_arrivees_reseau` (administrateur, agent, technicien).
+- **Capteur de niveau** LoRaWAN (modèle `TODO(RAYAN)`) : décodeur
+  `niveau_objet`, qui lit la mesure dans l'objet décodé par le serveur
+  réseau (champ et unité dans `platform_settings.capteur_niveau`, par
+  défaut `distance` en millimètres, à confirmer).
+- **Calculs** (`src/lib/moteur-gardien/reserves.ts` et `autonomie.ts`,
+  fonctions pures) : volume utile au-dessus de la prise d'eau (cuve couchée :
+  segment de disque) ; consommation réelle de chaque heure = arrivée du
+  réseau − variation des réserves ; heures d'autonomie et heure du niveau
+  bas en suivant le profil de consommation heure par heure des 7 derniers
+  jours. **Coupure** : aucune arrivée d'eau pendant 2 heures alors que les
+  réserves baissent (une citerne pleine dont le flotteur est fermé ne
+  déclenche rien). Seuils dans `platform_settings.autonomie`
+  (`TODO(RAYAN)` : à valider sur le terrain).
+- **Moteur** : la fonction `gardien-moteur` enregistre la coupure, suit
+  l'autonomie la plus basse, ouvre les alertes `coupure_reseau` et
+  `reserve_basse` (niveau bas prévu dans moins de 6 heures pendant une
+  coupure, ou atteint) et les résout au retour de l'eau. Le remplissage
+  des réserves après une coupure n'est jamais pris pour une rupture sur le
+  compteur d'arrivée (24 heures).
+- **Envois** : `gardien-envois` prévient directeurs et techniciens du site
+  (e-mail et SMS, mode « journal » en développement), puis annonce le
+  retour de l'eau. Le rapport mensuel a une section « Réserves d'eau et
+  coupures du réseau ».
+- **Écran** `/sites/reserves` (téléphone d'abord) : état du réseau public,
+  autonomie qui baisse en direct, heure du niveau bas, jauge de chaque
+  réserve, courbe de 48 heures avec la prévision, coupures récentes,
+  réglages des réserves.
+- **Tests** : `src/lib/moteur-gardien/autonomie.test.ts`,
+  `src/lib/gardien/reserves.test.ts`, `src/lib/gardien-rapports/reserves.test.ts`
+  et `src/test/integration/autonomie-gardien.test.ts` (réglage par un
+  technicien, trame du capteur, coupure détectée, alertes, retour de l'eau).
+
 ### Import CSV/Excel
 
 Page `/import` : assistant en 5 étapes (modèle → fichier → mapping → aperçu

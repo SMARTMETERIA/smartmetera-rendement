@@ -72,6 +72,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
     { data: pilotes },
     { data: rapports },
     { data: alertesEnCours },
+    { count: nbReserves },
   ] = await Promise.all([
     supabase
       .from("leak_events")
@@ -111,6 +112,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
       .eq("site_id", id)
       .in("statut", ["ouverte", "acquittee"])
       .in("type", ["compteur_muet", "temperature_basse"]),
+    supabase.from("water_reserves").select("id", { count: "exact", head: true }).eq("site_id", id).eq("active", true),
   ]);
 
   const toutes = (fuites ?? []) as Ligne[];
@@ -281,6 +283,23 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
               />
             </CardContent>
           )}
+        </Card>
+      )}
+
+      {(nbReserves ?? 0) > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Réserves d&apos;eau</CardTitle>
+            <CardDescription>
+              {nbReserves === 1 ? "1 réserve suivie" : `${nbReserves} réserves suivies`} : autonomie, coupures du réseau
+              public, niveau bas prévu.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href={`/sites/reserves#site-${id}`} className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}>
+              Voir l&apos;autonomie en eau
+            </Link>
+          </CardContent>
         </Card>
       )}
 
