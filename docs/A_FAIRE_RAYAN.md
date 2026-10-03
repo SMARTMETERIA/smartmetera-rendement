@@ -56,7 +56,7 @@ mise en ligne. Marque : « SmartMeteria » partout ; nom du produit :
 
 | N° | Point | Bloque la mise en ligne ? | Temps |
 |---|---|---|---|
-| 0 | Votre accès superadmin sur la base d'essai | Non, mais à faire en premier | 10 min |
+| 0 | Votre accès superadmin sur la base d'essai | Fait (3 octobre) | — |
 | **Décisions** | | | |
 | D1 | Adresse d'expédition des e-mails | Fait (3 octobre) | — |
 | D2 | Fournisseur des SMS et des appels | Fait (3 octobre) | — |
@@ -116,7 +116,10 @@ mise en ligne. Marque : « SmartMeteria » partout ; nom du produit :
 
 ## 0. Commencer ici : votre accès superadmin sur la base d'essai
 
-- [ ] **Fait**
+- [x] **Fait** — le 3 octobre 2026, par Claude, sur votre autorisation
+  écrite : droit superadmin donné au compte `raya.elhassani@gmail.com`
+  (créé le 6 septembre, mot de passe inchangé), **sur la base d'essai
+  seulement**. La production se fera en R7.
 
 **Pourquoi :** aucun compte superadmin n'existe sur la base d'essai.
 Sans lui, vous ne voyez pas l'espace « Superadmin » : stock des capteurs,
