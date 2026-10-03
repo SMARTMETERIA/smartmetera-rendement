@@ -40,6 +40,14 @@ function blocHtml(marque: Marque, bloc: Bloc): string {
   }
 }
 
+/**
+ * Objet d'un e-mail : le titre, puis le nom de la marque (« Gardien de
+ * l'eau by SmartMeteria », ou le nom du partenaire en marque blanche).
+ */
+export function sujetEmail(marque: Marque, titre: string): string {
+  return `${titre} — ${marque.nom}`;
+}
+
 export function emailHtml(marque: Marque, titre: string, blocs: Bloc[]): string {
   const n = COULEURS_NEUTRES;
   const entete = marque.logoUrl

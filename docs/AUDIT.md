@@ -15,7 +15,7 @@ Aucun code n'a été modifié pendant cette phase.
 
 ## 2. Environnement
 
-- Un seul projet Supabase : `smartmetera-rendement` (`orskfdkvczrxwcdpvlaa`),
+- Un seul projet Supabase : le projet d'essai (`orskfdkvczrxwcdpvlaa`),
   région `eu-west-3` (Paris), Postgres 17. C'est la base de développement ;
   il n'existe pas encore de projet de production.
 - Ni Docker ni CLI Supabase sur le poste : pas de base locale. Les

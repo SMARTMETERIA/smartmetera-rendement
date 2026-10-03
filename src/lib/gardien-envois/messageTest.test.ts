@@ -32,7 +32,10 @@ describe("message de test du superadmin", () => {
       ["sms", "+33612345678"],
       ["appel", "+33612345678"],
     ]);
-    expect(messages[0].sujet).toBe("SmartMeteria : message de test");
+    expect(messages[0].sujet).toBe("Message de test — Gardien de l'eau by SmartMeteria");
+    expect(messages[0].texte).toMatch(/Gardien de l'eau by SmartMeteria$/);
+    expect(messages[0].expediteur).toBe("SmartMeteria");
+    expect(messages[0].repondreA).toBe("contact@smartmeteria.com");
     expect(messages[1].texte).toContain("SmartMeteria : message de test");
     expect(messages[2].texte).toMatch(/^Bonjour, ici SmartMeteria\./);
   });
@@ -58,8 +61,8 @@ describe("message de test du superadmin", () => {
       libelleResultat({ canal: "sms", mode: "reel", statut: "echec", fournisseur: "twilio", erreur: "Twilio a répondu 401." }),
     ).toBe("Échec : Twilio a répondu 401.");
     expect(
-      libelleResultat({ canal: "appel", mode: "journal", statut: "journalise", fournisseur: null, erreur: "Aucun fournisseur configuré pour ce canal (TODO(RAYAN))." }),
-    ).toContain("Aucun fournisseur");
+      libelleResultat({ canal: "appel", mode: "journal", statut: "journalise", fournisseur: null, erreur: "Twilio n'est pas configuré pour ce canal." }),
+    ).toContain("Twilio n'est pas configuré");
   });
 });
 

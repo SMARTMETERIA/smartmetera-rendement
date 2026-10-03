@@ -49,14 +49,13 @@ export const MODELES_CAPTEURS: Record<CleModele, ModeleCapteur> = {
     decodeur: "milesight_em300_di",
     nature: "eau",
     voies: [null],
-    // TODO(RAYAN) : confirmer l'intervalle d'émission réglé sur les
-    // EM300-DI livrés (le Gardien demande au moins un relevé par heure).
-    intervalleEmissionS: null,
+    // Intervalle réglé sur les EM300-DI livrés : 60 minutes (Rayan, M2).
+    intervalleEmissionS: 3600,
     consigne:
-      "Vérifiez que l'intervalle d'émission est réglé à 60 minutes au plus (application Milesight ToolBox).",
+      "Vérifiez que l'intervalle d'émission est réglé à 60 minutes (application Milesight ToolBox).",
   },
   sonde_temperature: {
-    // TODO(RAYAN) : modèle de sonde à choisir.
+    // TODO(RAYAN) : modèle de sonde à choisir (plus tard, M3).
     libelle: "Sonde de température LoRaWAN",
     kit: "sonde",
     transmission: "lorawan",
@@ -68,8 +67,9 @@ export const MODELES_CAPTEURS: Record<CleModele, ModeleCapteur> = {
       "Fixez la sonde au contact du tuyau d'eau chaude et isolez-la de l'air ambiant.",
   },
   capteur_niveau: {
-    // TODO(RAYAN) : modèle de capteur de niveau à choisir (réserves d'eau).
-    libelle: "Capteur de niveau LoRaWAN",
+    // Modèle retenu par Rayan (M4) : mesure la distance jusqu'à la surface
+    // de l'eau, champ « distance » en millimètres dans son décodeur.
+    libelle: "Milesight EM500-UDL",
     kit: "niveau",
     transmission: "lorawan",
     decodeur: "niveau_objet",
@@ -103,6 +103,8 @@ export function trouverModele(saisie: string): CleModele | null {
     if (n === cle.replace(/_/g, " ") || n === libelle) return cle;
   }
   if (/adeunis|pulse|arf8420/.test(n)) return "adeunis_pulse_nbiot";
+  // Avant « milesight » : l'EM500-UDL est aussi un Milesight.
+  if (/em500|udl/.test(n)) return "capteur_niveau";
   if (/em300|milesight/.test(n)) return "milesight_em300_di";
   if (/temperature|sonde/.test(n)) return "sonde_temperature";
   if (/niveau|level|ultrason|citerne/.test(n)) return "capteur_niveau";

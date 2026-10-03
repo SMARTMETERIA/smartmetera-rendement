@@ -290,11 +290,13 @@ export function vuePreuve(c: ContenuPagePreuve): VueRapport {
     });
   }
   if (c.coutService) {
+    // Monnaie de facturation (dollars pour un site en francs congolais).
+    const mc = c.coutService.monnaie ?? m;
     const lignes: [string, string][] = [
-      ["Par jour", montant(c.coutService.parJour, m)],
-      ["Par mois (hors taxes)", montant(c.coutService.mensuel, m)],
+      ["Par jour", montant(c.coutService.parJour, mc)],
+      ["Par mois (hors taxes)", montant(c.coutService.mensuel, mc)],
     ];
-    if (c.coutService.parNuitee !== null) lignes.push(["Par nuitée", montant(c.coutService.parNuitee, m)]);
+    if (c.coutService.parNuitee !== null) lignes.push(["Par nuitée", montant(c.coutService.parNuitee, mc)]);
     blocs.push({ titre: "Coût du service", lignes });
   }
   if (c.retour.jours !== null) {

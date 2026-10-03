@@ -6,6 +6,7 @@
 
 import type { Marque } from "../marque.ts";
 import type { Canal, Message, ModeEnvois, ResultatEnvoi } from "./notify.ts";
+import { echapper, sujetEmail } from "./gabarit.ts";
 import { NUMERO_INTERNATIONAL } from "./telephone.ts";
 
 export const CANAUX_TEST: Canal[] = ["email", "sms", "appel", "whatsapp"];
@@ -43,17 +44,17 @@ export function validerMessageTest(
 }
 
 export function messagesTest(marque: Marque, demande: DemandeTest, urlApp: string): Message[] {
-  const court = `${marque.nom} : message de test. Si vous le recevez, les alertes par ce canal fonctionnent.`;
+  const court = `${marque.expediteur} : message de test. Si vous le recevez, les alertes par ce canal fonctionnent.`;
   return demande.canaux.map((canal) =>
     canal === "email"
       ? {
           canal,
           destinataire: demande.email,
-          sujet: `${marque.nom} : message de test`,
+          sujet: sujetEmail(marque, "Message de test"),
           texte: `Bonjour,\n\nCeci est un message de test envoyé depuis l'espace superadmin (${urlApp}/admin).\nSi vous le recevez, les alertes par e-mail fonctionnent.\n\n${marque.nom}`,
-          html: `<p>Bonjour,</p><p>Ceci est un message de test envoyé depuis l'espace superadmin.</p><p>Si vous le recevez, les alertes par e-mail fonctionnent.</p><p>${marque.nom}</p>`,
+          html: `<p>Bonjour,</p><p>Ceci est un message de test envoyé depuis l'espace superadmin.</p><p>Si vous le recevez, les alertes par e-mail fonctionnent.</p><p>${echapper(marque.nom)}</p>`,
           expediteur: marque.expediteur,
-          repondreA: null,
+          repondreA: marque.repondreA,
         }
       : {
           canal,
@@ -61,11 +62,11 @@ export function messagesTest(marque: Marque, demande: DemandeTest, urlApp: strin
           sujet: null,
           texte:
             canal === "appel"
-              ? `Bonjour, ici ${marque.nom}. Ceci est un appel de test. Si vous l'entendez, les alertes par appel fonctionnent. Au revoir.`
+              ? `Bonjour, ici ${marque.expediteur}. Ceci est un appel de test. Si vous l'entendez, les alertes par appel fonctionnent. Au revoir.`
               : court,
           html: null,
           expediteur: marque.expediteur,
-          repondreA: null,
+          repondreA: marque.repondreA,
         },
   );
 }

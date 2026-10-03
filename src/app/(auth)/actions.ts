@@ -170,7 +170,8 @@ async function inscrire(
     await envoyerEmail({
       to: d.email,
       ...rendu,
-      fromName: MARQUE_PLATEFORME.nom,
+      fromName: MARQUE_PLATEFORME.expediteur,
+      replyTo: MARQUE_PLATEFORME.repondreA,
     });
   } catch (err) {
     // Rien de partiel : ni compte orphelin, ni organisation sans admin.

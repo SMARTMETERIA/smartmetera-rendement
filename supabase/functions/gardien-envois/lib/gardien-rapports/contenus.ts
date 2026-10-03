@@ -443,6 +443,18 @@ export interface Tarifs {
   abonnement_premier_point?: number | null;
   abonnement_point_supplementaire?: number | null;
   sonde_temperature_mois?: number | null;
+  /** Option autonomie en eau : capteur de niveau d'une réserve. */
+  capteur_niveau_mise_en_service?: number | null;
+  capteur_niveau_mois?: number | null;
+}
+
+/**
+ * Monnaie dans laquelle un site est facturé : celle du site, sauf le franc
+ * congolais (décision de Rayan, D6 : facturation en dollars seulement). Le
+ * prix de l'eau, les pertes et les économies restent dans la monnaie du site.
+ */
+export function monnaieFacturation(monnaie: Monnaie): Monnaie {
+  return monnaie === "CDF" ? "USD" : monnaie;
 }
 
 export interface CoutService {
@@ -450,6 +462,8 @@ export interface CoutService {
   parJour: number;
   parNuitee: number | null;
   miseEnService: number | null;
+  /** Monnaie des montants (absente des pages figées avant le 3 octobre 2026 : celle du site). */
+  monnaie?: Monnaie;
 }
 
 const valeur = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -462,32 +476,42 @@ export function coutService(p: {
   tarifs: Tarifs | null;
   nbPoints: number;
   nbSondes: number;
+  /** Capteurs de niveau des réserves (option autonomie en eau). */
+  nbNiveaux?: number;
   avecPasserelle: boolean;
   remiseFondateurPct: number;
   nuiteesMois: number | null;
+  /** Monnaie de facturation des tarifs (voir monnaieFacturation). */
+  monnaie?: Monnaie;
 }): CoutService | null {
   const t = p.tarifs ?? {};
+  const nbNiveaux = p.nbNiveaux ?? 0;
   if (p.nbPoints < 1) return null;
   const premier = valeur(t.abonnement_premier_point);
   const supplementaire = valeur(t.abonnement_point_supplementaire);
   const sonde = valeur(t.sonde_temperature_mois);
+  const niveau = valeur(t.capteur_niveau_mois);
   if (premier === null) return null;
   if (p.nbPoints > 1 && supplementaire === null) return null;
   if (p.nbSondes > 0 && sonde === null) return null;
-  const brut = premier + (p.nbPoints - 1) * (supplementaire ?? 0) + p.nbSondes * (sonde ?? 0);
+  if (nbNiveaux > 0 && niveau === null) return null;
+  const brut =
+    premier + (p.nbPoints - 1) * (supplementaire ?? 0) + p.nbSondes * (sonde ?? 0) + nbNiveaux * (niveau ?? 0);
   const mensuel = arrondi(brut * (1 - (p.remiseFondateurPct || 0) / 100), 2);
   const miseEnPoint = valeur(t.mise_en_service_point);
   const miseEnPasserelle = valeur(t.mise_en_service_premier_point_passerelle);
+  const miseEnNiveau = valeur(t.capteur_niveau_mise_en_service);
   const premierPoint = p.avecPasserelle ? miseEnPasserelle : miseEnPoint;
   const miseEnService =
-    premierPoint === null || (p.nbPoints > 1 && miseEnPoint === null)
+    premierPoint === null || (p.nbPoints > 1 && miseEnPoint === null) || (nbNiveaux > 0 && miseEnNiveau === null)
       ? null
-      : arrondi(premierPoint + (p.nbPoints - 1) * (miseEnPoint ?? 0), 2);
+      : arrondi(premierPoint + (p.nbPoints - 1) * (miseEnPoint ?? 0) + nbNiveaux * (miseEnNiveau ?? 0), 2);
   return {
     mensuel,
     parJour: arrondi((mensuel * 12) / 365, 2),
     parNuitee: p.nuiteesMois && p.nuiteesMois > 0 ? arrondi(mensuel / p.nuiteesMois, 2) : null,
     miseEnService,
+    ...(p.monnaie ? { monnaie: p.monnaie } : {}),
   };
 }
 
@@ -608,16 +632,17 @@ export function contenuPagePreuve(p: {
       ? arrondi(somme(reparees.map((f) => f.economieMontant)), 2)
       : null,
   };
-  const retour = retourInvestissement({
-    cout: p.cout,
-    joursSurveillance: p.joursSurveillance,
-    economies: economies.montant,
-  });
   const m = p.site.monnaie;
+  // Site en francs congolais facturé en dollars : pas de retour sur
+  // investissement (aucun taux de change n'est supposé).
+  const memeMonnaie = !p.cout?.monnaie || p.cout.monnaie === m;
+  const retour = memeMonnaie
+    ? retourInvestissement({ cout: p.cout, joursSurveillance: p.joursSurveillance, economies: economies.montant })
+    : { jours: null, coutEngage: null };
   let phrase: string;
   if (economies.montant) {
     const trouvees = reparees.length === 1 ? "une fuite trouvée et réparée" : `${reparees.length} fuites trouvées et réparées`;
-    phrase = `${montantRond(economies.montant, m)} évités en ${p.joursSurveillance} jours grâce à ${trouvees}${p.cout ? `, pour un service à ${montant(p.cout.parJour, m)} par jour` : ""}.`;
+    phrase = `${montantRond(economies.montant, m)} évités en ${p.joursSurveillance} jours grâce à ${trouvees}${p.cout ? `, pour un service à ${montant(p.cout.parJour, p.cout.monnaie ?? m)} par jour` : ""}.`;
   } else if (fuites.length) {
     phrase = `${fuites.length === 1 ? "Une fuite trouvée" : `${fuites.length} fuites trouvées`} en ${p.joursSurveillance} jours : les économies seront comptées dès la réparation.`;
   } else {

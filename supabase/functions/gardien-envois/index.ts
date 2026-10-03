@@ -67,6 +67,7 @@ import {
   contenuPremiereNuit,
   contenuPremiereSemaine,
   coutService,
+  monnaieFacturation,
   resumeRapport,
   resumeReserves,
   type FuiteSource,
@@ -1024,12 +1025,14 @@ async function sectionRapports(ctx: Contexte) {
 // ---------------------------------------------------------------------------
 // 5) Pilotes et pages preuve
 // ---------------------------------------------------------------------------
+/** Tarifs de la monnaie de facturation du site (dollars pour un site en CDF). */
 function tarifsDuSite(ctx: Contexte, site: Site): Tarifs | null {
   const tarifs = (ctx.reglages.tarifs ?? {}) as Record<string, Tarifs>;
   const surcharges = (site.price_overrides ?? {}) as Record<string, Tarifs>;
-  const base = tarifs[site.currency];
+  const monnaie = monnaieFacturation(site.currency);
+  const base = tarifs[monnaie];
   if (!base) return null;
-  return { ...base, ...(surcharges[site.currency] ?? {}) };
+  return { ...base, ...(surcharges[monnaie] ?? {}) };
 }
 
 async function creerPagePreuve(ctx: Contexte, site: Site, debutMs: number, finMs: number) {
@@ -1046,6 +1049,12 @@ async function creerPagePreuve(ctx: Contexte, site: Site, debutMs: number, finMs
     .eq("site_id", site.id)
     .eq("kit", "C")
     .in("provisioning_status", ["pose", "actif"]);
+  const { count: niveaux } = await ctx.admin
+    .from("water_reserves")
+    .select("id", { count: "exact", head: true })
+    .eq("site_id", site.id)
+    .eq("active", true)
+    .not("device_id", "is", null);
   const debut = dateLocale(debutMs, site.timezone);
   const fin = dateLocale(finMs, site.timezone);
   const joursSurveillance = Math.max(1, Math.round((finMs - debutMs) / JOUR_MS));
@@ -1059,9 +1068,11 @@ async function creerPagePreuve(ctx: Contexte, site: Site, debutMs: number, finMs
     tarifs: tarifsDuSite(ctx, site),
     nbPoints: compteurs.length,
     nbSondes: sondes ?? 0,
+    nbNiveaux: niveaux ?? 0,
     avecPasserelle: (passerelles ?? 0) > 0,
     remiseFondateurPct: Number(org?.founder_discount_pct ?? 0),
     nuiteesMois: nuitees,
+    monnaie: monnaieFacturation(site.currency),
   });
   const parJour = await joursDuSite(ctx, compteurs.map((m) => m.id as string), debut, decalerJour(fin, 1));
   const economies = (ctx.reglages.economies ?? {}) as Ligne;

@@ -352,7 +352,7 @@ $$;
 -- ---------------------------------------------------------------------------
 -- 5) Page preuve publique : jeton exact, non expirée. Renvoie le contenu
 --    figé, le site (nom, type, ville) et la marque du partenaire si
---    l'organisation en a une (sinon l'écran affiche SmartMetera). Compte
+--    l'organisation en a une (sinon l'écran affiche SmartMeteria). Compte
 --    les consultations.
 -- ---------------------------------------------------------------------------
 create function public.page_preuve_publique(p_token text)

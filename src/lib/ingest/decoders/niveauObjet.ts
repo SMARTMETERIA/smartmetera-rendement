@@ -3,9 +3,9 @@
 // chargé dans le profil d'appareil ChirpStack ou The Things Stack). Aucun
 // format de trame n'est supposé ici.
 //
-// TODO(RAYAN) : modèle de capteur à choisir ; confirmer le nom du champ et
-// son unité avec sa documentation (platform_settings.capteur_niveau, par
-// défaut « distance » en millimètres).
+// Modèle retenu par Rayan : Milesight EM500-UDL, champ « distance » en
+// millimètres (platform_settings.capteur_niveau, modifiable par le
+// superadmin). Trames réelles à ajouter aux tests (A_FAIRE_RAYAN.md, M1).
 import type { ContexteDecodage, ReglageNiveau, TrameDecodee } from "../types";
 import { lireChampNumerique } from "./temperatureObjet";
 

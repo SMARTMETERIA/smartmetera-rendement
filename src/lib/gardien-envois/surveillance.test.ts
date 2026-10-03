@@ -137,7 +137,7 @@ describe("récapitulatif quotidien", () => {
 
   it("dit que tout va bien, avec les chiffres, les pilotes et les essais qui finissent", () => {
     const m = messageRecapitulatif(MARQUE_PLATEFORME, "https://app.smartmeteria.com", { ...base, taches: [] });
-    expect(m.sujet).toBe("Récapitulatif du 30 septembre 2026");
+    expect(m.sujet).toBe("Récapitulatif du 30 septembre 2026 — Gardien de l'eau by SmartMeteria");
     expect(m.texte).toContain("Toutes les tâches planifiées sont passées à l'heure.");
     expect(m.texte).toContain("Messages en échec (24 h) : 1");
     expect(m.texte).toContain("Hôtel Bellecour (Hôtel Bellecour Démo) : 5 octobre 2026");

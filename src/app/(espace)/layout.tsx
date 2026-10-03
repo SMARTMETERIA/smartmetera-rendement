@@ -66,21 +66,25 @@ export default async function EspaceLayout({
   }
   liens.push({ href: "/compte", label: "Mon compte" });
 
-  const nom =
+  const nomOrganisation =
     ctx.adhesion?.organizationName ??
     ctx.adhesionsSite[0]?.organizationName ??
     ctx.adhesionsClient[0]?.organizationName ??
-    NOM_PLATEFORME;
+    null;
   const orgMarque = organisationDeMarque(ctx);
-  const chargee = orgMarque ? await marqueOrganisation(await createClient(), orgMarque) : MARQUE_PLATEFORME;
-  // Client direct sans marque : identité SmartMeteria, avec son propre nom en tête.
-  const marque = chargee === MARQUE_PLATEFORME ? { ...MARQUE_PLATEFORME, nom } : chargee;
+  const marque = orgMarque ? await marqueOrganisation(await createClient(), orgMarque) : MARQUE_PLATEFORME;
+  // Client direct sans marque : « Gardien de l'eau by SmartMeteria » en tête,
+  // avec le nom de son organisation dessous.
+  const sousTitre = marque === MARQUE_PLATEFORME ? nomOrganisation : null;
 
   return (
     <EnveloppeMarque marque={marque} className="flex min-h-screen flex-col">
       <header className="bg-background border-b">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <EnteteMarque marque={marque} />
+          <div className="min-w-0">
+            <EnteteMarque marque={marque} />
+            {sousTitre && <p className="text-muted-foreground truncate text-xs">{sousTitre}</p>}
+          </div>
           <LogoutButton />
         </div>
         <NavEspace liens={liens} />

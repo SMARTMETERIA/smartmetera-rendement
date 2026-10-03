@@ -1,9 +1,13 @@
-// Usage mensuel d'une organisation Gardien, par monnaie (facturation
-// manuelle, pas de paiement en ligne) : mises en service du mois,
-// abonnements, sondes, remise fondateur, retenue à la source. Tarifs de
+// Usage mensuel d'une organisation Gardien, par monnaie de facturation
+// (facturation manuelle, pas de paiement en ligne) : mises en service du
+// mois, abonnements, sondes, capteurs de niveau, abonnement offert pendant
+// un pilote, remise fondateur, retenue à la source. Tarifs de
 // platform_settings.tarifs, surchargés par site (price_overrides). Un tarif
 // absent n'est jamais inventé : la ligne reste « à paramétrer ».
-import type { Tarifs } from "@/lib/gardien-rapports/contenus";
+// Décisions de Rayan (3 octobre 2026) : un site en francs congolais est
+// facturé en dollars (D6) ; pendant un pilote, la mise en service est
+// facturée et l'abonnement offert (D9).
+import { monnaieFacturation, type Tarifs } from "@/lib/gardien-rapports/contenus";
 import type { Monnaie } from "@/lib/moteur-gardien/economies";
 
 export type MonnaieUsage = Monnaie;
@@ -18,7 +22,14 @@ export interface SiteUsage {
   /** Dates de pose des points de comptage actifs (ISO). */
   poses: string[];
   sondes: number;
+  /** Dates de mise en service des capteurs de niveau actifs (ISO). */
+  niveaux?: string[];
   pilote: boolean;
+  /**
+   * Périodes de pilote du site (ISO) : l'abonnement y est offert. fin null :
+   * pilote pas encore converti (rien n'est facturé sans accord écrit).
+   */
+  periodesPilote?: { debut: string; fin: string | null }[];
 }
 
 export interface LigneUsage {
@@ -33,6 +44,7 @@ export interface UsageMonnaie {
   pointsActifs: number;
   misesEnService: number;
   sondes: number;
+  capteursNiveau: number;
   lignes: LigneUsage[];
   brut: number;
   remise: number;
@@ -61,9 +73,14 @@ export function usageMensuel(p: {
    * paramétrer (ligne « à paramétrer »).
    */
   prixPartenaireParPoint?: number | null;
+  /** platform_settings.pilotes.abonnement_offert (défaut : oui). */
+  abonnementOffertPilote?: boolean;
 }): UsageMonnaie[] {
   const parMonnaie = new Map<MonnaieUsage, SiteUsage[]>();
-  for (const s of p.sites) parMonnaie.set(s.monnaie, [...(parMonnaie.get(s.monnaie) ?? []), s]);
+  for (const s of p.sites) {
+    const m = monnaieFacturation(s.monnaie);
+    parMonnaie.set(m, [...(parMonnaie.get(m) ?? []), s]);
+  }
 
   return [...parMonnaie.entries()].map(([monnaie, sites]) => {
     const lignes: LigneUsage[] = [];
@@ -73,16 +90,19 @@ export function usageMensuel(p: {
     let pointsActifs = 0;
     let misesEnService = 0;
     let sondes = 0;
+    let capteursNiveau = 0;
+    let recurrentSite = 0;
     const ajouter = (libelle: string, quantite: number, prix: number | null, recurrente: boolean) => {
       if (quantite <= 0) return;
       const montant = prix === null ? null : arrondi(quantite * prix);
       if (montant === null) incomplet = true;
-      else if (recurrente) recurrent += montant;
+      else if (recurrente) recurrentSite += montant;
       else miseEnServiceTotal += montant;
       lignes.push({ libelle, quantite, prixUnitaire: prix, montant });
     };
 
     for (const s of sites) {
+      recurrentSite = 0;
       const t = { ...(p.tarifs[monnaie] ?? {}), ...(s.surcharges ?? {}) };
       const poses = [...s.poses].sort();
       const actifs = poses.filter((d) => d < p.finMois);
@@ -111,6 +131,34 @@ export function usageMensuel(p: {
         ajouter(`${s.nom} : abonnement, point supplémentaire`, actifs.length - 1, val(t.abonnement_point_supplementaire), true);
       }
       ajouter(`${s.nom} : sonde de température`, s.sondes, val(t.sonde_temperature_mois), true);
+
+      const niveaux = [...(s.niveaux ?? [])].filter((d) => d < p.finMois);
+      capteursNiveau += niveaux.length;
+      ajouter(
+        `${s.nom} : mise en service, capteur de niveau`,
+        niveaux.filter((d) => d >= p.debutMois).length,
+        val(t.capteur_niveau_mise_en_service),
+        false,
+      );
+      ajouter(`${s.nom} : capteur de niveau`, niveaux.length, val(t.capteur_niveau_mois), true);
+
+      // Pilote : abonnement offert au prorata des jours facturables du mois
+      // (depuis la première pose du site) couverts par le pilote.
+      const part =
+        p.abonnementOffertPilote === false
+          ? null
+          : partOfferte(p.debutMois, p.finMois, [...poses, ...niveaux].sort()[0] ?? null, s.periodesPilote ?? []);
+      if (part && recurrentSite > 0) {
+        const offert = -arrondi((recurrentSite * part.jours) / part.sur);
+        lignes.push({
+          libelle: `${s.nom} : abonnement offert pendant le pilote${part.jours < part.sur ? ` (${part.jours} jours sur ${part.sur})` : ""}`,
+          quantite: 1,
+          prixUnitaire: offert,
+          montant: offert,
+        });
+        recurrentSite += offert;
+      }
+      recurrent += recurrentSite;
     }
 
     const remise = arrondi((recurrent * (p.remiseFondateurPct || 0)) / 100);
@@ -122,6 +170,7 @@ export function usageMensuel(p: {
       pointsActifs,
       misesEnService,
       sondes,
+      capteursNiveau,
       lignes,
       brut,
       remise,
@@ -133,6 +182,48 @@ export function usageMensuel(p: {
       sitesEnPilote: sites.filter((s) => s.pilote).map((s) => s.nom),
     };
   });
+}
+
+const JOUR_MS = 86_400_000;
+
+/**
+ * Part de l'abonnement du mois offerte par un pilote : jours entiers
+ * couverts par une période de pilote, sur les jours facturables (du début
+ * du mois, ou de la première pose du site, à la fin du mois). null : rien
+ * d'offert.
+ */
+export function partOfferte(
+  debutMois: string,
+  finMois: string,
+  premierePose: string | null,
+  periodes: { debut: string; fin: string | null }[],
+): { jours: number; sur: number } | null {
+  const debut = Math.max(Date.parse(`${debutMois}T00:00:00Z`), premierePose ? Date.parse(premierePose) : -Infinity);
+  const fin = Date.parse(`${finMois}T00:00:00Z`);
+  const sur = Math.round((fin - debut) / JOUR_MS);
+  if (sur <= 0) return null;
+  const jours = Math.min(sur, joursCouverts(debut, fin, periodes));
+  return jours > 0 ? { jours, sur } : null;
+}
+
+/** Jours entiers entre d0 et d1 (millisecondes) couverts par au moins une période. */
+export function joursCouverts(
+  d0: number,
+  d1: number,
+  periodes: { debut: string; fin: string | null }[],
+): number {
+  const morceaux = periodes
+    .map((pp) => [Math.max(d0, Date.parse(pp.debut)), Math.min(d1, pp.fin ? Date.parse(pp.fin) : d1)] as const)
+    .filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b) && b > a)
+    .sort((x, y) => x[0] - y[0]);
+  let total = 0;
+  let fin = -Infinity;
+  for (const [a, b] of morceaux) {
+    const debut = Math.max(a, fin);
+    if (b > debut) total += b - debut;
+    fin = Math.max(fin, b);
+  }
+  return Math.round(total / JOUR_MS);
 }
 
 const csv = (v: string | number | null) => {
@@ -148,6 +239,7 @@ export const ENTETE_CSV_USAGE = [
   "Points actifs",
   "Mises en service",
   "Sondes",
+  "Capteurs de niveau",
   "Brut HT",
   "Remise fondateur",
   "Total HT",
@@ -168,6 +260,7 @@ export function lignesCsvUsage(organisation: string, mois: string, usages: Usage
       csv(u.pointsActifs),
       csv(u.misesEnService),
       csv(u.sondes),
+      csv(u.capteursNiveau),
       nombreCsv(u.brut),
       nombreCsv(u.remise),
       nombreCsv(u.ht),

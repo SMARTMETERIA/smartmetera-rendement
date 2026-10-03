@@ -84,7 +84,7 @@ describe("République démocratique du Congo", () => {
     });
     expect(r.ok && r.donnees).toMatchObject({ pays: "CD", telephone: "0812345678", siren: null });
     expect(validerInscription({ pays: "CD", telephone: "0612345678" }).ok).toBe(false);
-    // Aucun réglage : 0 % (TODO(RAYAN)) ; un réglage en dollars est repris.
+    // Aucun réglage : 0 % (décision D6, à confirmer) ; un réglage en dollars est repris.
     expect(retenueSourceParDefaut({ USD: { retenue_source_pct_defaut: null } }, "CD")).toBe(0);
     expect(retenueSourceParDefaut({ USD: { retenue_source_pct_defaut: 14 } }, "CD")).toBe(14);
   });

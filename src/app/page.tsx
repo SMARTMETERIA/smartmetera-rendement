@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NOM_PLATEFORME } from "@/lib/marque";
+import { NOM_PRODUIT } from "@/lib/marque";
 import { cn } from "@/lib/utils";
 import { PiedLegal } from "@/components/legal/PiedLegal";
 
@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-6 p-8 text-center">
       <h1 className="text-3xl font-semibold tracking-tight">
-        {NOM_PLATEFORME} — Gardien de l&apos;eau
+        {NOM_PRODUIT}
       </h1>
       <p className="text-muted-foreground max-w-xl">
         Le registre eau de votre établissement : fuites repérées la nuit et

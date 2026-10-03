@@ -6,7 +6,7 @@
 // Les passages entre crochets « [à compléter : …] » sont surlignés à
 // l'écran et doivent tous disparaître avant validation.
 
-import { NOM_PLATEFORME } from "@/lib/marque";
+import { NOM_PLATEFORME, NOM_PRODUIT } from "@/lib/marque";
 
 export const STATUT_DOCUMENTS: "modele" | "valide" = "modele";
 export const VERSION_DOCUMENTS = "Modèle du 1er octobre 2026";
@@ -107,7 +107,7 @@ export const DOCUMENTS: DocumentLegal[] = [
       {
         titre: "Objet",
         paragraphes: [
-          `Ces conditions encadrent l'usage du service ${NOM_PLATEFORME} « Gardien de l'eau » par les personnes invitées ou inscrites (administrateurs, directeurs de site, techniciens, lecteurs). Les conditions commerciales figurent dans les conditions générales de vente.`,
+          `Ces conditions encadrent l'usage du service « ${NOM_PRODUIT} » par les personnes invitées ou inscrites (administrateurs, directeurs de site, techniciens, lecteurs). Les conditions commerciales figurent dans les conditions générales de vente.`,
         ],
       },
       {
@@ -231,7 +231,7 @@ export const DOCUMENTS: DocumentLegal[] = [
       {
         titre: "Mise en service",
         paragraphes: [
-          "La mise en service est facturée selon le devis. Si l'option « remboursement si rien n'est trouvé » a été retenue et qu'aucune anomalie n'est détectée pendant le pilote, la mise en service est remboursée et le capteur retiré. [à compléter : délai et modalités du remboursement]",
+          "La mise en service est facturée selon le devis ; l'abonnement est offert pendant le pilote. Si l'option « remboursement si rien n'est trouvé » a été retenue et qu'aucune anomalie n'est détectée pendant le pilote, la mise en service est remboursée et le capteur retiré. [à compléter : délai et modalités du remboursement]",
         ],
       },
       {
@@ -276,7 +276,7 @@ export const DOCUMENTS: DocumentLegal[] = [
       {
         titre: "Durées de conservation",
         paragraphes: [
-          "Comptes : pendant la durée du contrat. Journal des messages : le contenu et le destinataire sont effacés après une durée paramétrable. [à compléter : durées validées, puis réglage « conservation » de la plateforme]",
+          "Comptes : pendant la durée du contrat. Journal des messages (e-mails, SMS, appels, WhatsApp) : le contenu et le destinataire sont effacés au bout de 12 mois ; la date, le canal et le résultat de l'envoi sont conservés. [à compléter : durées validées par le juriste]",
         ],
       },
       {

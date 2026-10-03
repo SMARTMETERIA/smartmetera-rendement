@@ -23,6 +23,7 @@ export async function GET(request: Request) {
       pointsActifs: u.active_points,
       misesEnService: u.setup_points,
       sondes: u.temperature_points,
+      capteursNiveau: Number(d.capteurs_niveau ?? 0),
       lignes: [],
       brut: Number(u.gross_amount),
       remise: Number(d.remise ?? 0),

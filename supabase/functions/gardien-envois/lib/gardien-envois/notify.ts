@@ -95,7 +95,7 @@ async function notifyTelephone(
 ): Promise<ResultatEnvoi> {
   if (config.mode === "journal") return journalise();
   if (!config.telephone || !canauxDisponibles(config.telephone)[message.canal]) {
-    return journalise("Aucun fournisseur configuré pour ce canal (TODO(RAYAN)).");
+    return journalise("Twilio n'est pas configuré pour ce canal (clés ou numéro manquants dans les secrets de la fonction).");
   }
   const redirige = config.mode === "redirection";
   if (redirige && !config.redirectionTelephone) {

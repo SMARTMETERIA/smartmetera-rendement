@@ -19,7 +19,8 @@ import {
 } from "@/lib/securite/protection";
 
 export const metadata: Metadata = {
-  title: "Ce que la surveillance a trouvé",
+  // Sans le nom du produit : la page peut être à la marque d'un partenaire.
+  title: { absolute: "Ce que la surveillance a trouvé" },
   robots: { index: false, follow: false },
 };
 

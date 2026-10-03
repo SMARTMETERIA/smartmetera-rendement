@@ -4,7 +4,7 @@
 // quotidien envoyé au superadmin par la fonction gardien-envois.
 
 import type { Marque } from "../marque.ts";
-import { emailHtml, emailTexte, type Bloc } from "./gabarit.ts";
+import { emailHtml, emailTexte, sujetEmail, type Bloc } from "./gabarit.ts";
 import { dateLongue, nombre } from "./format.ts";
 
 export interface TacheCron {
@@ -243,5 +243,5 @@ export function messageRecapitulatif(
     blocs.push({ type: "liste", lignes: d.essais.map((e) => [e.organisation, dateLongue(e.fin)]) });
   }
   blocs.push({ type: "bouton", libelle: "Ouvrir l'espace superadmin", lien: `${urlApp}/admin` });
-  return { sujet: titre, html: emailHtml(marque, titre, blocs), texte: emailTexte(marque, titre, blocs) };
+  return { sujet: sujetEmail(marque, titre), html: emailHtml(marque, titre, blocs), texte: emailTexte(marque, titre, blocs) };
 }

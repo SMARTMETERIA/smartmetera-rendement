@@ -6,6 +6,24 @@
  */
 export const NOM_PLATEFORME = "SmartMeteria";
 
+/**
+ * Nom du produit (décision de Rayan du 3 octobre 2026) : titre de
+ * l'application, en-tête et objet des e-mails, rapports, pages preuve.
+ * Un partenaire en marque blanche le remplace par son propre nom.
+ */
+export const NOM_PRODUIT = "Gardien de l'eau by SmartMeteria";
+
+/** Adresse de réponse des e-mails de la plateforme (décision D1). */
+export const ADRESSE_REPONSE_PLATEFORME = "contact@smartmeteria.com";
+
+/**
+ * Logo SMARTMETERIA : TODO(RAYAN), fichier à fournir. Emplacement prévu :
+ * public/marque/logo-smartmeteria.png (servi à /marque/logo-smartmeteria.png).
+ * Tant qu'il vaut null, le nom du produit s'affiche en texte à la place du
+ * logo (écrans, e-mails, PDF) : aucun logo n'est inventé.
+ */
+export const LOGO_PLATEFORME: string | null = null;
+
 /** Palette SmartMeteria (brief de design, phase 8). */
 export const COULEURS_PLATEFORME = {
   bleu: "#1B4F8A",
@@ -43,12 +61,14 @@ export interface Marque {
 }
 
 export const MARQUE_PLATEFORME: Marque = {
-  nom: NOM_PLATEFORME,
+  nom: NOM_PRODUIT,
   couleur: COULEURS_PLATEFORME.bleu,
-  logoUrl: null,
+  logoUrl: LOGO_PLATEFORME,
   piedDePage: null,
   afficherPropulse: false,
-  repondreA: null,
+  repondreA: ADRESSE_REPONSE_PLATEFORME,
+  // Nom devant l'adresse d'envoi (« SmartMeteria <alertes@smartmeteria.com> »),
+  // aussi utilisé en tête des SMS et des appels.
   expediteur: NOM_PLATEFORME,
   accent: COULEURS_PLATEFORME.turquoise,
 };
@@ -146,7 +166,8 @@ export function marqueDepuisBranding(
     logoUrl: logo && /^https:\/\//.test(logo) ? logo : null,
     piedDePage: branding?.legal_footer?.trim() || null,
     afficherPropulse: branding?.show_powered_by ?? true,
-    repondreA: branding?.reply_to_email?.trim() || null,
+    // Sans adresse de réponse propre, les réponses vont au contact SmartMeteria.
+    repondreA: branding?.reply_to_email?.trim() || ADRESSE_REPONSE_PLATEFORME,
     expediteur: branding?.sender_name?.trim() || nom,
     accent:
       branding?.accent_color && HEX.test(branding.accent_color)

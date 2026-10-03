@@ -815,6 +815,86 @@ Fait :
 Comment tester : ouvrez `docs/A_FAIRE_RAYAN.md` dans VS Code (clic droit,
 « Ouvrir l'aperçu ») et faites le point 0.
 
+## Réponses de Rayan du 3 octobre 2026 — appliquées
+
+Plan :
+1. Reporter les réponses dans `docs/A_FAIRE_RAYAN.md` (D1 à D11, M2 à M4) ; nouveaux points D12 (logo) et C0 (nom du dépôt).
+2. Marque : « Gardien de l'eau by SmartMeteria » (titre, en-tête et objet des e-mails, rapports, pages preuve), « SmartMeteria » en tête des SMS et appels, adresse de réponse, emplacement du logo ; dernières traces de l'ancienne orthographe.
+3. Migration `0056` : tarifs MAD et USD, capteur de niveau, pas de facturation en CDF, conservation 12 mois, EM500-UDL, abonnement offert en pilote.
+4. Export d'usage, page preuve, pré-diagnostic : monnaie de facturation, capteurs de niveau, abonnement offert pendant un pilote.
+5. Vérifier sur la base d'essai (démonstration, pages preuve, export) ; tests, README.
+
+Fait :
+- **Marque** : `NOM_PRODUIT` dans `src/lib/marque.ts` ; titre de chaque
+  page « … — Gardien de l'eau by SmartMeteria » (sauf les pages à la marque
+  d'un partenaire) ; en-tête des espaces : le nom du produit, avec le nom
+  de l'organisation dessous ; objet des e-mails « titre — Gardien de l'eau
+  by SmartMeteria » ; SMS « SmartMeteria : … », appel « Bonjour, ici
+  SmartMeteria » ; réponses à `contact@smartmeteria.com`. Logo : emplacement
+  `LOGO_PLATEFORME` (`TODO(RAYAN)`), aucun logo inventé. Ancienne orthographe
+  retirée des migrations (commentaires et message déjà corrigé par `0045`)
+  et de `docs/AUDIT.md` ; seule reste le nom du dépôt GitHub (C0, à
+  renommer par Rayan). Un test échoue si elle réapparaît.
+- **Réglages** (migration `0056`) : MAD 2 900 / 6 500 / 150 / 100 / 80,
+  retenue 10 % ; USD 450 / 900 / 29 / 19 / 12, retenue 0 % ; capteur de
+  niveau 390 € + 15 €, 4 500 + 150 MAD, 550 + 25 $ ; clé `CDF` retirée ;
+  conservation 12 mois ; `capteur_niveau.modele` EM500-UDL ;
+  `pilotes.abonnement_offert`.
+- **Facturation** : `monnaieFacturation` (un site en CDF est facturé en
+  dollars) ; export d'usage avec capteurs de niveau et ligne « abonnement
+  offert pendant le pilote » (prorata des jours facturables, jusqu'à la
+  conversion) ; page preuve et pré-diagnostic avec la monnaie du coût du
+  service, sans retour sur investissement si elle diffère de celle du site.
+- **Autres** : EM300-DI à 60 minutes dans l'assistant de pose ; EM500-UDL
+  dans le catalogue et le guide LoRaWAN ; Twilio et WhatsApp en RDC
+  confirmés (marques `TODO(RAYAN)` retirées) ; conservation 12 mois et
+  abonnement offert en pilote dans les pages légales et le registre ;
+  `.env.example` (adresse d'envoi). Société : rien rempli, passages « à
+  compléter » conservés.
+
+Vérifié sur la base d'essai :
+- L'outil de migration de Supabase a été refusé ; les réglages de `0056`
+  ont été saisis par la clé de service de `.env.local` (le canal de
+  `demo:reset`, garde-fou production compris), puis relus : identiques à la
+  migration. Seule la ligne 0056 manque à l'historique des migrations de
+  la base d'essai (sans effet ; la production l'aura en R1).
+- `demo:reset` vert (90 s). Pages preuve produites par la fonction déployée,
+  affichées par l'application : Lyon 1,02 € par jour et 31,00 € par mois ;
+  Agadir 14,79 MAD par jour, 450,00 MAD par mois, 15 200 MAD de mise en
+  service ; Kinshasa 2,83 USD par jour, 86,00 USD par mois, 2 250 USD de
+  mise en service ; en-tête « Gardien de l'eau by SmartMeteria ».
+- Export d'usage calculé sur les données de démonstration (mêmes requêtes
+  que l'espace superadmin) : Atlas 1 430 MAD HT, retenue 143 MAD ; Lyon en
+  pilote : 698 € de mise en service, abonnement offert ; Kinshasa 136 USD
+  (dont 2 capteurs de niveau) ; site minier de Likasi (CDF) facturé
+  67 USD.
+- Pré-diagnostic : vérifié par les tests de calcul et d'affichage en EUR,
+  MAD, USD et CDF (écran non ouvert : il demande un compte superadmin ou
+  partenaire).
+- Typecheck (application et fonctions), lint, 1 250 tests unitaires et
+  67 tests d'intégration verts.
+
+Non fait (bloqué) : redéploiement de la fonction `gardien-envois` sur la
+base d'essai (outil d'écriture de Supabase refusé). Jusqu'au prochain
+déploiement (R3), cette fonction garde les anciens objets d'e-mail, ne
+compte pas les capteurs de niveau dans le coût du service et ne donne pas
+de coût du service à un site en francs congolais. Le code est prêt et
+testé.
+
+Aucune dépendance ajoutée.
+
+Comment tester à l'écran :
+1. Dans le terminal : `npm run demo:reset`, puis `npm run dev` ; notez le
+   mot de passe affiché à la fin.
+2. Ouvrez `http://localhost:3000` : le titre de l'onglet et de la page est
+   « Gardien de l'eau by SmartMeteria ».
+3. Ouvrez les liens « Pages preuve » affichés à la fin de `demo:reset` : le
+   coût du service est en euros (Lyon) et en dirhams (Agadir).
+4. Connectez-vous avec `demo-kinshasa-admin@example.com`, « Mes sites »,
+   « Créer une page preuve » : le coût du service est en dollars.
+5. Ouvrez `/legal`, « Confidentialité » : la durée de 12 mois apparaît ;
+   « Conditions du pilote » : l'abonnement est offert pendant le pilote.
+
 ---
 
 # Historique — offre Immeuble (en pause)

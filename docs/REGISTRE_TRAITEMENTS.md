@@ -31,7 +31,7 @@ Contact pour les données : [à compléter].
 | Données | Adresse e-mail, numéro de téléphone d'alerte, actions sur les alertes (qui, quand), journal des messages (destinataire, date, canal, contenu) |
 | Données non personnelles | Relevés de consommation et de température des compteurs d'établissements |
 | Destinataires | Utilisateurs de l'organisation ; sous-traitants : Supabase, Resend (e-mails), Twilio (SMS, appels, WhatsApp, une fois activé) |
-| Durée | Journal des messages : contenu et destinataire effacés après une durée paramétrable (réglage `conservation`, [à compléter : durée]) ; relevés : jamais supprimés pendant le contrat |
+| Durée | Journal des messages : contenu et destinataire effacés au bout de 12 mois (réglage `conservation`, décision de Rayan du 3 octobre 2026, [à compléter : durée à confirmer par le juriste]) ; relevés : jamais supprimés pendant le contrat |
 | Transferts hors UE | [à compléter : garanties de Resend et Twilio] |
 
 ## 3. Pose des capteurs

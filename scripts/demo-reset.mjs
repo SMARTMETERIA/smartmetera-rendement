@@ -20,7 +20,7 @@
 //   dernier (rapport mensuel), fuite de chasse d'eau détectée ;
 // - « Société Minière Démo » : site minier à Likasi (francs congolais),
 //   trois points de mesure.
-// Aucun prix de l'eau en RDC : vide, comme en production (TODO(RAYAN)).
+// Aucun prix de l'eau en RDC : vide, comme en production (pas de prix par défaut, décision D7).
 // Puis fait tourner le moteur et les envois (mode journal : rien ne part).
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -545,7 +545,7 @@ async function kinshasa(comptes) {
   const source = await ok(admin.from("sources").insert({ organization_id: org.id, type: "saisie_manuelle", nom: "Démonstration" }).select("id").single(), "source Kinshasa");
   const debutDonnees = maintenant - 62 * J;
   const heureCourante = Math.floor(maintenant / H) * H;
-  // Prix de l'eau vide : aucun prix par défaut en RDC (TODO(RAYAN)), seuls les volumes sont donnés.
+  // Prix de l'eau vide : aucun prix par défaut en RDC (décision D7), seuls les volumes sont donnés.
   const site = await ok(
     admin
       .from("sites")

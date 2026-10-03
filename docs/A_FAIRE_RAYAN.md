@@ -47,22 +47,31 @@ de travail**, plus les délais d'attente (vérification du domaine d'envoi :
 quelques heures ; numéro de téléphone français : 1 à 3 jours ; relecture du
 juriste : 1 à 3 semaines).
 
+**Réponses du 3 octobre 2026 : appliquées.** Toutes les décisions (D1 à
+D11) et les points matériel M2 et M4 sont reportés ci-dessous et saisis
+dans les réglages de la base d'essai et dans le code. Restent à faire de
+votre côté : le logo (D12), les comptes, le juridique et les réglages de la
+mise en ligne. Marque : « SmartMeteria » partout ; nom du produit :
+« Gardien de l'eau by SmartMeteria ».
+
 | N° | Point | Bloque la mise en ligne ? | Temps |
 |---|---|---|---|
 | 0 | Votre accès superadmin sur la base d'essai | Non, mais à faire en premier | 10 min |
 | **Décisions** | | | |
-| D1 | Adresse d'expédition des e-mails | Oui | 2 min |
-| D2 | Fournisseur des SMS et des appels | Oui | 15 min |
-| D3 | Durée de conservation des messages | Oui | 10 min |
-| D4 | Tarifs au Maroc | Peut attendre (bloque la vente au Maroc) | 30 min |
-| D5 | Prix de l'eau par défaut au Maroc | Peut attendre | 10 min |
-| D6 | Tarifs en RDC (dollars et francs congolais) | Peut attendre (bloque la vente en RDC) | 30 min |
-| D7 | Prix de l'eau par défaut en RDC | Peut attendre | 10 min |
-| D8 | Tarif de l'option « autonomie en eau » | Peut attendre (avant de vendre l'option) | 15 min |
-| D9 | Facturation pendant un pilote | Peut attendre (avant la première facture) | 10 min |
-| D10 | Relance par WhatsApp en RDC | Peut attendre | 2 min |
-| D11 | Erreurs du navigateur plus lisibles dans Sentry | Peut attendre | 5 min |
+| D1 | Adresse d'expédition des e-mails | Fait (3 octobre) | — |
+| D2 | Fournisseur des SMS et des appels | Fait (3 octobre) | — |
+| D3 | Durée de conservation des messages | Fait (3 octobre ; à confirmer par le juriste, J1) | — |
+| D4 | Tarifs au Maroc | Fait (3 octobre ; retenue à confirmer, J1) | — |
+| D5 | Prix de l'eau par défaut au Maroc | Fait (3 octobre) | — |
+| D6 | Tarifs en RDC (dollars) | Fait (3 octobre ; retenue à confirmer, J4) | — |
+| D7 | Prix de l'eau par défaut en RDC | Fait (3 octobre) | — |
+| D8 | Tarif de l'option « autonomie en eau » | Fait (3 octobre) | — |
+| D9 | Facturation pendant un pilote | Fait (3 octobre) | — |
+| D10 | Relance par WhatsApp en RDC | Fait (3 octobre) | — |
+| D11 | Erreurs du navigateur plus lisibles dans Sentry | Fait (3 octobre : garder ainsi) | — |
+| D12 | Fichier du logo SMARTMETERIA | Peut attendre (le nom s'affiche en texte en attendant) | 15 min |
 | **Comptes à créer** | | | |
+| C0 | Nom du dépôt GitHub avec la bonne orthographe | Non, mais à faire avant C3 | 5 min |
 | C1 | Gestionnaire de mots de passe | Oui | 15 min |
 | C2 | Base de production (Supabase, Paris) | Oui | 20 min |
 | C3 | Site web (Vercel) | Oui | 20 min |
@@ -75,9 +84,9 @@ juriste : 1 à 3 semaines).
 | C10 | Connexion avec Google | Peut attendre | 30 min |
 | **Matériel** | | | |
 | M1 | Trames réelles de chaque capteur | Peut attendre (avant le premier client) | 30 min par modèle |
-| M2 | Intervalle d'émission des EM300-DI | Peut attendre | 10 min |
-| M3 | Modèle de sonde de température | Peut attendre (option eau chaude) | 1 h |
-| M4 | Modèle de capteur de niveau | Peut attendre (option autonomie) | 1 h |
+| M2 | Intervalle d'émission des EM300-DI | Fait (3 octobre : 60 minutes) | — |
+| M3 | Modèle de sonde de température | Plus tard (option eau chaude) | 1 h |
+| M4 | Modèle de capteur de niveau | Fait (3 octobre : Milesight EM500-UDL) | — |
 | **Juridique** | | | |
 | J1 | Pages légales, registre et informations de la société | Oui | 2 h + juriste |
 | J2 | Phrase d'accord pour continuer après un pilote | Oui | avec J1 |
@@ -151,7 +160,7 @@ en premier : vous en aurez besoin pour tester.
 
 ### D1. Adresse d'expédition des e-mails
 
-- [ ] **Fait** — **Bloque la mise en ligne** · 2 minutes
+- [x] **Fait** — **Bloque la mise en ligne** · 2 minutes
 
 **Pourquoi :** les alertes et les rapports partent d'une adresse à votre
 nom de domaine. Elle doit être choisie avant d'ouvrir le compte d'envoi
@@ -163,11 +172,17 @@ adresse, ou un sous-domaine réservé aux envois (par exemple
 
 **Étapes :** écrivez « d'accord » ou l'adresse de votre choix.
 
-Votre réponse :
+Votre réponse : expéditeur `SmartMeteria <alertes@smartmeteria.com>`,
+adresse de réponse `contact@smartmeteria.com`.
+
+Appliqué : adresse d'envoi dans `.env.example` (à saisir en R5 et R6) ;
+adresse de réponse sur tous les e-mails de la plateforme (et ceux d'un
+partenaire qui n'a pas la sienne). La boîte `contact@smartmeteria.com` doit
+exister et être relevée (voir C4).
 
 ### D2. Fournisseur des SMS, des appels et des WhatsApp
 
-- [ ] **Fait** — **Bloque la mise en ligne** · 15 minutes
+- [x] **Fait** — **Bloque la mise en ligne** · 15 minutes
 
 **Pourquoi :** une fuite est signalée par SMS au technicien, puis par un
 appel (France) ou un WhatsApp (Maroc, RDC) si personne ne réagit en
@@ -178,11 +193,14 @@ demande un petit développement.
 **Étapes :** lisez la page des tarifs SMS de Twilio pour la France, le
 Maroc et la RDC, puis écrivez « Twilio » ou le nom d'un autre fournisseur.
 
-Votre réponse :
+Votre réponse : Twilio.
+
+Appliqué : Twilio est le fournisseur branché ; il reste à ouvrir le compte
+(C7) et à saisir ses clés (R6).
 
 ### D3. Durée de conservation des messages
 
-- [ ] **Fait** — **Bloque la mise en ligne** · 10 minutes (et l'avis du juriste, J1)
+- [x] **Fait** — **Bloque la mise en ligne** · 10 minutes (et l'avis du juriste, J1)
 
 **Pourquoi :** le journal des envois garde le destinataire (adresse,
 téléphone) et le texte de chaque message. La loi sur les données
@@ -195,11 +213,16 @@ supprimés.
 **Étapes :** choisissez une durée en mois (par exemple 12 ou 24), après
 avis du juriste si possible.
 
-Votre réponse :
+Votre réponse : 12 mois (à confirmer par le juriste).
+
+Appliqué : réglage « conservation » à 12 mois ; chaque nuit, l'adresse, le
+téléphone et le texte des messages de plus de 12 mois sont effacés. Durée
+écrite dans la politique de confidentialité et le registre des
+traitements, avec la mention « à confirmer par le juriste » (J1).
 
 ### D4. Tarifs au Maroc (dirhams)
 
-- [ ] **Fait** — **Peut attendre** (bloque la vente au Maroc) · 30 minutes
+- [x] **Fait** — **Peut attendre** (bloque la vente au Maroc) · 30 minutes
 
 **Pourquoi :** sans tarifs, l'export d'usage marque les lignes « à
 paramétrer » et la page preuve n'affiche pas le coût du service.
@@ -213,11 +236,21 @@ paramétrer » et la page preuve n'affiche pas le coût du service.
 6. retenue à la source par défaut (en %), si un conseil fiscal l'a
    confirmée.
 
-Votre réponse :
+Votre réponse (hors taxes) :
+1. mise en service d'un point : 2 900 MAD ;
+2. premier point avec passerelle : 6 500 MAD ;
+3. abonnement du premier point : 150 MAD par mois ;
+4. point supplémentaire : 100 MAD par mois ;
+5. sonde de température : 80 MAD par mois ;
+6. retenue à la source : 10 % par défaut (à confirmer par un conseil
+   fiscal).
+
+Appliqué : tarifs de la plateforme, export d'usage, page preuve et
+pré-diagnostic.
 
 ### D5. Prix de l'eau par défaut au Maroc
 
-- [ ] **Fait** — **Peut attendre** · 10 minutes
+- [x] **Fait** — **Peut attendre** · 10 minutes
 
 **Pourquoi :** sans prix de l'eau, un site marocain affiche les fuites en
 m³ seulement, sans montant. Un prix moyen de référence sert de valeur de
@@ -227,23 +260,36 @@ voir R11).
 **Étapes :** donnez un prix moyen du m³ en dirhams (avec sa source), ou
 écrivez « pas de prix par défaut ».
 
-Votre réponse :
+Votre réponse : pas de prix par défaut. Chaque site marocain reçoit son
+prix (R11) ; sans prix, ses fuites sont données en m³.
 
 ### D6. Tarifs en RDC (dollars et francs congolais)
 
-- [ ] **Fait** — **Peut attendre** (bloque la vente en RDC) · 30 minutes
+- [x] **Fait** — **Peut attendre** (bloque la vente en RDC) · 30 minutes
 
 **Pourquoi :** même raison que D4. Tous les tarifs en dollars (USD) et en
-francs congolais (CDF) sont vides.
+francs congolais (CDF) étaient vides.
 
 **Étapes :** donnez les mêmes six valeurs que D4, en dollars et, si vous
 vendez aussi en francs congolais, en francs congolais.
 
-Votre réponse :
+Votre réponse (hors taxes, en dollars seulement) :
+1. mise en service d'un point : 450 $ ;
+2. premier point avec passerelle : 900 $ ;
+3. abonnement du premier point : 29 $ par mois ;
+4. point supplémentaire : 19 $ par mois ;
+5. sonde de température : 12 $ par mois ;
+6. retenue à la source : 0 % (à confirmer).
+
+Pas de franc congolais pour la facturation : un site dont l'eau est payée
+en francs congolais est facturé en dollars. Ses fuites et ses économies
+restent en francs congolais ; sa page preuve donne le coût du service en
+dollars, sans « retour sur investissement » (il faudrait un taux de
+change, qui n'est pas supposé).
 
 ### D7. Prix de l'eau par défaut en RDC
 
-- [ ] **Fait** — **Peut attendre** · 10 minutes
+- [x] **Fait** — **Peut attendre** · 10 minutes
 
 **Pourquoi :** même raison que D5 (sites congolais : volumes seulement
 tant qu'aucun prix n'est saisi).
@@ -251,11 +297,11 @@ tant qu'aucun prix n'est saisi).
 **Étapes :** donnez un prix moyen du m³ en dollars et en francs congolais
 (avec sa source), ou écrivez « pas de prix par défaut ».
 
-Votre réponse :
+Votre réponse : pas de prix par défaut (prix saisi site par site, R11).
 
 ### D8. Tarif de l'option « autonomie en eau »
 
-- [ ] **Fait** — **Peut attendre** (avant de vendre l'option) · 15 minutes
+- [x] **Fait** — **Peut attendre** (avant de vendre l'option) · 15 minutes
 
 **Pourquoi :** le capteur de niveau des citernes n'a aucun prix dans
 l'export d'usage.
@@ -263,11 +309,16 @@ l'export d'usage.
 **Étapes :** donnez la mise en service et l'abonnement mensuel d'un
 capteur de niveau, dans chaque monnaie où vous le vendrez.
 
-Votre réponse :
+Votre réponse : mise en service 390 €, 4 500 MAD, 550 $ ; abonnement
+15 €, 150 MAD, 25 $ par mois.
+
+Appliqué : l'export d'usage compte chaque capteur de niveau (mise en
+service le mois de sa première mesure, puis abonnement) ; la page preuve
+l'inclut dans le coût du service.
 
 ### D9. Facturation pendant un pilote
 
-- [ ] **Fait** — **Peut attendre** (avant la première facture d'un client en pilote) · 10 minutes
+- [x] **Fait** — **Peut attendre** (avant la première facture d'un client en pilote) · 10 minutes
 
 **Pourquoi :** l'export d'usage compte les abonnements des sites en pilote
 et les signale (colonne « Sites en pilote »). Il faut savoir s'ils sont
@@ -275,11 +326,26 @@ facturés, offerts ou remboursés.
 
 **Étapes :** écrivez « facturés », « offerts » ou « remboursés si… ».
 
-Votre réponse :
+Votre réponse : pendant un pilote, la mise en service est facturée et
+l'abonnement est offert les 30 jours ; la mise en service est remboursée et
+le capteur retiré si rien n'est trouvé, quand l'option est cochée.
+
+Appliqué :
+- export d'usage : la mise en service apparaît le mois de la pose ; une
+  ligne « abonnement offert pendant le pilote » annule l'abonnement des
+  jours de pilote. Il est offert jusqu'à la conversion : si le client n'a
+  pas encore accepté par écrit à la fin des 30 jours, rien n'est facturé
+  tant que vous n'avez pas passé le pilote en « converti ». Un pilote
+  prolongé reste offert jusqu'à sa nouvelle date de fin ;
+- remboursement : à la fin d'un pilote sans anomalie avec l'option
+  cochée, la tâche « Rembourser la mise en service et retirer le capteur »
+  apparaît dans l'espace superadmin (avoir à faire à la main) ;
+- conditions du pilote (page légale) : « l'abonnement est offert pendant le
+  pilote » ajouté.
 
 ### D10. Relance par WhatsApp en RDC
 
-- [ ] **Fait** — **Peut attendre** · 2 minutes
+- [x] **Fait** — **Peut attendre** · 2 minutes
 
 **Pourquoi :** après 2 heures sans réaction à une fuite, la relance part
 par WhatsApp au Maroc. Elle a été choisie aussi pour la RDC.
@@ -287,11 +353,11 @@ par WhatsApp au Maroc. Elle a été choisie aussi pour la RDC.
 **Étapes :** écrivez « d'accord » ou « appel » (appel vocal comme en
 France).
 
-Votre réponse :
+Votre réponse : d'accord (WhatsApp, comme au Maroc).
 
 ### D11. Erreurs du navigateur plus lisibles dans Sentry
 
-- [ ] **Fait** — **Peut attendre** (à décider après quelques semaines) · 5 minutes
+- [x] **Fait** — **Peut attendre** (à décider après quelques semaines) · 5 minutes
 
 **Pourquoi :** les erreurs partent vers Sentry sans module supplémentaire.
 Celles du navigateur y apparaissent dans un code compacté, plus difficile
@@ -301,7 +367,24 @@ lourd.
 **Étapes :** après quelques semaines d'exploitation, écrivez « garder
 ainsi » ou « ajouter le module Sentry ».
 
-Votre réponse :
+Votre réponse : garder ainsi.
+
+### D12. Fichier du logo SMARTMETERIA
+
+- [ ] **Fait** — **Peut attendre** · 15 minutes
+
+**Pourquoi :** en attendant le logo, le nom « Gardien de l'eau by
+SmartMeteria » s'affiche en texte en tête des écrans, des e-mails, des
+rapports et des pages preuve. Aucun logo n'a été inventé.
+
+**Étapes :**
+1. Demandez au graphiste le logo SMARTMETERIA en **PNG à fond
+   transparent**, au moins 400 pixels de large (et en SVG s'il l'a).
+2. Dans VS Code, enregistrez-le sous
+   `public/marque/logo-smartmeteria.png` (créez le dossier `marque` dans
+   `public` s'il n'existe pas).
+3. Dites à Claude : « le logo est dans public/marque ». Il le branchera
+   sur les écrans, les e-mails et les PDF.
 
 ---
 
@@ -310,6 +393,25 @@ Votre réponse :
 Avant de commencer, il vous faut l'accès au site où vous avez acheté le nom
 de domaine `smartmeteria.com` (OVH, Gandi, Cloudflare…) : plusieurs comptes
 demandent d'y ajouter des lignes DNS.
+
+### C0. Nom du dépôt GitHub avec la bonne orthographe
+
+- [ ] **Fait** — **Ne bloque pas la mise en ligne**, mais à faire avant C3 · 5 minutes
+
+**Pourquoi :** le dépôt du code sur GitHub porte encore l'ancien nom de
+la marque (écrit sans le « i » de Meteria). C'est la seule trace qui reste :
+Claude ne renomme pas un dépôt sans votre accord.
+
+**Étapes :**
+1. Sur [github.com](https://github.com), ouvrez l'organisation
+   **SMARTMETERIA**, puis le dépôt du projet (« …-rendement »).
+2. **Settings**, rubrique **General**, champ **Repository name** :
+   saisissez `smartmeteria-rendement`, puis **Rename**.
+3. GitHub redirige l'ancienne adresse vers la nouvelle : rien ne casse.
+   Dites ensuite à Claude « le dépôt est renommé » : il mettra à jour
+   l'adresse sur votre ordinateur.
+4. Facultatif : dans Supabase, projet d'essai, **Project Settings >
+   General > Project name**, renommez-le `smartmeteria-essai`.
 
 ### C1. Gestionnaire de mots de passe
 
@@ -367,9 +469,9 @@ région Paris est déjà réglée dans le projet.
 **Étapes :**
 1. Sur [vercel.com](https://vercel.com), créez un compte avec **Continue
    with GitHub** (le compte GitHub qui voit le dépôt
-   `SMARTMETERIA/smartmetera-rendement`).
+   `SMARTMETERIA/smartmeteria-rendement`, renommé en C0).
 2. **Add New…**, puis **Project**. Choisissez le dépôt
-   `smartmetera-rendement` et cliquez **Import**.
+   `smartmeteria-rendement` et cliquez **Import**.
 3. Laissez les réglages proposés (Next.js). Ne cliquez pas encore
    **Deploy** si Vercel vous laisse d'abord ajouter les variables : elles
    sont décrites en R5. Sinon, le premier déploiement échouera, c'est
@@ -392,9 +494,9 @@ pas dans les indésirables, il faut prouver que vous possédez le domaine.
 
 **Étapes :**
 1. Sur [resend.com](https://resend.com), créez un compte.
-2. **Domains**, puis **Add Domain** : `smartmeteria.com` (ou le
-   sous-domaine choisi en D1), région **Ireland (eu-west-1)** si elle est
-   proposée.
+2. **Domains**, puis **Add Domain** : `smartmeteria.com` (adresse
+   d'envoi choisie en D1 : `alertes@smartmeteria.com`), région **Ireland
+   (eu-west-1)** si elle est proposée.
 3. Resend affiche 3 ou 4 lignes DNS. Copiez-les **exactement** chez le
    vendeur de votre domaine, puis cliquez **Verify** dans Resend.
 4. Ajoutez aussi, chez le vendeur du domaine, une ligne de type `TXT`, nom
@@ -402,6 +504,9 @@ pas dans les indésirables, il faut prouver que vous possédez le domaine.
    `v=DMARC1; p=none; rua=mailto:votre-adresse@smartmeteria.com`.
 5. **API Keys**, puis **Create API Key**, droit **Sending access**. Rangez
    la clé (C1) sous le nom `RESEND_API_KEY`.
+6. Chez votre fournisseur de messagerie, vérifiez que la boîte
+   `contact@smartmeteria.com` existe et que vous la lisez : les réponses
+   des clients aux alertes et aux rapports y arrivent (D1).
 
 **Vérifier :** le domaine passe à « Verified » (parfois après quelques
 heures). La clé sera saisie en R5 et R6.
@@ -463,7 +568,8 @@ seulement écrits dans le journal des envois.
    **Content Template Builder** : un modèle de catégorie **Utility**, en
    français, avec une seule variable `{{1}}` (le texte de l'alerte).
    Texte proposé, à faire valider par Meta : « {{1}} — Ouvrez votre espace
-   SmartMeteria pour indiquer que vous vous en occupez. » Une fois
+   Gardien de l'eau by SmartMeteria pour indiquer que vous vous en
+   occupez. » Une fois
    approuvé, rangez son identifiant (commence par `HX`).
 
 Les clés seront saisies en R6.
@@ -542,14 +648,14 @@ fabricants. Quelques messages réels de chaque modèle permettent de le
 confirmer et de les ajouter aux tests.
 
 **Étapes :** posez un capteur de chaque modèle (EM300-DI, Adeunis, sonde,
-capteur de niveau) sur un robinet d'essai. Ses messages apparaissent dans
+capteur de niveau EM500-UDL) sur un robinet d'essai (ou une cuve). Ses messages apparaissent dans
 **Superadmin > Réception des capteurs > trames d'appareils inconnus** s'il
 n'est pas encore dans le stock. Copiez-en trois ou quatre et donnez-les à
 Claude.
 
 ### M2. Intervalle d'émission des EM300-DI
 
-- [ ] **Fait** — **Peut attendre** · 10 minutes
+- [x] **Fait** — **Peut attendre** · 10 minutes
 
 **Pourquoi :** l'assistant de pose annonce l'heure de la première donnée.
 Il faut connaître l'intervalle réglé sur les capteurs livrés (60 minutes
@@ -558,7 +664,11 @@ au plus).
 **Étapes :** regardez le réglage dans l'application Milesight ToolBox (ou
 demandez-le au fournisseur) et écrivez-le ici.
 
-Votre réponse :
+Votre réponse : 60 minutes.
+
+Appliqué : l'assistant de pose annonce la première donnée d'un EM300-DI
+au plus tard une heure après la pose et demande au technicien de vérifier
+ce réglage.
 
 ### M3. Modèle de sonde de température
 
@@ -570,11 +680,11 @@ serveur LoRaWAN et doit produire un champ `temperature` en °C.
 **Étapes :** choisissez le modèle et donnez sa référence. Si son décodeur
 nomme le champ autrement, indiquez le nom.
 
-Votre réponse :
+Votre réponse : plus tard (l'option eau chaude attend ce choix).
 
 ### M4. Modèle de capteur de niveau (citernes)
 
-- [ ] **Fait** — **Peut attendre** (option autonomie en eau) · 1 heure
+- [x] **Fait** — **Peut attendre** (option autonomie en eau) · 1 heure
 
 **Pourquoi :** il mesure soit la distance jusqu'à la surface de l'eau
 (ultrason ou radar posé au-dessus), soit la hauteur d'eau (capteur de
@@ -584,7 +694,12 @@ Par défaut, l'application attend un champ `distance` en millimètres.
 **Étapes :** choisissez le modèle et donnez sa référence, le nom du champ
 de mesure et son unité.
 
-Votre réponse :
+Votre réponse : Milesight EM500-UDL, champ `distance` en millimètres.
+
+Appliqué : modèle dans le catalogue des appareils (import du stock),
+réglage « capteur de niveau » de la plateforme, guide du serveur LoRaWAN
+(`infra/chirpstack/README.md` : coller le décodeur Milesight de
+l'EM500-UDL). Le capteur se pose au-dessus de l'eau (« distance »).
 
 ---
 
@@ -604,7 +719,9 @@ registre des traitements (`docs/REGISTRE_TRAITEMENTS.md`). Ils doivent
 **Étapes :**
 1. Rassemblez les informations de la société : raison sociale, forme,
    capital, siège, numéro d'immatriculation, numéro de TVA, directeur de
-   la publication, contact, contact pour les données personnelles.
+   la publication, contact, contact pour les données personnelles. (Le
+   3 octobre, vous avez demandé de ne rien remplir pour l'instant : ces
+   passages restent « à compléter » sur les pages légales.)
 2. Ouvrez `/legal` dans l'application et imprimez les six pages (ou
    envoyez le lien au juriste), avec le registre.
 3. Demandez au juriste de trancher les points ouverts : plafond de
@@ -612,7 +729,7 @@ registre des traitements (`docs/REGISTRE_TRAITEMENTS.md`). Ils doivent
    applicable (France et Maroc), retenue à la source, matériel vendu ou
    mis à disposition, sort du matériel après un pilote, garanties de
    transfert hors Union européenne de chaque sous-traitant, durée de
-   conservation (D3).
+   conservation (12 mois, D3), retenue à la source au Maroc (10 %, D4).
 4. Donnez à Claude les informations et les textes corrigés : il les
    saisira et retirera le bandeau « Modèle à faire valider ».
 
@@ -649,8 +766,8 @@ intégrateur local.
 
 **Pourquoi :** les pages légales contiennent des passages « à compléter »
 pour la RDC (droit applicable, fiscalité, autorité de protection des
-données). La retenue à la source est à 0 % tant qu'un conseil fiscal n'a
-rien dit.
+données). La retenue à la source est à 0 % (votre choix du 3 octobre), à
+confirmer par un conseil fiscal congolais.
 
 **Étapes :** posez ces questions au juriste (avec J1) et à un conseil
 fiscal congolais, puis donnez les réponses.
@@ -795,8 +912,8 @@ que les mots de passe trop connus soient refusés.
    dans Supabase bloquerait la connexion.
 5. Après C4 : **Emails**, onglet **SMTP Settings**, activez *Custom SMTP*
    avec Host `smtp.resend.com`, Port `465`, Username `resend`, Password :
-   votre clé Resend, Sender email : l'adresse de D1, Sender name
-   `SmartMeteria`. L'application envoie elle-même ses e-mails ; ce réglage
+   votre clé Resend, Sender email : `alertes@smartmeteria.com` (D1),
+   Sender name `SmartMeteria`. L'application envoie elle-même ses e-mails ; ce réglage
    sert de secours pour les rares e-mails envoyés directement par Supabase.
 
 **Vérifier :** en R9, l'inscription d'essai reçoit bien son e-mail.
@@ -818,7 +935,7 @@ Variables**, environnement **Production**, ajoutez :
 | `SUPABASE_SERVICE_ROLE_KEY` | clé service_role de production (C2) |
 | `NEXT_PUBLIC_SITE_URL` | `https://app.smartmeteria.com` |
 | `RESEND_API_KEY` | clé Resend (C4) |
-| `RESEND_FROM_EMAIL` | l'adresse de D1, par exemple `SmartMeteria <alertes@smartmeteria.com>` |
+| `RESEND_FROM_EMAIL` | `SmartMeteria <alertes@smartmeteria.com>` (D1) |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | C5 |
 | `SENTRY_DSN` | C6 |
 
@@ -912,7 +1029,7 @@ branche `feat/gardien` ; c'est vous qui décidez quand le publier. Rien
 n'est jamais envoyé directement sur `main`.
 
 **Étapes :**
-1. Sur GitHub, ouvrez le dépôt `SMARTMETERIA/smartmetera-rendement`.
+1. Sur GitHub, ouvrez le dépôt `SMARTMETERIA/smartmeteria-rendement` (C0).
 2. Bouton **Compare & pull request** (ou **Pull requests**, **New pull
    request**, de `feat/gardien` vers `main`).
 3. Relisez le résumé, cliquez **Create pull request**, puis **Merge pull
@@ -995,9 +1112,24 @@ en ligne.
 - **Base d'essai** : les tâches automatiques y tournent aussi. Les sites
   d'essai reçoivent leurs rapports et leurs alertes dans le journal des
   envois ; rien ne part réellement (mode « journal »).
-- **Fonction d'envois de la base d'essai** : elle a une version de retard
-  (deux formulations de message corrigées depuis : « Débit continu
-  détecté », « Eau perdue depuis la détection »). La correction part avec
-  le prochain déploiement (R3).
-- **Déjà réglé** : orthographe de la marque (« SmartMeteria » partout) ;
-  message au technicien à la première donnée reçue après une pose.
+- **Fonction d'envois de la base d'essai** : elle a deux versions de
+  retard. Elle applique déjà les nouveaux tarifs (EUR, MAD, USD) à la page
+  preuve, mais pas encore : le nom « Gardien de l'eau by SmartMeteria »
+  dans l'objet et l'en-tête des e-mails d'alerte, le nom « SmartMeteria »
+  en tête des SMS, l'adresse de réponse, le capteur de niveau dans le coût
+  du service, la facturation en dollars d'un site en francs congolais, et
+  deux formulations (« Débit continu détecté », « Eau perdue depuis la
+  détection »). Tout part avec le prochain déploiement (R3) : le
+  3 octobre, l'outil d'écriture de Supabase a été refusé à Claude, qui n'a
+  donc pas redéployé la fonction sur la base d'essai.
+- **Réglages du 3 octobre sur la base d'essai** : tarifs, conservation,
+  capteur de niveau et pilotes sont enregistrés (mêmes valeurs que la
+  migration `0056`). Seule la ligne « 0056 » de l'historique des
+  migrations de la base d'essai manque ; si la migration est rejouée un
+  jour sur cette base, elle donne exactement le même résultat. La base de
+  production la recevra normalement en R1.
+- **Déjà réglé** : orthographe de la marque (« SmartMeteria » partout,
+  sauf le nom du dépôt GitHub : C0) ; nom du produit « Gardien de l'eau by
+  SmartMeteria » (titre de l'application, en-tête et objet des e-mails,
+  rapports, pages preuve) ; message au technicien à la première donnée
+  reçue après une pose.

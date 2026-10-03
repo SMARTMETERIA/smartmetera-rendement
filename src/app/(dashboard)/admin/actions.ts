@@ -10,7 +10,7 @@ import { urlSite } from "@/lib/auth/liens";
 import { envoyerEmail } from "@/lib/email/envoyer";
 import { NOM_PLATEFORME } from "@/lib/marque";
 import { usageMensuel } from "@/lib/gardien/usage";
-import type { Tarifs } from "@/lib/gardien-rapports/contenus";
+import { monnaieFacturation, type Tarifs } from "@/lib/gardien-rapports/contenus";
 import { consommerQuota } from "@/lib/securite/protection";
 import { validerMessageTest, type ResultatTest } from "@/lib/gardien-envois/messageTest";
 import type { ModeEnvois } from "@/lib/gardien-envois/notify";
@@ -255,17 +255,19 @@ export async function calculerUsageMensuel(params: { mois: string }): Promise<{ 
   d.setUTCMonth(d.getUTCMonth() + 1);
   const fin = d.toISOString().slice(0, 10);
 
-  const [{ data: reglage }, { data: orgs }] = await Promise.all([
+  const [{ data: reglage }, { data: reglagePilotes }, { data: orgs }] = await Promise.all([
     admin.from("platform_settings").select("value").eq("key", "tarifs").maybeSingle(),
+    admin.from("platform_settings").select("value").eq("key", "pilotes").maybeSingle(),
     admin
       .from("organizations")
       .select("id, founder_discount_pct, withholding_tax_pct, partner_price_per_point")
       .eq("kind", "sites"),
   ]);
   const tarifs = (reglage?.value ?? {}) as Record<string, Tarifs>;
+  const abonnementOffertPilote = (reglagePilotes?.value as { abonnement_offert?: unknown } | null)?.abonnement_offert !== false;
   let lignes = 0;
   for (const org of orgs ?? []) {
-    const [{ data: sites }, { data: compteurs }, { data: sondes }, { data: passerelles }, { data: pilotes }] = await Promise.all([
+    const [{ data: sites }, { data: compteurs }, { data: sondes }, { data: passerelles }, { data: pilotes }, { data: reserves }] = await Promise.all([
       admin.from("sites").select("id, name, currency, price_overrides").eq("organization_id", org.id),
       admin
         .from("meters")
@@ -283,12 +285,45 @@ export async function calculerUsageMensuel(params: { mois: string }): Promise<{ 
       admin.from("devices").select("site_id").eq("organization_id", org.id).eq("kit", "C").in("provisioning_status", ["pose", "actif"]),
       admin
         .from("pilots")
-        .select("site_id")
+        .select("site_id, started_at, ends_at, status, converted_at")
         .eq("organization_id", org.id)
-        .in("status", ["en_cours", "prolonge"])
         .lt("started_at", `${fin}T00:00:00Z`),
+      // Capteurs de niveau : réserves actives équipées d'un capteur.
+      admin
+        .from("water_reserves")
+        .select("id, site_id, created_at")
+        .eq("organization_id", org.id)
+        .eq("active", true)
+        .not("device_id", "is", null),
     ]);
     if (!sites?.length) continue;
+    // Mise en service d'un capteur de niveau : sa première mesure reçue
+    // (à défaut, la création de la réserve).
+    const niveaux = await Promise.all(
+      (reserves ?? []).map(async (r) => {
+        const { data: premiere } = await admin
+          .from("reserve_levels")
+          .select("ts")
+          .eq("reserve_id", r.id)
+          .order("ts", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        return { siteId: r.site_id as string, date: (premiere?.ts as string | undefined) ?? (r.created_at as string) };
+      }),
+    );
+    // Abonnement offert du début du pilote à sa conversion (ou à sa fin s'il
+    // est retiré) ; pilote en cours ou prolongé : rien n'est facturé.
+    const periodes = (pilotes ?? []).map((p) => ({
+      siteId: p.site_id as string,
+      enCours: p.status === "en_cours" || p.status === "prolonge",
+      debut: p.started_at as string,
+      fin:
+        p.status === "converti"
+          ? ((p.converted_at as string | null) ?? (p.ends_at as string))
+          : p.status === "retire"
+            ? (p.ends_at as string)
+            : null,
+    }));
     const usages = usageMensuel({
       debutMois: debut,
       finMois: fin,
@@ -296,19 +331,23 @@ export async function calculerUsageMensuel(params: { mois: string }): Promise<{ 
       remiseFondateurPct: Number(org.founder_discount_pct ?? 0),
       retenuePct: Number(org.withholding_tax_pct ?? 0),
       prixPartenaireParPoint: org.partner_price_per_point == null ? null : Number(org.partner_price_per_point),
+      abonnementOffertPilote,
       sites: sites.map((s) => ({
         id: s.id,
         nom: s.name,
         monnaie: monnaieDe(s.currency),
-        surcharges: ((s.price_overrides ?? {}) as Record<string, Tarifs>)[s.currency] ?? null,
+        // Surcharges dans la monnaie de facturation (dollars pour un site en CDF).
+        surcharges: ((s.price_overrides ?? {}) as Record<string, Tarifs>)[monnaieFacturation(monnaieDe(s.currency))] ?? null,
         avecPasserelle: (passerelles ?? []).some((p) => p.site_id === s.id),
         poses: (compteurs ?? []).filter((m) => m.site_id === s.id).map((m) => m.installed_at as string),
         sondes: (sondes ?? []).filter((p) => p.site_id === s.id).length,
-        pilote: (pilotes ?? []).some((p) => p.site_id === s.id),
+        niveaux: niveaux.filter((n) => n.siteId === s.id).map((n) => n.date),
+        pilote: periodes.some((p) => p.siteId === s.id && p.enCours),
+        periodesPilote: periodes.filter((p) => p.siteId === s.id),
       })),
     });
     for (const u of usages) {
-      if (!u.pointsActifs && !u.sondes) continue;
+      if (!u.pointsActifs && !u.sondes && !u.capteursNiveau) continue;
       const { error } = await admin.from("usage_monthly").upsert(
         {
           organization_id: org.id,
@@ -328,6 +367,7 @@ export async function calculerUsageMensuel(params: { mois: string }): Promise<{ 
             remise: u.remise,
             net: u.net,
             retenue_pct: u.retenuePct,
+            capteurs_niveau: u.capteursNiveau,
             incomplet: u.incomplet,
             sites_en_pilote: u.sitesEnPilote,
           },

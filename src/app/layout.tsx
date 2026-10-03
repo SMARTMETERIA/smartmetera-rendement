@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
+import { NOM_PRODUIT } from "@/lib/marque";
 
 // Identité SmartMeteria (docs/DESIGN.md) : Fraunces pour les titres et les
 // grands chiffres, Manrope pour le texte. Polices auto-hébergées par Next.
@@ -22,7 +23,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SmartMeteria",
+  // Titre de l'application ; une page de partenaire impose le sien (absolute).
+  title: { default: NOM_PRODUIT, template: `%s — ${NOM_PRODUIT}` },
   description:
     "Le registre eau des établissements : fuites détectées la nuit, températures d'eau chaude, économies prouvées.",
 };

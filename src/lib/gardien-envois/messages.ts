@@ -10,7 +10,7 @@ import {
   TITRES_RAPPORT,
   type TypeRapport,
 } from "../gardien-rapports/contenus";
-import { emailHtml, emailTexte, type Bloc } from "./gabarit";
+import { emailHtml, emailTexte, sujetEmail, type Bloc } from "./gabarit";
 import { dateHeure, dateLongue, heure, montant, moisLong, nombre, volume } from "./format";
 import type { EtapeFuite } from "./destinataires";
 
@@ -40,11 +40,12 @@ export const LIBELLES_FUITE: Record<TypeFuite, string> = {
 function rendu(ctx: Contexte, titre: string, blocs: Bloc[], court: string, vocal = court): Rendu {
   const complets: Bloc[] = [...blocs, { type: "note", texte: MENTION_SURVEILLANCE }];
   return {
-    sujet: titre,
+    sujet: sujetEmail(ctx.marque, titre),
     html: emailHtml(ctx.marque, titre, complets),
     texte: emailTexte(ctx.marque, titre, complets),
-    court: `${ctx.marque.nom} : ${court}`,
-    vocal: `Bonjour, ici ${ctx.marque.nom}. ${vocal}`,
+    // SMS et appel : nom court de l'expéditeur (« SmartMeteria » ou le partenaire).
+    court: `${ctx.marque.expediteur} : ${court}`,
+    vocal: `Bonjour, ici ${ctx.marque.expediteur}. ${vocal}`,
   };
 }
 

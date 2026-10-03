@@ -88,10 +88,16 @@ Station ») selon ce que votre passerelle utilise, et les ports **80** et
 2. Région : EU868 ; version LoRaWAN et paramètres régionaux : ceux de la
    fiche technique du capteur ; activation : OTAA.
 3. Onglet « Codec » :
-   - EM300-DI : facultatif (SmartMeteria décode lui-même les impulsions) ;
+   - EM300-DI : facultatif (SmartMeteria décode lui-même les impulsions).
+     Intervalle d'émission réglé à 60 minutes (application Milesight
+     ToolBox) ;
    - sonde de température : **obligatoire**. Collez le décodeur ChirpStack
      publié par le fabricant de la sonde. Il doit produire un champ
-     `temperature` en °C. TODO(RAYAN) : modèle de sonde à choisir.
+     `temperature` en °C. TODO(RAYAN) : modèle de sonde à choisir ;
+   - capteur de niveau Milesight EM500-UDL (option autonomie en eau) :
+     **obligatoire**. Collez le décodeur ChirpStack publié par Milesight
+     pour l'EM500-UDL. Il produit un champ `distance` en millimètres, que
+     SmartMeteria lit tel quel.
 
 ## 6. Créer l'application et ajouter les capteurs
 
@@ -120,8 +126,9 @@ l'écran passe à « Données reçues » dès le premier message.
 1. Créez un compte et une application sur The Things Stack Cloud (région
    Europe).
 2. Déclarez la passerelle et les capteurs (DevEUI, AppKey).
-3. Sonde de température : onglet « Payload formatters » du capteur,
-   formateur JavaScript du fabricant (champ `temperature` en °C).
+3. Sonde de température et capteur de niveau EM500-UDL : onglet « Payload
+   formatters » du capteur, formateur JavaScript du fabricant (champ
+   `temperature` en °C ; champ `distance` en millimètres).
 4. « Integrations » → « Webhooks » → « Add webhook » → « Custom webhook » :
    format **JSON**, « Base URL » :
    `https://<projet>.supabase.co/functions/v1/ingest/ttn/<jeton>` (même

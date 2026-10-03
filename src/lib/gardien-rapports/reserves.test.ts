@@ -129,7 +129,7 @@ describe("messages de l'autonomie en eau", () => {
       fuseau: "Africa/Kinshasa",
       maintenantMs: maintenant,
     });
-    expect(r.sujet).toBe("Coupure du réseau public — Hôtel du Fleuve");
+    expect(r.sujet).toBe("Coupure du réseau public — Hôtel du Fleuve — Gardien de l'eau by SmartMeteria");
     expect(texte(r.court)).toBe(
       "SmartMeteria : coupure du réseau public à Hôtel du Fleuve. Autonomie estimée : 10 h. Niveau bas prévu à 17:00. Voir : https://app.exemple.fr/sites/reserves",
     );

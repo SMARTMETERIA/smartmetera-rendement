@@ -19,7 +19,7 @@ async function marqueDuSlug(slug: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const marque = await marqueDuSlug((await params).slug);
-  return { title: marque ? `Connexion — ${marque.nom}` : "Connexion" };
+  return { title: marque ? { absolute: `Connexion — ${marque.nom}` } : "Connexion" };
 }
 
 /** Connexion à la marque d'un partenaire (logo, couleurs, nom). */

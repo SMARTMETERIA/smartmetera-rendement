@@ -81,7 +81,7 @@ describe("usage mensuel (facturation)", () => {
   it("export CSV lisible dans Excel en français", () => {
     const usages = usageMensuel({ debutMois: "2026-09-01", finMois: "2026-10-01", tarifs: TARIFS, sites: [site({ poses: ["2026-08-01T00:00:00Z"], pilote: true })], remiseFondateurPct: 0, retenuePct: 0 });
     expect(lignesCsvUsage("Hôtels; Atlas", "2026-09", usages)).toEqual([
-      '"Hôtels; Atlas";2026-09;EUR;1;0;0;19;0;19;0;0;19;non;Hôtel',
+      '"Hôtels; Atlas";2026-09;EUR;1;0;0;0;19;0;19;0;0;19;non;Hôtel',
     ]);
   });
 });

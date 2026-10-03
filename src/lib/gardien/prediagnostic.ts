@@ -3,7 +3,7 @@
 // le service, par jour et par nuitée. Débits de référence : valeurs du plan,
 // modifiables dans platform_settings.prediagnostic.
 import { coutFuite, type Monnaie } from "@/lib/moteur-gardien/economies";
-import { coutService, type CoutService, type Tarifs } from "@/lib/gardien-rapports/contenus";
+import { coutService, monnaieFacturation, type CoutService, type Tarifs } from "@/lib/gardien-rapports/contenus";
 import { montant, montantRond, nombre } from "@/lib/gardien-envois/format";
 import { paysDe, type Pays } from "@/lib/auth/validation";
 import { REGLAGES_PAYS } from "./pays";
@@ -28,6 +28,8 @@ export interface EntreePrediagnostic {
 
 export interface ResultatPrediagnostic {
   monnaie: Monnaie;
+  /** Monnaie du coût du service (dollars pour un établissement en francs congolais). */
+  monnaieService: Monnaie;
   chasse: { lph: number; m3ParJour: number; parJour: number; parAn: number };
   enterree: { lph: number; m3ParJour: number; parJour: number; parAn: number };
   service: CoutService | null;
@@ -79,12 +81,18 @@ export function validerPrediagnostic(e: Partial<Record<keyof EntreePrediagnostic
   };
 }
 
+/** Tarifs à appliquer : ceux de la monnaie de facturation de l'établissement. */
+export function tarifsPrediagnostic(tarifs: Record<string, Tarifs>, monnaie: Monnaie): Tarifs | null {
+  return tarifs[monnaieFacturation(monnaie)] ?? null;
+}
+
 export function prediagnostic(
   e: EntreePrediagnostic,
   tarifs: Tarifs | null,
   debits = DEBITS_REFERENCE,
 ): ResultatPrediagnostic {
   const monnaie: Monnaie = e.monnaie;
+  const monnaieService = monnaieFacturation(monnaie);
   const cas = (lph: number) => {
     const c = coutFuite({ excesLph: lph, prixM3: e.prixM3, depuisMs: 0, maintenantMs: 0 });
     return { lph, m3ParJour: c.m3ParJour, parJour: c.coutParJour as number, parAn: c.coutAnnuel as number };
@@ -100,14 +108,15 @@ export function prediagnostic(
     avecPasserelle: false,
     remiseFondateurPct: 0,
     nuiteesMois: nuiteesParMois,
+    monnaie: monnaieService,
   });
   const partFacturePct =
     e.factureAnnuelle && e.factureAnnuelle > 0 ? Math.round((chasse.parAn / e.factureAnnuelle) * 100) : null;
   const serviceTexte = service
-    ? ` La surveillance coûte ${montant(service.parJour, monnaie)} par jour${service.parNuitee !== null ? `, soit ${montant(service.parNuitee, monnaie)} par nuitée` : ""}.`
+    ? ` La surveillance coûte ${montant(service.parJour, monnaieService)} par jour${service.parNuitee !== null ? `, soit ${montant(service.parNuitee, monnaieService)} par nuitée` : ""}.`
     : "";
   const phrase = `Une seule chasse d'eau qui fuit coûte ${montantRond(chasse.parAn, monnaie)} par an à ${e.etablissement}${partFacturePct !== null ? ` (${nombre(partFacturePct, 0)} % de la facture d'eau)` : ""} ; une fuite enterrée, ${montantRond(enterree.parAn, monnaie)} par an.${serviceTexte}`;
-  return { monnaie, chasse, enterree, service, nuiteesParMois, partFacturePct, phrase };
+  return { monnaie, monnaieService, chasse, enterree, service, nuiteesParMois, partFacturePct, phrase };
 }
 
 /** Vue du pré-diagnostic (page et PDF à la marque). */
@@ -132,13 +141,14 @@ export function vuePrediagnostic(e: EntreePrediagnostic, r: ResultatPrediagnosti
     },
   ];
   if (r.service) {
+    const ms = r.monnaieService;
     const lignes: [string, string][] = [
       ["Points de comptage", String(e.nbPoints)],
-      ["Par mois (hors taxes)", montant(r.service.mensuel, m)],
-      ["Par jour", montant(r.service.parJour, m)],
+      ["Par mois (hors taxes)", montant(r.service.mensuel, ms)],
+      ["Par jour", montant(r.service.parJour, ms)],
     ];
-    if (r.service.parNuitee !== null) lignes.push(["Par nuitée", montant(r.service.parNuitee, m)]);
-    if (r.service.miseEnService !== null) lignes.push(["Mise en service (une fois)", montant(r.service.miseEnService, m)]);
+    if (r.service.parNuitee !== null) lignes.push(["Par nuitée", montant(r.service.parNuitee, ms)]);
+    if (r.service.miseEnService !== null) lignes.push(["Mise en service (une fois)", montant(r.service.miseEnService, ms)]);
     blocs.push({ titre: "Le service de surveillance", lignes });
   }
   return {

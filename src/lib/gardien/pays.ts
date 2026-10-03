@@ -57,9 +57,9 @@ export function monnaiePays(country: unknown): Monnaie {
 }
 
 /**
- * Valeurs de repli si platform_settings.tarifs est illisible.
- * TODO(RAYAN) : retenue à la source pour un client en RDC (0 % tant que
- * rien n'est décidé).
+ * Valeurs de repli si platform_settings.tarifs est illisible (décisions de
+ * Rayan, D4 et D6 : Maroc 10 %, RDC 0 %). TODO(RAYAN) : à confirmer par un
+ * conseil fiscal.
  */
 const RETENUE_PAR_DEFAUT: Record<Pays, number> = { FR: 0, MA: 10, CD: 0 };
 

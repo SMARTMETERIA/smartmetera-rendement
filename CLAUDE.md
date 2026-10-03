@@ -4,6 +4,7 @@
 Source de vérité : docs/PLAN_GARDIEN.md ; avancement : docs/PROGRESS.md.
 Offres Réseau et Immeuble en pause (docs/PLAN_IMMEUBLE.md) : ne pas les casser.
 Règles supplémentaires :
+- Marque « SmartMeteria » partout ; nom du produit « Gardien de l'eau by SmartMeteria » (titre, e-mails, rapports, pages preuve).
 - Fenêtres de nuit, envois et rapports à l'heure locale du site (Europe/Paris, Africa/Casablanca, Africa/Kinshasa ou Africa/Lubumbashi).
 - Montants dans la monnaie du site (EUR, MAD, USD ou CDF).
 - Pertes et économies : toujours la méthode prudente, affichée à côté du montant.

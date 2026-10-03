@@ -49,7 +49,7 @@ describe("notify : rien de réel sans configuration explicite", () => {
     for (const canal of ["sms", "appel", "whatsapp"] as const) {
       const r = await notify({ ...email, canal, destinataire: "+33612345678" }, config, recuperer);
       expect(r.statut).toBe("journalise");
-      expect(r.erreur).toContain("TODO(RAYAN)");
+      expect(r.erreur).toContain("Twilio n'est pas configuré");
     }
     expect(recuperer).not.toHaveBeenCalled();
   });
@@ -146,7 +146,7 @@ describe("messages", () => {
 
   it("alerte fuite : coût par jour et par mois, lien « Je m'en occupe »", () => {
     const r = messageFuite(ctx, fuite, "initial", fuite.detecteeMs + 24 * H);
-    expect(r.sujet).toBe("Fuite de nuit détectée : Hôtel Atlas, Cuisine");
+    expect(r.sujet).toBe("Fuite de nuit détectée : Hôtel Atlas, Cuisine — Gardien de l'eau by SmartMeteria");
     expect(texte(r.court)).toBe(
       "SmartMeteria : fuite de nuit à Hôtel Atlas, Cuisine, 25 L/h depuis 02:00. 2,93 € par jour, 88,02 € par mois si rien n'est fait. Je m'en occupe : https://app.exemple.fr/fuites/f1",
     );
@@ -176,7 +176,7 @@ describe("messages", () => {
       "initial",
       fuite.detecteeMs + 24 * H,
     );
-    expect(r.sujet).toBe("Débit continu détecté : Hôtel Atlas, Cuisine");
+    expect(r.sujet).toBe("Débit continu détecté : Hôtel Atlas, Cuisine — Gardien de l'eau by SmartMeteria");
     expect(texte(r.texte)).toContain("Eau perdue depuis la détection : 0,6 m³");
     expect(r.texte).not.toContain("Coût depuis");
     expect(texte(r.vocal)).toContain("Elle fait perdre environ 0,6 m³ par jour");
@@ -184,7 +184,7 @@ describe("messages", () => {
 
   it("escalade au directeur", () => {
     const r = messageFuite(ctx, fuite, "directeur", fuite.detecteeMs + 12 * H);
-    expect(r.sujet).toBe("Fuite sans prise en charge depuis 12 h : Hôtel Atlas, Cuisine");
+    expect(r.sujet).toBe("Fuite sans prise en charge depuis 12 h : Hôtel Atlas, Cuisine — Gardien de l'eau by SmartMeteria");
   });
 
   it("annonce d'un rapport mensuel", () => {
@@ -195,7 +195,7 @@ describe("messages", () => {
       periode: "2026-09-01",
       resume: "Rien à signaler.",
     });
-    expect(r.sujet).toBe("Rapport de septembre 2026 — Hôtel Atlas");
+    expect(r.sujet).toBe("Rapport de septembre 2026 — Hôtel Atlas — Gardien de l'eau by SmartMeteria");
     expect(r.texte).toContain("https://app.exemple.fr/rapports/r1/pdf");
   });
 });

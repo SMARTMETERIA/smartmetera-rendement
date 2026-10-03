@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { VueRapportEcran } from "@/components/rapports/VueRapportEcran";
-import { prediagnostic, validerPrediagnostic, vuePrediagnostic } from "@/lib/gardien/prediagnostic";
+import { prediagnostic, tarifsPrediagnostic, validerPrediagnostic, vuePrediagnostic } from "@/lib/gardien/prediagnostic";
 import type { Tarifs } from "@/lib/gardien-rapports/contenus";
 
 const CHAMPS = [
@@ -47,7 +47,7 @@ export function FormulairePrediagnostic({
   const vue = validation.ok
     ? vuePrediagnostic(
         validation.entree,
-        prediagnostic(validation.entree, tarifs[validation.entree.monnaie] ?? null, debits),
+        prediagnostic(validation.entree, tarifsPrediagnostic(tarifs, validation.entree.monnaie), debits),
       )
     : null;
   const lienPdf = `/prediagnostic/pdf?${new URLSearchParams(valeurs).toString()}`;

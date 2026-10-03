@@ -144,6 +144,12 @@ Les migrations SQL sont dans `supabase/migrations`, appliquées dans l'ordre :
 - `0052_delai_appels_fonctions.sql` — les appels planifiés vers les
   fonctions (`cron_appeler_edge_function`) attendent 2 minutes au lieu de
   5 secondes : un passage un peu long n'est plus compté en échec.
+- `0053` à `0055` — autonomie en eau et RDC (sections plus bas).
+- `0056_decisions_rayan.sql` — réglages décidés par Rayan le 3 octobre
+  2026 (tarifs MAD et USD, capteur de niveau, conservation 12 mois,
+  EM500-UDL, abonnement offert pendant un pilote). Sur la base d'essai, ces
+  réglages ont été saisis par la clé de service (même résultat) ; la ligne
+  0056 manque seulement à l'historique des migrations de cette base.
 
 Pour les appliquer sur un nouveau projet Supabase : installez la
 [CLI Supabase](https://supabase.com/docs/guides/local-development), liez le
@@ -514,10 +520,10 @@ les limites des fonctions Supabase.
   réseau public), `meters.public_inlet` (compteur d'arrivée du réseau
   public). Saisie par `reserve_enregistrer`, `reserve_retirer` et
   `site_arrivees_reseau` (administrateur, agent, technicien).
-- **Capteur de niveau** LoRaWAN (modèle `TODO(RAYAN)`) : décodeur
-  `niveau_objet`, qui lit la mesure dans l'objet décodé par le serveur
-  réseau (champ et unité dans `platform_settings.capteur_niveau`, par
-  défaut `distance` en millimètres, à confirmer).
+- **Capteur de niveau** LoRaWAN Milesight EM500-UDL (choix de Rayan) :
+  décodeur `niveau_objet`, qui lit la mesure dans l'objet décodé par le
+  serveur réseau (champ et unité dans `platform_settings.capteur_niveau` :
+  `distance` en millimètres).
 - **Calculs** (`src/lib/moteur-gardien/reserves.ts` et `autonomie.ts`,
   fonctions pures) : volume utile au-dessus de la prise d'eau (cuve couchée :
   segment de disque) ; consommation réelle de chaque heure = arrivée du
@@ -553,14 +559,48 @@ les limites des fonctions Supabase.
   monnaies de site `USD` et `CDF` (montants affichés « 12,50 USD »,
   « 125 000 CDF »). Un site congolais choisit son fuseau et sa monnaie à la
   création (dollar à Kinshasa par défaut).
-- **Rien d'inventé** : tarifs `USD` et `CDF` et prix de l'eau par défaut
-  vides dans `platform_settings` (`TODO(RAYAN)`) ; sans prix de l'eau, seuls
-  les volumes sont donnés. Retenue à la source par défaut : 0 %.
+- **Tarifs en dollars** (décision de Rayan, migration `0056`) ; pas de
+  facturation en francs congolais : un site en `CDF` est facturé en
+  dollars (`monnaieFacturation`). Pas de prix de l'eau par défaut : sans
+  prix, seuls les volumes sont donnés. Retenue à la source par défaut : 0 %.
 - **Inscription, téléphone et relances** : établissement en « RD Congo »
   (sans SIREN), numéros `+243`, relance d'une fuite par WhatsApp comme au
   Maroc. Pré-diagnostic en dollars ou en francs congolais. Mentions des
   pages légales « à compléter » pour la RDC.
 - **Tests** : `src/lib/gardien/rdc.test.ts`.
+
+### Décisions de Rayan du 3 octobre 2026
+
+- **Marque et produit** : « SmartMeteria » partout ; nom du produit
+  `NOM_PRODUIT` = « Gardien de l'eau by SmartMeteria » (`src/lib/marque.ts`) :
+  titre de l'application (gabarit `%s — Gardien de l'eau by SmartMeteria`),
+  en-tête et objet des e-mails (`sujetEmail`), rapports et pages preuve.
+  SMS et appels commencent par « SmartMeteria » (`marque.expediteur`).
+  Logo : emplacement prévu (`LOGO_PLATEFORME`, fichier
+  `public/marque/logo-smartmeteria.png` à fournir), nom en texte en
+  attendant.
+- **E-mails** : expéditeur `SmartMeteria <alertes@smartmeteria.com>`
+  (`RESEND_FROM_EMAIL`), réponses à `contact@smartmeteria.com` (aussi pour
+  un partenaire sans adresse de réponse). SMS, appels et WhatsApp : Twilio ;
+  relance WhatsApp au Maroc et en RDC.
+- **Réglages** (migration `0056_decisions_rayan.sql`) : tarifs MAD et USD,
+  capteur de niveau dans les trois monnaies, clé `CDF` retirée des tarifs,
+  conservation du journal des messages 12 mois, capteur de niveau
+  EM500-UDL, `pilotes.abonnement_offert`.
+- **Export d'usage** (`src/lib/gardien/usage.ts`) : regroupé par monnaie de
+  facturation ; capteurs de niveau (mise en service le mois de la première
+  mesure, puis abonnement) ; pendant un pilote, ligne « abonnement offert »
+  au prorata des jours facturables couverts, jusqu'à la conversion (rien
+  n'est facturé sans accord écrit) ; colonne « Capteurs de niveau » dans le
+  CSV.
+- **Page preuve et pré-diagnostic** : coût du service dans la monnaie de
+  facturation (`CoutService.monnaie`) ; capteurs de niveau compris ; pas de
+  retour sur investissement quand les monnaies diffèrent (site en CDF).
+- **Matériel** : EM300-DI à 60 minutes (assistant de pose) ; EM500-UDL dans
+  le catalogue et le guide `infra/chirpstack/README.md`.
+- **Tests** : `src/lib/gardien/decisions-rayan.test.ts` (tarifs de la
+  migration, export d'usage, page preuve et pré-diagnostic en EUR, MAD et
+  USD, marque, aucune trace de l'ancienne orthographe).
 
 ### Import CSV/Excel
 

@@ -150,7 +150,7 @@ create table public.org_branding (
   support_email text,
   support_phone text,
   legal_footer text,
-  -- Mention « Propulsé par SmartMetera » : active par défaut, seul le
+  -- Mention « Propulsé par SmartMeteria » : active par défaut, seul le
   -- superadmin peut la masquer (déclencheur ci-dessous).
   show_powered_by boolean not null default true,
   created_at timestamptz not null default now(),
@@ -175,10 +175,10 @@ begin
     return new;
   end if;
   if tg_op = 'INSERT' and not new.show_powered_by then
-    raise exception 'Seul le superadmin peut masquer la mention « Propulsé par SmartMetera ».';
+    raise exception 'Seul le superadmin peut masquer la mention « Propulsé par SmartMeteria ».';
   end if;
   if tg_op = 'UPDATE' and new.show_powered_by is distinct from old.show_powered_by then
-    raise exception 'Seul le superadmin peut masquer la mention « Propulsé par SmartMetera ».';
+    raise exception 'Seul le superadmin peut masquer la mention « Propulsé par SmartMeteria ».';
   end if;
   return new;
 end;

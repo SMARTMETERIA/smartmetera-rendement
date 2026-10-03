@@ -51,17 +51,28 @@ Tout arbitrage se fait en faveur de ces trois tests.
 
 ### Modèle économique (paramètres par défaut, tous modifiables)
 
-| Élément | France | Maroc |
-|---|---|---|
-| Mise en service, par point | 349 € HT | 2 500 MAD |
-| Mise en service du premier point d'un site avec passerelle | 590 € HT | à paramétrer |
-| Abonnement, premier point d'un site | 19 € HT par mois | 120 MAD par mois |
-| Abonnement, point supplémentaire du même site | 12 € HT par mois | à paramétrer |
-| Sonde de température (registre légionelles) | +9 € HT par mois | à paramétrer |
-| Prix partenaire en marque blanche | 6 à 9 € par point, fixé par partenaire | à paramétrer |
-| Engagement | 24 mois ; option annuelle avec deux mois offerts | idem |
-| Remise fondateur | pourcentage paramétrable par organisation (défaut 0) | idem |
-| Retenue à la source | 0 % par défaut | 10 % par défaut pour une organisation marocaine facturée depuis l'étranger |
+Montants hors taxes. Maroc, RDC et capteur de niveau : décisions de Rayan
+du 3 octobre 2026 (`docs/A_FAIRE_RAYAN.md`, D4 à D9, migration `0056`).
+
+| Élément | France | Maroc | RDC (dollars seulement) |
+|---|---|---|---|
+| Mise en service, par point | 349 € | 2 900 MAD | 450 $ |
+| Mise en service du premier point d'un site avec passerelle | 590 € | 6 500 MAD | 900 $ |
+| Abonnement, premier point d'un site | 19 € par mois | 150 MAD par mois | 29 $ par mois |
+| Abonnement, point supplémentaire du même site | 12 € par mois | 100 MAD par mois | 19 $ par mois |
+| Sonde de température (registre légionelles) | +9 € par mois | +80 MAD par mois | +12 $ par mois |
+| Capteur de niveau (option autonomie en eau) | 390 € puis 15 € par mois | 4 500 MAD puis 150 MAD par mois | 550 $ puis 25 $ par mois |
+| Prix partenaire en marque blanche | 6 à 9 € par point, fixé par partenaire | à paramétrer | à paramétrer |
+| Engagement | 24 mois ; option annuelle avec deux mois offerts | idem | idem |
+| Remise fondateur | pourcentage paramétrable par organisation (défaut 0) | idem | idem |
+| Retenue à la source | 0 % par défaut | 10 % par défaut pour une organisation marocaine facturée depuis l'étranger (à confirmer par un conseil fiscal) | 0 % (à confirmer) |
+| Prix de l'eau par défaut | 4,89 €/m³ | aucun (saisi par site) | aucun (saisi par site) |
+
+Pas de facturation en francs congolais : un site en CDF est facturé en
+dollars (ses pertes et économies restent en CDF). Pilote : mise en service
+facturée, abonnement offert jusqu'à la conversion ; mise en service
+remboursée et capteur retiré si rien n'est trouvé, quand l'option est
+cochée.
 
 Pas de paiement en ligne en v1 : un export d'usage mensuel sert à facturer à la main.
 
@@ -267,6 +278,7 @@ Stripe ; LwM2M, CoAP et serveur UDP ; électrovanne de coupure automatique ; sui
 Source de vérité : docs/PLAN_GARDIEN.md ; avancement : docs/PROGRESS.md.
 Offres Réseau et Immeuble en pause (docs/PLAN_IMMEUBLE.md) : ne pas les casser.
 Règles supplémentaires :
+- Marque « SmartMeteria » partout ; nom du produit « Gardien de l'eau by SmartMeteria » (titre, e-mails, rapports, pages preuve).
 - Fenêtres de nuit, envois et rapports à l'heure locale du site (Europe/Paris, Africa/Casablanca, Africa/Kinshasa ou Africa/Lubumbashi).
 - Montants dans la monnaie du site (EUR, MAD, USD ou CDF).
 - Pertes et économies : toujours la méthode prudente, affichée à côté du montant.

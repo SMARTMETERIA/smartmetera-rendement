@@ -73,7 +73,7 @@ describe("notify : SMS, appel et WhatsApp", () => {
     const recuperer = reponseTwilio();
     const r = await notify(sms, configEnvois({ ...RESEND, GARDIEN_ENVOIS_MODE: "reel" }), recuperer);
     expect(r).toMatchObject({ mode: "journal", statut: "journalise" });
-    expect(r.erreur).toContain("TODO(RAYAN)");
+    expect(r.erreur).toContain("Twilio n'est pas configuré");
     expect(recuperer).not.toHaveBeenCalled();
   });
 

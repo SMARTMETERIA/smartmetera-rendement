@@ -1,8 +1,8 @@
 // SMS, appel vocal et WhatsApp derrière notify() (plan, section 3 et phase
 // G10). Fournisseur branché : Twilio (un seul compte pour les trois canaux,
 // API publique : ressources Messages et Calls de l'API REST 2010-04-01).
-// TODO(RAYAN) : choix définitif du fournisseur (docs/A_FAIRE_RAYAN.md) ; un autre
-// fournisseur se branche en ajoutant une fonction d'envoi ici.
+// Twilio est le fournisseur retenu par Rayan (docs/A_FAIRE_RAYAN.md, D2) ; un
+// autre fournisseur se brancherait en ajoutant une fonction d'envoi ici.
 //
 // Désactivé tant que les clés manquent : sans GARDIEN_TELEPHONE_FOURNISSEUR
 // et sans les variables du canal, le message est seulement journalisé.
